@@ -1,0 +1,638 @@
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SqlServerTypes\x64\msvcr100.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SqlServerTypes\x64\SqlServerSpatial110.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SqlServerTypes\x86\msvcr100.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SqlServerTypes\x86\SqlServerSpatial110.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\org.thecrossingchurch.CustomJobs.dll.config
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\org.thecrossingchurch.CustomJobs.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\org.thecrossingchurch.CustomJobs.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\DotLiquid.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.SqlServer.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EPPlus.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Newtonsoft.Json.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Quartz.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\RestSharp.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Enums.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.Shared.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Diagnostics.DiagnosticSource.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Net.Http.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Humanizer.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CSScriptLibrary.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.ViewModels.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.ImageSharp.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.ImageSharp.Drawing.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Linq.Dynamic.Core.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\HtmlAgilityPack.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CommonMark.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\PreMailer.Net.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NuGet.Core.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Web.XmlTransform.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\OpenXmlPowerTools.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\DocumentFormat.OpenXml.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\UAParser.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\dotless.Core.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ImageResizer.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.SqlServer.Types.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Ical.Net.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CacheManager.Core.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.Analysis.Common.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.Tv.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.Storage.Blob.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.Storage.Common.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Storage.v1.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Cloud.Storage.V1.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.S3.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.Core.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Storage.Blobs.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Auth.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Core.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\PuppeteerSharp.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.DownhillCss.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\IdentityModel.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Tokens.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Protocols.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Hashids.net.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AngleSharp.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNet.SignalR.Core.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EXIFextractor.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Owin.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Net.Http.Formatting.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Clients.ActiveDirectory.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Owin.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Z.EntityFramework.Plus.EF6.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Http.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\DDay.iCal.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.DotLiquid.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.Fonts.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\FCM.Net.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Twilio.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.ServiceBus.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.AzureServiceBusTransport.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.RabbitMqTransport.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\xxHashSharp.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Optimization.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Elasticsearch.Net.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.JsonNetSerializer.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Core.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Logging.Abstractions.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NodaTime.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\BCrypt.Net.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Version.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\TimeZoneConverter.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Http.WebHost.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CronExpressionDescriptor.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.Utilities.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Formatting.Compact.Reader.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Formatting.Compact.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Sinks.File.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Encodings.Web.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.AspNet.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\GreenPipes.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\C5.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Memory.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.CodeAnalysis.Scripting.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.CodeAnalysis.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Mono.CSharp.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.CodeAnalysis.CSharp.Scripting.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Numerics.Vectors.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Buffers.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Encoding.CodePages.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IO.Packaging.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Management.Automation.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Logging.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.KeyVault.Core.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.Rest.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Interactive.Async.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Storage.Common.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Threading.Tasks.Extensions.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Json.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Bcl.AsyncInterfaces.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Memory.Data.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Logging.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.WebUtilities.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.ValueTuple.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NewId.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Newtonsoft.Json.Bson.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\RabbitMQ.Client.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\WebGrease.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Web.Infrastructure.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.Common.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.Protocols.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Primitives.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Options.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Connections.Abstractions.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Threading.Channels.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Reflection.Metadata.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.CodeAnalysis.CSharp.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Net.Http.Headers.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Diagnostics.Tracing.EventSource.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Antlr3.Runtime.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IO.Pipelines.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Connections.Client.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Connections.Common.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MessagePack.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Features.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\DotLiquid.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.dll.config
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Enums.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Enums.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.Shared.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.Shared.dll.config
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.dll.config
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.SqlServer.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EPPlus.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Newtonsoft.Json.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\RestSharp.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Diagnostics.DiagnosticSource.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CSScriptLibrary.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.ViewModels.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.ViewModels.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.ImageSharp.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.ImageSharp.Drawing.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Linq.Dynamic.Core.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Linq.Dynamic.Core.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.dll.config
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\HtmlAgilityPack.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\HtmlAgilityPack.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CommonMark.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CommonMark.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\UAParser.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\dotless.Core.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ImageResizer.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Ical.Net.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CacheManager.Core.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IdentityModel.Tokens.Jwt.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.Analysis.Common.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.Analysis.Common.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.Tv.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.Storage.Blob.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.Storage.Common.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Storage.v1.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Storage.v1.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Cloud.Storage.V1.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Cloud.Storage.V1.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.S3.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.S3.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.Core.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.Core.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Storage.Blobs.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Auth.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Auth.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Core.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Core.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\PuppeteerSharp.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.DownhillCss.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Protocols.OpenIdConnect.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\IdentityModel.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Tokens.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Protocols.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Hashids.net.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AngleSharp.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNet.SignalR.Core.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNet.SignalR.Core.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Net.Http.Formatting.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Clients.ActiveDirectory.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Owin.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Z.EntityFramework.Plus.EF6.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Http.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.DotLiquid.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.DotLiquid.dll.config
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.Fonts.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Twilio.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.ServiceBus.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.AzureServiceBusTransport.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.RabbitMqTransport.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Optimization.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Elasticsearch.Net.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Elasticsearch.Net.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.JsonNetSerializer.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.JsonNetSerializer.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Core.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Logging.Abstractions.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NodaTime.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NodaTime.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\BCrypt.Net.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\BCrypt.Net.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Version.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\TimeZoneConverter.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Http.WebHost.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Formatting.Compact.Reader.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Formatting.Compact.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Sinks.File.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Sinks.File.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Encodings.Web.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.AspNet.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\GreenPipes.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Memory.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Numerics.Vectors.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Buffers.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Encoding.CodePages.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Logging.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.JsonWebTokens.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.KeyVault.Core.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.Rest.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.Rest.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Interactive.Async.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Storage.Common.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Threading.Tasks.Extensions.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Json.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Bcl.AsyncInterfaces.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Memory.Data.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Logging.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.WebUtilities.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.ValueTuple.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NewId.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Newtonsoft.Json.Bson.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\RabbitMQ.Client.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.Common.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.Protocols.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Primitives.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Options.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Connections.Abstractions.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Threading.Channels.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.DependencyInjection.Abstractions.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Net.Http.Headers.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Diagnostics.Tracing.EventSource.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Antlr3.Runtime.pdb
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IO.Pipelines.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Connections.Client.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Connections.Common.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MessagePack.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Features.xml
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\da\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\de\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\es\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\es-MX\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\fa\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\fi\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\fr\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\it\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ja\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ko\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\nb\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\nl\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\pl\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\pt\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ro\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ru\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\sl\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\sv\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\tr\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\uk\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\zh-Hans\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\zh-Hant\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thecrossingchurch.CustomJobs.csproj.AssemblyReference.cache
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thecrossingchurch.CustomJobs.csproj.CoreCompileInputs.cache
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thec.813A8ADA.Up2Date
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thecrossingchurch.CustomJobs.dll
+C:\Users\shane.delapena\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thecrossingchurch.CustomJobs.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SqlServerTypes\x64\msvcr100.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SqlServerTypes\x64\SqlServerSpatial110.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SqlServerTypes\x86\msvcr100.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SqlServerTypes\x86\SqlServerSpatial110.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\org.thecrossingchurch.CustomJobs.dll.config
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\org.thecrossingchurch.CustomJobs.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\org.thecrossingchurch.CustomJobs.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\DotLiquid.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.SqlServer.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EPPlus.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Newtonsoft.Json.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Quartz.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\RestSharp.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Enums.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.Shared.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Diagnostics.DiagnosticSource.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Net.Http.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Humanizer.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CSScriptLibrary.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.ViewModels.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.ImageSharp.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.ImageSharp.Drawing.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Linq.Dynamic.Core.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\HtmlAgilityPack.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CommonMark.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\PreMailer.Net.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NuGet.Core.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Web.XmlTransform.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\OpenXmlPowerTools.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\DocumentFormat.OpenXml.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\UAParser.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\dotless.Core.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ImageResizer.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.SqlServer.Types.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Ical.Net.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CacheManager.Core.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.Analysis.Common.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.Tv.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.Storage.Blob.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.Storage.Common.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Storage.v1.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Cloud.Storage.V1.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.S3.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.Core.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Storage.Blobs.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Auth.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Core.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\PuppeteerSharp.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.DownhillCss.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\IdentityModel.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Tokens.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Protocols.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Hashids.net.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AngleSharp.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNet.SignalR.Core.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EXIFextractor.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Owin.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Net.Http.Formatting.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Clients.ActiveDirectory.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Owin.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Z.EntityFramework.Plus.EF6.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Http.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\DDay.iCal.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.DotLiquid.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.Fonts.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\FCM.Net.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Twilio.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.ServiceBus.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.AzureServiceBusTransport.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.RabbitMqTransport.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\xxHashSharp.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Optimization.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Elasticsearch.Net.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.JsonNetSerializer.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Core.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Logging.Abstractions.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NodaTime.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\BCrypt.Net.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Version.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\TimeZoneConverter.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Http.WebHost.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CronExpressionDescriptor.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.Utilities.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Formatting.Compact.Reader.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Formatting.Compact.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Sinks.File.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Encodings.Web.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.AspNet.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\GreenPipes.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\C5.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Memory.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.CodeAnalysis.Scripting.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.CodeAnalysis.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Mono.CSharp.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.CodeAnalysis.CSharp.Scripting.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Numerics.Vectors.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Buffers.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Encoding.CodePages.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IO.Packaging.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Management.Automation.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Logging.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.KeyVault.Core.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.Rest.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Interactive.Async.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Storage.Common.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Threading.Tasks.Extensions.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Json.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Bcl.AsyncInterfaces.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Memory.Data.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Logging.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.WebUtilities.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.ValueTuple.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NewId.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Newtonsoft.Json.Bson.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\RabbitMQ.Client.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\WebGrease.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Web.Infrastructure.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.Common.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.Protocols.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Primitives.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Options.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Connections.Abstractions.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Threading.Channels.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Reflection.Metadata.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.CodeAnalysis.CSharp.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Net.Http.Headers.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Diagnostics.Tracing.EventSource.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Antlr3.Runtime.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IO.Pipelines.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Connections.Client.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Connections.Common.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MessagePack.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Features.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\DotLiquid.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.dll.config
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Enums.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Enums.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.Shared.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.Shared.dll.config
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.dll.config
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EntityFramework.SqlServer.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\EPPlus.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Newtonsoft.Json.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\RestSharp.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Diagnostics.DiagnosticSource.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CSScriptLibrary.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.ViewModels.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.ViewModels.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.ImageSharp.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.ImageSharp.Drawing.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Linq.Dynamic.Core.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Linq.Dynamic.Core.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.dll.config
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\HtmlAgilityPack.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\HtmlAgilityPack.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CommonMark.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CommonMark.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\UAParser.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\dotless.Core.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ImageResizer.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Ical.Net.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\CacheManager.Core.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IdentityModel.Tokens.Jwt.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.Analysis.Common.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Lucene.Net.Analysis.Common.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Common.Tv.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.Storage.Blob.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.Storage.Common.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Storage.v1.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Storage.v1.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Cloud.Storage.V1.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Cloud.Storage.V1.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.S3.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.S3.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.Core.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AWSSDK.Core.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Storage.Blobs.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Auth.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Auth.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Core.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.Core.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\PuppeteerSharp.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.DownhillCss.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Protocols.OpenIdConnect.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\IdentityModel.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Tokens.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Protocols.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Hashids.net.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\AngleSharp.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNet.SignalR.Core.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNet.SignalR.Core.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Net.Http.Formatting.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Clients.ActiveDirectory.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Owin.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Z.EntityFramework.Plus.EF6.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Http.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.DotLiquid.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Lava.DotLiquid.dll.config
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\SixLabors.Fonts.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Twilio.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.ServiceBus.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.AzureServiceBusTransport.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MassTransit.RabbitMqTransport.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Optimization.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Elasticsearch.Net.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Elasticsearch.Net.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.JsonNetSerializer.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Nest.JsonNetSerializer.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Apis.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Core.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Logging.Abstractions.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NodaTime.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NodaTime.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\BCrypt.Net.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\BCrypt.Net.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Rock.Version.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\TimeZoneConverter.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Web.Http.WebHost.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Formatting.Compact.Reader.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Formatting.Compact.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Sinks.File.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Serilog.Sinks.File.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Encodings.Web.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.AspNet.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\GreenPipes.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Memory.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Numerics.Vectors.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Buffers.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Encoding.CodePages.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.Logging.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.IdentityModel.JsonWebTokens.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.KeyVault.Core.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.Rest.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Google.Api.Gax.Rest.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Interactive.Async.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Azure.Storage.Common.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Threading.Tasks.Extensions.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Text.Json.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Bcl.AsyncInterfaces.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Memory.Data.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Logging.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.WebUtilities.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.ValueTuple.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\NewId.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Newtonsoft.Json.Bson.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\RabbitMQ.Client.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.Common.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Azure.SignalR.Protocols.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Primitives.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.Options.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Connections.Abstractions.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.Threading.Channels.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Extensions.DependencyInjection.Abstractions.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Net.Http.Headers.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.Diagnostics.Tracing.EventSource.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Antlr3.Runtime.pdb
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\System.IO.Pipelines.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Connections.Client.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Connections.Common.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\MessagePack.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\Microsoft.AspNetCore.Http.Features.xml
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\da\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\de\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\es\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\es-MX\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\fa\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\fi\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\fr\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\it\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ja\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ko\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\nb\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\nl\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\pl\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\pt\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ro\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\ru\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\sl\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\sv\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\tr\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\uk\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\zh-Hans\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\bin\Debug\zh-Hant\CronExpressionDescriptor.resources.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thecrossingchurch.CustomJobs.csproj.AssemblyReference.cache
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thecrossingchurch.CustomJobs.csproj.CoreCompileInputs.cache
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thec.813A8ADA.Up2Date
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thecrossingchurch.CustomJobs.dll
+C:\Users\shane.delapena\OneDrive - Lake Pointe Church\Documents\GitHub\Rock\Rock\org.thecrossingchurch.CustomJobs\obj\Debug\org.thecrossingchurch.CustomJobs.pdb
