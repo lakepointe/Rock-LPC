@@ -435,7 +435,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
 
         private List<int> FindPersonIds(HSContactResult contact, RockContext _context)
         {
-            using ( RockContext context = _context )
+            using ( RockContext context = new RockContext() )
             {
                 SqlParameter[] sqlParams = new SqlParameter[] {
                     new SqlParameter( "@first_name", contact.properties.firstname ?? "" ),
@@ -464,7 +464,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
 
         private int[] GetAllPersonIds(RockContext _context)
         {
-            using ( RockContext context = _context )
+            using ( RockContext context = new RockContext() )
             {
                 var query = context.Database.SqlQuery<int>($@"
                     SELECT Id
