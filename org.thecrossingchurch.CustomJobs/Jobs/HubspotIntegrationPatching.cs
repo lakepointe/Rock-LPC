@@ -88,23 +88,12 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
         {
             JobDataMap dataMap = context.JobDetail.JobDataMap;
 
-            //Bearer Token, but I didn't change the Attribute Key
+            // Get HS API Token
             string attrKey = dataMap.GetString("AttributeKey");
-            Debug.WriteLine("AttributeKey: " + attrKey);
             string attrValue = GlobalAttributesCache.Get().GetValue(attrKey);
-            Debug.WriteLine("AttributeValue: " + attrValue);
-            key = "";
-            key = Encryption.DecryptString( attrValue );
-            Debug.WriteLine("Found key: " + key);
-            businessUnit = dataMap.GetString("BusinessUnit");
+            key = Encryption.DecryptString(attrValue);
+
             var current_id = 0;
-
-            //Bearer Token, but I didn't change the Attribute Key ---- Original. Commented 6/25
-            //string attrKey = dataMap.GetString("AttributeKey");
-            //key = Encryption.DecryptString(GlobalAttributesCache.Get().GetValue(attrKey));
-            //businessUnit = dataMap.GetString("BusinessUnit");
-
-            //var current_id = 0;
 
             PersonService personService = new PersonService(new RockContext());
 
@@ -242,7 +231,9 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         properties.Add( new HubspotPropertyUpdate() { property = hsKey, value = value } );
 
                     }
+                    
 
+                    // TODO - handle name changes here also? or is it risky that we trash HS data?
 
 
                     // Handle Email and Phone
