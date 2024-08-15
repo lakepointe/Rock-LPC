@@ -232,9 +232,9 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
 
                     }
                     
-
-                    // TODO - handle name changes here also? or is it risky that we trash HS data?
-
+                    // Handle name changes
+                    properties.Add(new HubspotPropertyUpdate() { property = "firstname", value = person.NickName });
+                    properties.Add(new HubspotPropertyUpdate() { property = "lastname", value = person.LastName });
 
                     // Handle Email and Phone
                     PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );

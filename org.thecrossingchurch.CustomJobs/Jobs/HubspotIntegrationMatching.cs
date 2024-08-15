@@ -325,7 +325,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             resultMsg.AppendFormat( ", {0} contacts with Rock person id that is valid", idCorrect );
             resultMsg.AppendFormat( ", {0} contacts with no match in Rock", idEmpty );
             resultMsg.AppendFormat( ", {0} new contacts imported into HubSpot", idAdded );
-            this.Result = resultMsg.ToString();
+            context.UpdateLastStatusMessage(resultMsg.ToString());
 
             // Write excel file
             byte[] sheetbytes = excel.GetAsByteArray();
