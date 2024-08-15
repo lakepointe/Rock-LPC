@@ -89,6 +89,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             // Setup Excel
             ExcelPackage excel = new ExcelPackage();
             ExcelWorksheet worksheet = SetupWorksheet(excel);
+            var row = 2;
 
             // Setup Context & Services
             RockContext _context = new RockContext();
@@ -133,8 +134,11 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                     {
                         // Person not found
                         Debug.WriteLine("Contact with id not found in Rock. Clearing Id.");
+                        // Clear the person id in HubSpot
+                        var properties = new List<HubspotPropertyUpdate>() { new HubspotPropertyUpdate() { property = "rock_person_id", value = "" } };
+                        var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
+                        UpdateHsContact(current_id, url, properties, 0);
                         idRemoved++;
-                        // TODO - Clear person id in HS
                     }
                     else
                     {
@@ -278,15 +282,15 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
 
             // Add contacts for people unknown to HubSpot
             HashSet<int> hsPersonIds = new HashSet<int>();
-            foreach ( contact in contacts)
+            foreach ( var contact in contacts)
             {
                 hsPersonIds.Add(contact.properties.rock_person_id);
             }
             
             int[] personIds = GetAllPersonIds(_context);
-            foreach (id in personIds)
+            foreach ( int id in personIds )
             {
-                if (!hsPersonIds.contains(id))
+                if (!hsPersonIds.Contains(id))
                 {
                     Person person = personService.Get(id);
                     if (person != null)
@@ -294,6 +298,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         List<HubspotPropertyUpdate> properties = new List<HubspotPropertyUpdate>();
                         properties.Add(new HubspotPropertyUpdate() { property = "firstname", value = person.NickName });
                         properties.Add(new HubspotPropertyUpdate() { property = "lastname", value = person.LastName });
+                        properties.Add(new HubspotPropertyUpdate() { property = "rock_person_id", value = person.Id.ToString() });
                         PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
                         if ( mobile != null && !mobile.IsUnlisted && mobile.IsMessagingEnabled )
                         {
@@ -310,7 +315,6 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         AddHsContact(url, properties, 0);
                         idAdded++;
                     }
-                    
                 }
             }
 
@@ -483,7 +487,6 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             worksheet.PrinterSettings.BottomMargin = .5m;
             var headers = new List<string> { "HubSpot FirstName", "Rock FirstName", "HubSpot LastName", "Rock LastName", "HubSpot Email", "Rock Email", "HubSpot Phone", "Rock Phone", "HubSpot Connection Status", "Rock Connection Status", "HubSpot Link", "Rock Link", "HubSpot CreatedDate", "Rock Created Date", "HubSpot Modified Date", "Rock Modified Date", "Rock ID" };
             var h = 1;
-            var row = 2;
             foreach ( var header in headers )
             {
                 worksheet.Cells[1, h].Value = header;
