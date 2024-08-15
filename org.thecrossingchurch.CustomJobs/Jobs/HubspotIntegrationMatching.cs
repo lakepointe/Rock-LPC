@@ -36,6 +36,7 @@ using System.Diagnostics;
 using System.ComponentModel;
 using System.Threading;
 using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
+using System.Text;
 
 namespace org.crossingchurch.HubspotIntegration.Jobs
 {
