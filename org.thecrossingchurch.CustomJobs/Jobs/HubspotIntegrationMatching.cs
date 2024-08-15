@@ -257,7 +257,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         }
                     }
                     var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
-                    MakeRequest(current_id, url, properties, 0); //----------------------------------6/12
+                    UpdateHsContact(current_id, url, properties, 0);
                     WriteToLog(string.Format("    After Request (Id and Props): {0}", watch.ElapsedMilliseconds));
                 }
                 else
@@ -267,7 +267,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         //We don't have an exact match but we have guesses, so update Hubspot to reflect that.
                         var properties = new List<HubspotPropertyUpdate>() { new HubspotPropertyUpdate() { property = "potential_rock_match", value = "True" } };
                         var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
-                        MakeRequest(current_id, url, properties, 0); //---------------------------------6/12
+                        UpdateHsContact(current_id, url, properties, 0);
 
                         WriteToLog(string.Format("    After Request (Label): {0}", watch.ElapsedMilliseconds));
                     }
@@ -280,7 +280,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             HashSet<int> hsPersonIds = new HashSet<int>();
             foreach ( contact in contacts)
             {
-                hsPersonIds.Add( contact.properties.rock_person_id );
+                hsPersonIds.Add(contact.properties.rock_person_id);
             }
             
             int[] personIds = GetAllPersonIds(_context);
@@ -288,7 +288,29 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             {
                 if (!hsPersonIds.contains(id))
                 {
-                    // TODO - Insert this person into HS
+                    Person person = personService.Get(id);
+                    if (person != null)
+                    {
+                        List<HubspotPropertyUpdate> properties = new List<HubspotPropertyUpdate>();
+                        properties.Add(new HubspotPropertyUpdate() { property = "firstname", value = person.NickName });
+                        properties.Add(new HubspotPropertyUpdate() { property = "lastname", value = person.LastName });
+                        PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
+                        if ( mobile != null && !mobile.IsUnlisted && mobile.IsMessagingEnabled )
+                        {
+                            properties.Add( new HubspotPropertyUpdate() { property = "phone", value = mobile.NumberFormatted } );
+                        }
+
+                        string email = person.Email;
+                        if ( person.CanReceiveEmail( true ) )
+                        {
+                            properties.Add( new HubspotPropertyUpdate() { property = "email", value = email } );
+                        }
+
+                        var url = $"https://api.hubapi.com/crm/v3/objects/contacts/";
+                        AddHsContact(url, properties, 0);
+                        idAdded++;
+                    }
+                    
                 }
             }
 
@@ -298,7 +320,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             resultMsg.AppendFormat( ", {0} contacts with Rock person id removed", idRemoved );
             resultMsg.AppendFormat( ", {0} contacts with Rock person id that is valid", idCorrect );
             resultMsg.AppendFormat( ", {0} contacts with no match in Rock", idEmpty );
-            resultMsg.AppendFormat( ", {0} new contacts imported into HubSpot", idEmpty );
+            resultMsg.AppendFormat( ", {0} new contacts imported into HubSpot", idAdded );
             this.Result = resultMsg.ToString();
 
             // Write excel file
@@ -309,14 +331,44 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             System.IO.File.WriteAllBytes(path, sheetbytes);
         }
 
-        private void MakeRequest(int current_id, string url, List<HubspotPropertyUpdate> properties, int attempt)
+        private void AddHsContact(string url, List<HubspotPropertyUpdate> properties, int attempt)
         {
-            //Update the Hubspot Contact
+            // Add new Hubspot Contact
             try
             {
-                //For Testing Write to Log File
-                WriteToLog(string.Format("{0}     ID: {1}{2}PROPS:{2}{3}", RockDateTime.Now.ToString("HH:mm:ss.ffffff"), current_id, Environment.NewLine, JsonConvert.SerializeObject(properties)));
+                var client = new RestClient(url);
+                client.Timeout = -1;
+                var request = new RestRequest(Method.POST);
+                request.AddHeader("accept", "application/json");
+                request.AddHeader("content-type", "application/json");
+                request.AddHeader("Authorization", $"Bearer {key}");
+                request.AddParameter("application/json", $"{{\"properties\": {{ {String.Join(",", properties.Select(p => $"\"{p.property}\": \"{p.value}\""))} }} }}", ParameterType.RequestBody);
+                IRestResponse response = client.Execute(request);
+                if ( ( int )response.StatusCode == 429 )
+                {
+                    if ( attempt < 3 )
+                    {
+                        Thread.Sleep(9000);
+                        AddHsContact(current_id, url, properties, attempt + 1);
+                    }
+                }
+                if ( response.StatusCode != HttpStatusCode.OK )
+                {
+                    throw new Exception(response.Content);
+                }
+            }
+            catch ( Exception e )
+            {
+                var json = $"{{\"properties\": {JsonConvert.SerializeObject(properties)} }}";
+                ExceptionLogService.LogException(new Exception($"Hubspot Sync Error{Environment.NewLine}{e}{Environment.NewLine}Current Id: {current_id}{Environment.NewLine}Exception from Request:{Environment.NewLine}{e.Message}{Environment.NewLine}Request:{Environment.NewLine}{json}{Environment.NewLine}"));
+            }
+        }
 
+        private void UpdateHsContact(int current_id, string url, List<HubspotPropertyUpdate> properties, int attempt)
+        {
+            // Update the Hubspot Contact
+            try
+            {
                 var client = new RestClient(url);
                 client.Timeout = -1;
                 var request = new RestRequest(Method.PATCH);
@@ -330,7 +382,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                     if ( attempt < 3 )
                     {
                         Thread.Sleep(9000);
-                        MakeRequest(current_id, url, properties, attempt + 1);
+                        UpdateHsContact(current_id, url, properties, attempt + 1);
                     }
                 }
                 if ( response.StatusCode != HttpStatusCode.OK )
