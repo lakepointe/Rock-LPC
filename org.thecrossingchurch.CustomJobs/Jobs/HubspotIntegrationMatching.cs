@@ -285,7 +285,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             HashSet<int> hsPersonIds = new HashSet<int>();
             foreach ( var contact in contacts)
             {
-                hsPersonIds.Add(contact.properties.rock_person_id);
+                hsPersonIds.Add(contact.properties.rock_person_id.AsInteger());
             }
             
             int[] personIds = GetAllPersonIds(_context);
@@ -354,7 +354,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                     if ( attempt < 3 )
                     {
                         Thread.Sleep(9000);
-                        AddHsContact(current_id, url, properties, attempt + 1);
+                        AddHsContact(url, properties, attempt + 1);
                     }
                 }
                 if ( response.StatusCode != HttpStatusCode.OK )
@@ -365,7 +365,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             catch ( Exception e )
             {
                 var json = $"{{\"properties\": {JsonConvert.SerializeObject(properties)} }}";
-                ExceptionLogService.LogException(new Exception($"Hubspot Sync Error{Environment.NewLine}{e}{Environment.NewLine}Current Id: {current_id}{Environment.NewLine}Exception from Request:{Environment.NewLine}{e.Message}{Environment.NewLine}Request:{Environment.NewLine}{json}{Environment.NewLine}"));
+                ExceptionLogService.LogException(new Exception($"Hubspot Sync Error{Environment.NewLine}{e}{Environment.NewLine}Exception from Request:{Environment.NewLine}{e.Message}{Environment.NewLine}Request:{Environment.NewLine}{json}{Environment.NewLine}"));
             }
         }
 
