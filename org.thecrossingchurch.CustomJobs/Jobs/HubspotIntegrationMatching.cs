@@ -98,7 +98,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             // Get list of all contacts from HubSpot
             contacts = new List<HSContactResult>();
             request_count = 0;
-            string apiUrl = "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=email,firstname,lastname,phone,rock_person_id,rock_record_status,has_potential_rock_match,createdate,lastmodifieddate"
+            string apiUrl = "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=email,firstname,lastname,phone,rock_person_id,rock_record_status,has_potential_rock_match,createdate,lastmodifieddate";
             GetContacts(apiUrl);
             Debug.WriteLine("Contacts returned: " + contacts.Count());
             WriteToLog(string.Format("Total Contacts to Match: {0}", contacts.Count()));
@@ -278,9 +278,9 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
 
             // Add contacts for people unknown to HubSpot
             HashSet<int> hsPersonIds = new HashSet<int>();
-            foreach (contact in contacts)
+            foreach ( contact in contacts)
             {
-                hsPersonIds.Add(contact.properties.rock_person_id)
+                hsPersonIds.Add( contact.properties.rock_person_id );
             }
             
             int[] personIds = GetAllPersonIds(_context);
