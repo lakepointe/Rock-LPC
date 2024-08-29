@@ -186,6 +186,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                 {
                     current_id = person.Id;
                     var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contacts[i].id}";
+                    Debug.WriteLine( "Contact Count: " + i + " of " + contacts.Count() );
                     Debug.WriteLine( "URL: " + url );
                     var properties = new List<HubspotPropertyUpdate>();
 
