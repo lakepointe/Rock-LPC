@@ -39,6 +39,7 @@ using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
 using System.Data.Entity;
 using Rock.Search.Person;
 using Quartz.Impl.Matchers;
+using System.Text;
 
 namespace org.crossingchurch.HubspotIntegration.Jobs
 {
@@ -224,7 +225,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         // Set date values to HubSpot required format
                         if ( type == "Date" )
                         { 
-                            value = value != "" && value != null ? ConvertDate( ( DateTime ) value.AsDateTime() ) : value;
+                            value = value != "" || value != null ? ConvertDate( ( DateTime ) value.AsDateTime() ) : value;
                         }
 
                         // Patch it!
@@ -305,6 +306,13 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                 }
                 //WriteToLog( string.Format( "    End of iteration: {0}", watch.ElapsedMilliseconds ) );
                 //watch.Stop();
+            
+
+                // Output Job Stats
+                var resultMsg = new StringBuilder();
+                resultMsg.AppendFormat( i + " of " + contacts.Count() + " Contacts Patched." );
+                resultMsg.AppendFormat( "\n Last Person: " + person.FullName + "(" + person.Id + ")" );
+                context.UpdateLastStatusMessage( resultMsg.ToString() );
             }
         }
 
