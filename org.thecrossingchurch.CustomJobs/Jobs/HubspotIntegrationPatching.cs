@@ -224,7 +224,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         // Set date values to HubSpot required format
                         if ( type == "Date" )
                         { 
-                            value = value != "" ? ConvertDate( ( DateTime ) value.AsDateTime() ) : value;
+                            value = value != "" && value != null ? ConvertDate( ( DateTime ) value.AsDateTime() ) : value;
                         }
 
                         // Patch it!
