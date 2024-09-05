@@ -40,6 +40,8 @@ using System.Data.Entity;
 using Rock.Search.Person;
 using Quartz.Impl.Matchers;
 using System.Text;
+using Rock.Lava.RockLiquid.Blocks;
+using RestSharp.Extensions;
 
 namespace org.crossingchurch.HubspotIntegration.Jobs
 {
@@ -105,13 +107,18 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             var propRequest = new RestRequest(Method.GET);
             propRequest.AddHeader("Authorization", $"Bearer {key}");
             IRestResponse propResponse = propClient.Execute(propRequest);
+            WriteToLog( "Is propResponse Null? : " + propResponse.IsNull().ToString() );
             var props = new List<HubspotProperty>();
             var tmbtProps = new List<HubspotProperty>();
             var propsQry = JsonConvert.DeserializeObject<HSPropertyQueryResult>(propResponse.Content);
             props = propsQry.results;
+            WriteToLog( "Is propsQry Null? : " + propsQry.IsNull().ToString() );
+            WriteToLog( "Is propsQry.results Null? : " + propsQry.results.IsNull().ToString() );
+            WriteToLog( "Is props Null? : " + props.IsNull().ToString() );
+            
 
-            //Filter to props in Rock Information Group (and Contact information group)
-            props = props.Where(p => p.groupName == "rock_information" || p.groupName == "Contact information").ToList();
+            //Filter to props in Rock Information Group (and Contact information group) 
+            props = props.Where(p => p.groupName == "rock_information" || p.groupName == "contactinformation").ToList();
             //props = props.Where( p => p.groupName == "Contact information" ).ToList(); // - 6/26 sdlp - To update names, address, and phone
             //tmbtProps = propsQry.results.Where(p => p.groupName == "rock_tmbt_information").ToList(); // ---------- Commented 6/25 sdlp
             //Business Unit hs_all_assigned_business_unit_ids
@@ -130,9 +137,11 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             request_count = 0;
 
             // TODO get all properties...
-            GetContacts("https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=email,firstname,lastname,gender,birthday,first_time_giving,first_visit_date,baptism,phone,rock_person_id,life_groups,enews_subscriber,first_time_serving,rock_account_created_date,lastmodifieddate");
+            // email,firstname,lastname,gender,birthday,first_time_giving,first_visit_date,baptism,phone,rock_person_id,life_groups,enews_subscriber,first_time_serving,rock_account_created_date,lastmodifieddate
+            GetContacts( "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=rock_person_id" );
             Debug.WriteLine("Contacts returned: " + contacts.Count());
             WriteToLog(string.Format("Total Contacts to Match: {0}", contacts.Count()));
+
 
             PersonAliasService pa_svc = new PersonAliasService(_context);
             FinancialTransactionService ft_svc = new FinancialTransactionService(_context);
@@ -157,7 +166,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             Debug.WriteLine( "eNews Email List: " + eNewsEmails );
 
 
-
+            
 
             //WriteToLog( string.Format( "Total Contacts: {0}", contacts.Count() ) );
             for ( var i = 0; i < contacts.Count(); i++ )
@@ -202,6 +211,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         string type = dvAttributes.GetValueOrNull( "Type" ).Value;
                         string key = hsSyncDv.Value;
                         var value = "";
+                        DateTime date;
 
                         // Get person property or attribute
                         if ( propertyOrAttribute == "Property" ) // is property
@@ -224,8 +234,14 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
 
                         // Set date values to HubSpot required format
                         if ( type == "Date" )
-                        { 
-                            value = value != "" || value != null ? ConvertDate( ( DateTime ) value.AsDateTime() ) : value;
+                        {
+                            if ( string.IsNullOrEmpty(value) == false )
+                            {
+                                if ( value.AsDateTime() != null )
+                                {
+                                    value = ConvertDate( value.AsDateTime() );
+                                }
+                            }
                         }
 
                         // Patch it!
@@ -301,12 +317,13 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                     }
                     catch ( Exception err )
                     {
-                        ExceptionLogService.LogException(new Exception($"Hubspot Sync Error{Environment.NewLine}{err}{Environment.NewLine}Current Id: {current_id}{Environment.NewLine}Exception from Job:{Environment.NewLine}{err.Message}{Environment.NewLine}"));
+                        ExceptionLogService.LogException(new Exception($"Hubspot Sync Error{Environment.NewLine}{err}{Environment.NewLine}Current Id: {current_id}{Environment.NewLine}Exception from Job:{Environment.NewLine}{err.Message}{Environment.NewLine} - Record Count:{i}"));
                     }
                 }
                 //WriteToLog( string.Format( "    End of iteration: {0}", watch.ElapsedMilliseconds ) );
                 //watch.Stop();
-            
+                WriteToLog( string.Format( i + " of " + contacts.Count() + " Contacts Patched." ) );
+                WriteToLog( string.Format( "Last Person: " + person.FullName + "( " + person.Id + " )" ) );
 
                 // Output Job Stats
                 var resultMsg = new StringBuilder();
@@ -373,8 +390,9 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             contactRequest.AddHeader("Authorization", $"Bearer {key}");
             IRestResponse contactResponse = contactClient.Execute(contactRequest);
             var contactResults = JsonConvert.DeserializeObject<HSContactQueryResult>(contactResponse.Content);
-            contacts.AddRange(contactResults.results.Where(c => c.properties.rock_person_id != null && c.properties.rock_person_id != "" && c.properties.email != null && c.properties.email != "").ToList());
-            if ( contactResults.paging != null && contactResults.paging.next != null && !String.IsNullOrEmpty(contactResults.paging.next.link) && request_count < 500 )
+            //contacts.AddRange(contactResults.results.Where(c => c.properties.rock_person_id != null && c.properties.rock_person_id != "" && c.properties.email != null && c.properties.email != "").ToList());
+            contacts.AddRange( contactResults.results.Where( c => c.properties.rock_person_id != null && c.properties.rock_person_id != "" ).ToList() );
+            if ( contactResults.paging != null && contactResults.paging.next != null && !String.IsNullOrEmpty(contactResults.paging.next.link) && request_count < 2000 )
             {
                 GetContacts(contactResults.paging.next.link);
             }
