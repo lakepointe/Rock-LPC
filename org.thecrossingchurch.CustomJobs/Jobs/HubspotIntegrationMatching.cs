@@ -37,6 +37,7 @@ using System.ComponentModel;
 using System.Threading;
 using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
 using System.Text;
+using DotLiquid.Tags;
 
 namespace org.crossingchurch.HubspotIntegration.Jobs
 {
@@ -77,6 +78,9 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
         /// </summary>
         public virtual void Execute(IJobExecutionContext context)
         {
+            Debug.WriteLine( "***********************************************************************************************************************************************" );
+            Debug.WriteLine( "********************************************* HubSpot Integration Matching Job Start **********************************************************" );
+            Debug.WriteLine( "***********************************************************************************************************************************************" );
             JobDataMap dataMap = context.JobDetail.JobDataMap;
 
             // Get HS API Token
@@ -117,12 +121,13 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             // Inserted new HS person that was only in rock
             int idAdded = 0;
 
+            
 
             // Process each contact in HubSpot
             for ( var i = 0; i < contacts.Count(); i++ )
             {
                 var contact = contacts[i];
-
+                
                 Stopwatch watch = new Stopwatch();
                 watch.Start();
 
@@ -131,7 +136,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                 if ( contact.properties.rock_person_id != "" )
                 {
                     Person existingPerson = personService.Get(contacts[i].properties.rock_person_id);
-                    if (existingPerson == null)
+                    if (existingPerson == null) // HS Contact person does not exist in Rock
                     {
                         // Person not found
                         Debug.WriteLine("Contact with id not found in Rock. Clearing Id.");
@@ -273,7 +278,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         var properties = new List<HubspotPropertyUpdate>() { new HubspotPropertyUpdate() { property = "potential_rock_match", value = "True" } };
                         var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
                         UpdateHsContact(current_id, url, properties, 0);
-
+                        
                         WriteToLog(string.Format("    After Request (Label): {0}", watch.ElapsedMilliseconds));
                     }
                 }
@@ -283,23 +288,30 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
 
             // Add contacts for people unknown to HubSpot
             HashSet<int> hsPersonIds = new HashSet<int>();
-            foreach ( var contact in contacts)
+            HashSet<string> hsPersonEmails = new HashSet<string>();
+            foreach ( var contact in contacts )
             {
-                hsPersonIds.Add(contact.properties.rock_person_id.AsInteger());
+                hsPersonIds.Add( contact.properties.rock_person_id.AsInteger() );
+                hsPersonEmails.Add( contact.properties.email.ToStringSafe().ToLower() );
             }
-            
-            int[] personIds = GetAllPersonIds(_context);
+            Debug.WriteLine( string.Format( "hsPersonIds is this big: {0}", hsPersonIds.Count ) );
+
+            int[] personIds = GetAllPersonIds(_context); // All Person Ids 18 years of age or older and is ACTIVE
             foreach ( int id in personIds )
             {
-                if (!hsPersonIds.Contains(id))
+                if ( !hsPersonIds.Contains( id ) )
                 {
-                    Person person = personService.Get(id);
-                    if (person != null)
+                    Debug.WriteLine(string.Format("hsPersonIds does not contain: {0}", id));
+                    Person person = personService.Get( id );
+                    if ( person != null )
                     {
+                        if ( hsPersonEmails.Contains( person.Email.ToStringSafe().ToLower() ) ) { continue; }
+                        if ( hsPersonIds.Contains( person.Id ) ) { continue; }
+
                         List<HubspotPropertyUpdate> properties = new List<HubspotPropertyUpdate>();
-                        properties.Add(new HubspotPropertyUpdate() { property = "firstname", value = person.NickName });
-                        properties.Add(new HubspotPropertyUpdate() { property = "lastname", value = person.LastName });
-                        properties.Add(new HubspotPropertyUpdate() { property = "rock_person_id", value = person.Id.ToString() });
+                        properties.Add( new HubspotPropertyUpdate() { property = "firstname", value = person.NickName } );
+                        properties.Add( new HubspotPropertyUpdate() { property = "lastname", value = person.LastName } );
+                        properties.Add( new HubspotPropertyUpdate() { property = "rock_person_id", value = person.Id.ToString() } );
                         PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
                         if ( mobile != null && !mobile.IsUnlisted && mobile.IsMessagingEnabled )
                         {
@@ -307,13 +319,13 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         }
 
                         string email = person.Email;
-                        if ( person.CanReceiveEmail( true ) )
+                        if ( person.CanReceiveEmail( true ) && hsPersonEmails.Contains( person.Email.ToStringSafe().ToLower() ) == false )
                         {
                             properties.Add( new HubspotPropertyUpdate() { property = "email", value = email } );
                         }
 
                         var url = $"https://api.hubapi.com/crm/v3/objects/contacts/";
-                        AddHsContact(url, properties, 0);
+                        AddHsContact( url, properties, 0 );
                         idAdded++;
                     }
                 }
@@ -341,31 +353,36 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             // Add new Hubspot Contact
             try
             {
-                var client = new RestClient(url);
+                var client = new RestClient( url );
                 client.Timeout = -1;
-                var request = new RestRequest(Method.POST);
-                request.AddHeader("accept", "application/json");
-                request.AddHeader("content-type", "application/json");
-                request.AddHeader("Authorization", $"Bearer {key}");
-                request.AddParameter("application/json", $"{{\"properties\": {{ {String.Join(",", properties.Select(p => $"\"{p.property}\": \"{p.value}\""))} }} }}", ParameterType.RequestBody);
-                IRestResponse response = client.Execute(request);
-                if ( ( int )response.StatusCode == 429 )
+                var request = new RestRequest( Method.POST );
+                request.AddHeader( "accept", "application/json" );
+                request.AddHeader( "content-type", "application/json" );
+                request.AddHeader( "Authorization", $"Bearer {key}" );
+                request.AddParameter( "application/json", $"{{\"properties\": {{ {String.Join( ",", properties.Select( p => $"\"{p.property}\": \"{p.value}\"" ) )} }} }}", ParameterType.RequestBody );
+                IRestResponse response = client.Execute( request );
+                if ( ( int ) response.StatusCode == 429 )
                 {
                     if ( attempt < 3 )
                     {
-                        Thread.Sleep(9000);
-                        AddHsContact(url, properties, attempt + 1);
+                        Thread.Sleep( 9000 );
+                        AddHsContact( url, properties, attempt + 1 );
                     }
                 }
                 if ( response.StatusCode != HttpStatusCode.OK )
                 {
-                    throw new Exception(response.Content);
+                    throw new Exception( response.Content );
+                }
+                Debug.WriteLine( string.Format( "Updating HubSpot with : {0} | {1}", url, properties ) );
+                if ( ( int ) response.StatusCode == 409 || ( int ) response.StatusCode == 400 )
+                {
+                    Debug.WriteLine( string.Format( "********* AddHsContact() HTTP STATUS CODE: {0}} | {1}", ( int ) response.StatusCode, url ) );
                 }
             }
             catch ( Exception e )
             {
-                var json = $"{{\"properties\": {JsonConvert.SerializeObject(properties)} }}";
-                ExceptionLogService.LogException(new Exception($"Hubspot Sync Error{Environment.NewLine}{e}{Environment.NewLine}Exception from Request:{Environment.NewLine}{e.Message}{Environment.NewLine}Request:{Environment.NewLine}{json}{Environment.NewLine}"));
+                var json = $"{{\"properties\": {JsonConvert.SerializeObject( properties )} }}";
+                ExceptionLogService.LogException( new Exception( $"Hubspot Sync Error{Environment.NewLine}{e}{Environment.NewLine}Exception from Request:{Environment.NewLine}{e.Message}{Environment.NewLine}Request:{Environment.NewLine}{json}{Environment.NewLine}" ) );
             }
         }
 
@@ -374,15 +391,16 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             // Update the Hubspot Contact
             try
             {
+                Debug.WriteLine( string.Format( "Method UpdateHsContact() called with this URL: {0}", url ) );
                 var client = new RestClient(url);
                 client.Timeout = -1;
                 var request = new RestRequest(Method.PATCH);
                 request.AddHeader("accept", "application/json");
                 request.AddHeader("content-type", "application/json");
                 request.AddHeader("Authorization", $"Bearer {key}");
-                request.AddParameter("application/json", $"{{\"properties\": {{ {String.Join(",", properties.Select(p => $"\"{p.property}\": \"{p.value}\""))} }} }}", ParameterType.RequestBody);
+                request.AddParameter( "application/json", $"{{\"properties\": {{ {String.Join(",", properties.Select(p => $"\"{p.property}\": \"{p.value}\""))} }} }}", ParameterType.RequestBody);
                 IRestResponse response = client.Execute(request);
-                if ( ( int )response.StatusCode == 429 )
+                if ( ( int )response.StatusCode == 429 ) // To many requests
                 {
                     if ( attempt < 3 )
                     {
@@ -394,6 +412,11 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                 {
                     throw new Exception(response.Content);
                 }
+                if ( ( int )response.StatusCode == 409 || ( int )response.StatusCode == 400 )
+                {
+                    Debug.WriteLine( string.Format("********* UpdateHsContact() HTTP STATUS CODE: {0}} | {1}", ( int )response.StatusCode, url) );
+                }
+
             }
             catch ( Exception e )
             {
@@ -427,6 +450,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             // Original - Contacts with emails that do not already have Rock IDs in the desired business unit
             // Now - LOOK AT EVERY CONTACT
             // contacts.AddRange(contactResults.results.Where(c => c.properties.email != null && c.properties.email != "" && ( c.properties.rock_person_id == null || c.properties.rock_person_id == "" || c.properties.rock_person_id == "0" )).ToList());
+            contacts.AddRange(contactResults.results);
             if ( contactResults.paging != null && contactResults.paging.next != null && !String.IsNullOrEmpty(contactResults.paging.next.link) && request_count < 2000 )
             {
                 GetContacts(contactResults.paging.next.link);

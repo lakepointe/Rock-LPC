@@ -166,7 +166,11 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             Debug.WriteLine( "eNews Email List: " + eNewsEmails );
 
 
-            
+            HashSet<string> hsPersonEmails = new HashSet<string>();
+            foreach ( var contact in contacts )
+            {
+                hsPersonEmails.Add( contact.properties.email.ToStringSafe().ToLower() );
+            }
 
             //WriteToLog( string.Format( "Total Contacts: {0}", contacts.Count() ) );
             for ( var i = 0; i < contacts.Count(); i++ )
@@ -266,7 +270,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                     }
 
                     string email = person.Email;
-                    if ( person.CanReceiveEmail( true ) )
+                    if ( person.CanReceiveEmail( true ) && hsPersonEmails.Contains( person.Email.ToStringSafe().ToLower() ) == false )
                     {
                         properties.Add( new HubspotPropertyUpdate() { property = "email", value = email } );
                     }
