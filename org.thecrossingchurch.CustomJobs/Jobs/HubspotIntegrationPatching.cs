@@ -141,13 +141,16 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             GetContacts( "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=rock_person_id" );
             Debug.WriteLine("Contacts returned: " + contacts.Count());
             WriteToLog(string.Format("Total Contacts to Match: {0}", contacts.Count()));
-
-
+            
             PersonAliasService pa_svc = new PersonAliasService(_context);
             FinancialTransactionService ft_svc = new FinancialTransactionService(_context);
             AttributeValueService av_svc = new AttributeValueService(_context);
             var dataViewService = new DataViewService( _context );
             var enewsDV = dataViewService.Get( "e4f1db79-63c7-41ca-ab45-6ed6b16feb0e" ); // ENews DataView Id: 2882, Guid: e4f1db79-63c7-41ca-ab45-6ed6b16feb0e
+
+            // Check Email Format
+            string[] tlds = { ".com", ".org", ".net", ".info", ".biz", ".name", ".pro", ".aero", ".coop", ".museum", ".asia", ".cat", ".jobs", ".mobi", ".tel", ".travel", ".xxx", ".ac", ".ad", ".ae", ".af", ".ag", ".ai", ".al", ".am", ".an", ".ao", ".aq", ".ar", ".as", ".at", ".au", ".aw", ".ax", ".az", ".ba", ".bb", ".bd", ".be", ".bf", ".bg", ".bh", ".bi", ".bj", ".bm", ".bn", ".bo", ".br", ".bs", ".bt", ".bv", ".bw", ".by", ".bz", ".ca", ".cc", ".cd", ".cf", ".cg", ".ch", ".ci", ".ck", ".cl", ".cm", ".cn", ".co", ".cr", ".cu", ".cv", ".cw", ".cx", ".cy", ".cz", ".de", ".dj", ".dk", ".dm", ".do", ".dz", ".ec", ".ee", ".eg", ".er", ".es", ".et", ".eu", ".fi", ".fj", ".fk", ".fm", ".fo", ".fr", ".ga", ".gb", ".gd", ".ge", ".gf", ".gg", ".gh", ".gi", ".gl", ".gm", ".gn", ".gp", ".gq", ".gr", ".gs", ".gt", ".gu", ".gw", ".gy", ".hk", ".hm", ".hn", ".hr", ".ht", ".hu", ".id", ".ie", ".il", ".im", ".in", ".io", ".iq", ".ir", ".is", ".it", ".je", ".jm", ".jo", ".jp", ".ke", ".kg", ".kh", ".ki", ".km", ".kn", ".kp", ".kr", ".kw", ".ky", ".kz", ".la", ".lb", ".lc", ".li", ".lk", ".lr", ".ls", ".lt", ".lu", ".lv", ".ly", ".ma", ".mc", ".md", ".me", ".mg", ".mh", ".mk", ".ml", ".mm", ".mn", ".mo", ".mp", ".mq", ".mr", ".ms", ".mt", ".mu", ".mv", ".mw", ".mx", ".my", ".mz", ".na", ".nc", ".ne", ".nf", ".ng", ".ni", ".nl", ".no", ".np", ".nr", ".nu", ".nz", ".om", ".pa", ".pe", ".pf", ".pg", ".ph", ".pk", ".pl", ".pm", ".pn", ".pr", ".ps", ".pt", ".pw", ".py", ".qa", ".re", ".ro", ".rs", ".ru", ".rw", ".sa", ".sb", ".sc", ".sd", ".se", ".sg", ".sh", ".si", ".sj", ".sk", ".sl", ".sm", ".sn", ".so", ".sr", ".ss", ".st", ".su", ".sv", ".sx", ".sy", ".sz", ".tc", ".td", ".tf", ".tg", ".th", ".tj", ".tk", ".tl", ".tm", ".tn", ".to", ".tp", ".tr", ".tt", ".tv", ".tw", ".tz", ".ua", ".ug", ".uk", ".us", ".uy", ".uz", ".va", ".vc", ".ve", ".vg", ".vi", ".vn", ".vu", ".wf", ".ws", ".ye", ".yt", ".za", ".zm", ".zw", ".edu", ".gov", ".int", ".mil", ".arpa", ".academy", ".accountant", ".actor", ".agency", ".app", ".art", ".attorney", ".auction", ".audio", ".bank", ".bar", ".beer", ".blog", ".book", ".boutique", ".business", ".cafe", ".camera", ".camp", ".capital", ".car", ".careers", ".cash", ".casino", ".catering", ".center", ".ceo", ".charity", ".chat", ".cheap", ".church", ".city", ".claims", ".cleaning", ".clinic", ".clothing", ".cloud", ".club", ".coach", ".codes", ".coffee", ".college", ".community", ".company", ".computer", ".construction", ".consulting", ".contractors", ".cooking", ".cool", ".credit", ".creditcard", ".cricket", ".cruises", ".dance", ".dating", ".deals", ".degree", ".delivery", ".dental", ".design", ".diamonds", ".digital", ".direct", ".directory", ".discount", ".doctor", ".dog", ".domains", ".education", ".email", ".energy", ".engineering", ".enterprises", ".equipment", ".estate", ".events", ".exchange", ".expert", ".exposed", ".express", ".fail", ".farm", ".fashion", ".finance", ".financial", ".fish", ".fishing", ".fit", ".fitness", ".flights", ".florist", ".food", ".football", ".foundation", ".fund", ".furniture", ".gallery", ".game", ".games", ".garden", ".gift", ".gifts", ".glass", ".global", ".gold", ".golf", ".graphics", ".gratis", ".green", ".gripe", ".guide", ".guitars", ".guru", ".hair", ".healthcare", ".help", ".hiv", ".hockey", ".holdings", ".holiday", ".host", ".hosting", ".house", ".how", ".immo", ".industries", ".institute", ".insurance", ".international", ".investments", ".jewelry", ".kitchen", ".land", ".lawyer", ".lease", ".legal", ".life", ".lighting", ".limited", ".limo", ".loan", ".loans", ".lol", ".maison", ".management", ".market", ".marketing", ".media", ".memorial", ".money", ".mortgage", ".movie", ".music", ".network", ".news", ".ninja", ".online", ".partners", ".parts", ".photo", ".photography", ".photos", ".pics", ".pictures", ".pizza", ".place", ".plumbing", ".plus", ".poker", ".porn", ".press", ".productions", ".properties", ".property", ".pub", ".racing", ".realty", ".recipes", ".red", ".rehab", ".reise", ".reisen", ".rent", ".rentals", ".repair", ".report", ".restaurant", ".review", ".reviews", ".rip", ".rocks", ".run", ".sale", ".salon", ".school", ".science", ".services", ".sex", ".sexy", ".shoes", ".shop", ".shopping", ".show", ".singles", ".site", ".ski", ".soccer", ".social", ".software", ".solar", ".solutions", ".space", ".store", ".studio", ".style", ".supplies", ".supply", ".support", ".surgery", ".systems", ".tax", ".taxi", ".team", ".technology", ".tennis", ".theater", ".tickets", ".tips", ".tires", ".today", ".tools", ".top", ".tours", ".town", ".toys", ".trade", ".trading", ".training", ".tube", ".university", ".vacations", ".vet", ".video", ".villas", ".vision", ".vodka", ".vote", ".voting", ".voyage", ".watch", ".webcam", ".website", ".wedding", ".wiki", ".win", ".wine", ".work", ".works", ".world", ".wtf", ".xyz", ".yoga", ".zone" };
+            Debug.WriteLine( string.Format( "Comparing {0} Top-Level Domains.", tlds.Length ) );
 
             // ENews from DataView To List
             var qry = enewsDV.GetQuery();
@@ -163,7 +166,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                     //eNewsEmailList = eNewsEmailList + "," + colVal;
                 }
             }
-            Debug.WriteLine( "eNews Email List: " + eNewsEmails );
+            Debug.WriteLine( string.Format("{0} Emails on ENews List.",eNewsData.Count ) );
 
 
             HashSet<string> hsPersonEmails = new HashSet<string>();
@@ -269,8 +272,10 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         properties.Add( new HubspotPropertyUpdate() { property = "phone", value = "" } );
                     }
 
-                    string email = person.Email;
-                    if ( person.CanReceiveEmail( true ) && hsPersonEmails.Contains( person.Email.ToStringSafe().ToLower() ) == false )
+                    string email = person.Email.ToLower();
+                    string[] emailSep = email.Split( '.' );
+                    string emailtld = "." + emailSep[emailSep.Length - 1];
+                    if ( person.CanReceiveEmail( true ) && hsPersonEmails.Contains( person.Email.ToStringSafe().ToLower() ) == false && email.Contains( "@" ) && tlds.Contains( emailtld ) )
                     {
                         properties.Add( new HubspotPropertyUpdate() { property = "email", value = email } );
                     }
