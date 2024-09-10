@@ -172,7 +172,10 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
             HashSet<string> hsPersonEmails = new HashSet<string>();
             foreach ( var contact in contacts )
             {
-                hsPersonEmails.Add( contact.properties.email.ToStringSafe().ToLower() );
+                if ( contact.properties.email.ToStringSafe() != null )
+                {
+                    hsPersonEmails.Add( contact.properties.email.ToStringSafe().ToLower() );
+                }
             }
 
             //WriteToLog( string.Format( "Total Contacts: {0}", contacts.Count() ) );
@@ -261,7 +264,7 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                     properties.Add(new HubspotPropertyUpdate() { property = "firstname", value = person.NickName });
                     properties.Add(new HubspotPropertyUpdate() { property = "lastname", value = person.LastName });
 
-                    // Handle Email and Phone
+                    // Handle Phone
                     PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
                     if ( mobile != null && !mobile.IsUnlisted && mobile.IsMessagingEnabled )
                     {
@@ -272,10 +275,24 @@ namespace org.crossingchurch.HubspotIntegration.Jobs
                         properties.Add( new HubspotPropertyUpdate() { property = "phone", value = "" } );
                     }
 
-                    string email = person.Email.ToLower();
-                    string[] emailSep = email.Split( '.' );
-                    string emailtld = "." + emailSep[emailSep.Length - 1];
-                    if ( person.CanReceiveEmail( true ) && hsPersonEmails.Contains( person.Email.ToStringSafe().ToLower() ) == false && email.Contains( "@" ) && tlds.Contains( emailtld ) )
+                    // Handle Email
+                    string email = person.Email == "" ? "" : person.Email.ToStringSafe();
+                    if (email != "" )
+                    {
+                        email = email != null ? person.Email.ToLower() : "";  //person.Email.ToLower().ToStringSafe();
+                    }
+                    string emailtld = "";
+                    if (email.Contains("."))
+                    {
+                        string[] emailSep = email.Split( '.' );
+                        emailtld = "." + emailSep[emailSep.Length - 1];
+                    }
+                    else
+                    {
+                        email = "";
+                    }
+
+                    if ( person.CanReceiveEmail( true ) && hsPersonEmails.Contains( email ) == false && email.Contains( "@" ) && tlds.Contains( emailtld ) )
                     {
                         properties.Add( new HubspotPropertyUpdate() { property = "email", value = email } );
                     }
