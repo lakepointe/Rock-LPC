@@ -69,8 +69,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Jobs\HubspotIntegrationMatching.cs" />
-    <Compile Include="Jobs\HubspotIntegrationPatching.cs" />
+    <Compile Include="Jobs\HubSpotIntegrationMatching.cs" />
+    <Compile Include="Jobs\HubSpotIntegrationPatching.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
