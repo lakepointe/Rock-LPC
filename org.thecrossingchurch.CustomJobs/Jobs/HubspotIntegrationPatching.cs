@@ -402,8 +402,9 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
                 DateTime today = RockDateTime.Now;
                 if ( today.Year - date.Value.Year < 1000 && today.Year - date.Value.Year > -1000 )
                 {
-                    date = new DateTime( date.Value.Year, date.Value.Month, date.Value.Day, 0, 0, 0 );
-                    var d = date.Value.Subtract( new DateTime( 1970, 1, 1 ) ).TotalSeconds * 1000;
+                    //date = new DateTime( date.Value.Year, date.Value.Month, date.Value.Day, 0, 0, 0 );
+                    //var d = date.Value.Subtract( new DateTime( 1970, 1, 1 ) ).TotalSeconds * 1000;
+                    var d = date.Value.Date.Subtract( new DateTime( 1970, 1, 1 ) ).TotalSeconds * 1000;
                     return d.ToString();
                 }
             }
