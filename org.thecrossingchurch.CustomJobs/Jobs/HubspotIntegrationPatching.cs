@@ -296,18 +296,21 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
                     };
                     foreach ( KeyValuePair<int, string> kvp in stepsPath )
                     {
-                        var stepQuery = from s in _context.Steps
-                                        join pa in _context.PersonAliases on s.PersonAliasId equals pa.Id
-                                        where s.StepTypeId == kvp.Key && pa.Id == s.PersonAliasId && pa.PersonId == person.Id
-                                        select s.CompletedDateTime;
-                        var stepDate = ( object ) stepQuery.FirstOrDefault();
-                        var stepResult = string.IsNullOrEmpty( ( string ) stepDate ) == false ? stepQuery.FirstOrDefault().ToString() : "";
-                        if ( stepResult != "" )
+                        var stepService = new StepService( _context );
+                        var stepResult = stepService.Queryable()
+                            .Where( s => s.StepTypeId == kvp.Key && s.PersonAlias.PersonId == person.Id )
+                            .Select( s => s.CompletedDateTime )
+                            .OrderBy( s => s )
+                            .FirstOrDefault();
+
+                        if ( stepResult != null )
                         {
-                            ConvertDate( stepResult.AsDateTime() );
+                            properties[kvp.Value] = ConvertDate( stepResult );
                         }
-                        // Debug.WriteLine( "Discpleship Step Path : " + kvp.Value + " | completed date: " + stepResult );
-                        properties[kvp.Value] = stepResult;
+                        else
+                        {
+                            properties[kvp.Value] = "";
+                        }
                     }
 
                     try
