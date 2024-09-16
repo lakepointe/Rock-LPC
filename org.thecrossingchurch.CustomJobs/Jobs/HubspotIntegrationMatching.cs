@@ -89,287 +89,294 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
             // Don't see this being used for anything...
             var current_id = 0;
 
-            // HubSpot Property Update Dictionary
-            //Dictionary<string, string> HubSpotPropertyUpdate = new Dictionary<string, string>();
-            //{
-            //    { property, value }
-            //};
-
             // Setup Excel
             ExcelPackage excel = new ExcelPackage();
             ExcelWorksheet worksheet = SetupWorksheet( excel );
             var row = 2;
 
             // Setup Context & Services
-            RockContext _context = new RockContext();
-            PersonService personService = new PersonService( _context );
-            PersonSearchKeyService personSearchKeyService = new PersonSearchKeyService( _context );
-
-            // Get list of all contacts from HubSpot
-            Contacts = new List<HubSpotContactResult>();
-            RequestCount = 0;
-            string apiUrl = "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=email,firstname,lastname,phone,rock_person_id,rock_record_status,has_potential_rock_match,createdate,lastmodifieddate";
-            GetContacts( apiUrl );
-            // Debug.WriteLine( "Contacts returned: " + Contacts.Count() );
-            WriteToLog( string.Format( "Total Contacts to Match: {0}", Contacts.Count() ) );
-
-            // 5 cases, record statistics for each
-            // HubSpot person without person id we find a match for
-            int idSet = 0;
-            // HubSpot person with a person id that no longer exists in Rock
-            int idRemoved = 0;
-            // HubSpot person with a person id that exists in Rock today
-            int idCorrect = 0;
-            // HubSpot person has no match in Rock
-            int idEmpty = 0;
-            // Inserted new HubSpot person that was only in Rock
-            int idAdded = 0;
-
-            // Process each contact in HubSpot
-            for ( var i = 0; i < Contacts.Count(); i++ )
+            using ( RockContext context = new RockContext() )
             {
-                var contact = Contacts[i];
-                current_id = string.IsNullOrEmpty( contact.properties.rock_person_id ) == false ? contact.properties.rock_person_id.AsInteger() : 0;
-                
-                Stopwatch watch = new Stopwatch();
-                watch.Start();
+                PersonService personService = new PersonService( context );
+                PersonSearchKeyService personSearchKeyService = new PersonSearchKeyService( context );
 
-                // Debug.WriteLine( "Operating on contact: " + contact );
+                // Get list of all contacts from HubSpot
+                Contacts = new List<HubSpotContactResult>();
+                RequestCount = 0;
+                string apiUrl = "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=email,firstname,lastname,phone,rock_person_id,rock_record_status,has_potential_rock_match,createdate,lastmodifieddate";
+                GetContacts( apiUrl );
+                // Debug.WriteLine( "Contacts returned: " + Contacts.Count() );
+                WriteToLog( string.Format( "Total Contacts to Match: {0}", Contacts.Count() ) );
 
-                if ( contact.properties.rock_person_id != "" )
+                // 5 cases, record statistics for each
+                // HubSpot person without person id we find a match for
+                int idSet = 0;
+                // HubSpot person with a person id that no longer exists in Rock
+                int idRemoved = 0;
+                // HubSpot person with a person id that exists in Rock today
+                int idCorrect = 0;
+                // HubSpot person has no match in Rock
+                int idEmpty = 0;
+                // Inserted new HubSpot person that was only in Rock
+                int idAdded = 0;
+
+                // Process each contact in HubSpot
+                for ( var i = 0; i < Contacts.Count(); i++ )
                 {
-                    Person existingPerson = personService.Get( Contacts[i].properties.rock_person_id );
-                    if ( existingPerson == null ) // HupotbS Contact person does not exist in Rock
+                    var contact = Contacts[i];
+                    current_id = string.IsNullOrEmpty( contact.properties.rock_person_id ) == false ? contact.properties.rock_person_id.AsInteger() : 0;
+
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+
+                    // Debug.WriteLine( "Operating on contact: " + contact );
+
+                    if ( contact.properties.rock_person_id != "" )
                     {
-                        // Person not found
-                        // Debug.WriteLine( "Contact with id not found in Rock. Clearing Id." );
-                        // Clear the person id in HubSpot
-                        var properties = new List<HubSpotPropertyUpdate>() { new HubSpotPropertyUpdate() { property = "rock_person_id", value = "" } };
-                        var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
-                        UpdateHubSpotContact( current_id, url, properties, 0 );
-                        idRemoved++;
-                    }
-                    else
-                    {
-                        // Person still exists in DB
-                        // No need to continue processing this person
-                        // Debug.WriteLine( "Contact with id found in Rock. Skipping contact" );
-                        idCorrect++;
-                        break;
-                    }
-                }
-
-                Person person = null;
-                bool hasMultiEmail = false;
-
-                List<int> matchingIds = FindPersonIds( contact );
-                if ( matchingIds.Count > 1 )
-                {
-                    hasMultiEmail = true;
-                }
-                else if ( matchingIds.Count == 1 )
-                {
-                    person = personService.Get( matchingIds.First() );
-                    // New single match found, increment the counter!
-                    idSet++;
-                }
-
-                // Debug.WriteLine( "Matching People Found: " + string.IsNullOrEmpty(matchingIds) );
-                WriteToLog( string.Format( "    After SQL: {0}", watch.ElapsedMilliseconds ) );
-
-                // Atempt to match 1:1 based on email history making sure we exclude emails with multiple matches in the person table
-                if ( person == null && hasMultiEmail == false )
-                {
-                    string email = contact.properties.email.ToLower();
-                    var matches = personSearchKeyService.Queryable().Where( k => k.SearchTypeValueId == 3497 && k.SearchValue == email ).Select( k => k.PersonAlias.PersonId ).Distinct().ToList();
-
-                    if ( matches != null )
-                    {
-                        // Debug.WriteLine( "PersonSearchKeyService match count: " + matches.Count() );
-                        if ( matches.Count() == 1 )
+                        Person existingPerson = personService.Get( Contacts[i].properties.rock_person_id );
+                        if ( existingPerson == null ) // HupotbS Contact person does not exist in Rock
                         {
-                            // If 1:1 Email match and HubSpot has no other info, make it a match
-                            if ( String.IsNullOrEmpty( contact.properties.firstname ) && String.IsNullOrEmpty( contact.properties.lastname ) )
+                            // Person not found
+                            // Debug.WriteLine( "Contact with id not found in Rock. Clearing Id." );
+                            // Clear the person id in HubSpot
+                            var properties = new Dictionary<string, string>
                             {
-                                person = personService.Get( matches.First() );
-                                // New single match found, increment the counter!
-                                idSet++;
-                            }
+                                { "rock_person_id", "" }
+                            };
+                            var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
+                            UpdateHubSpotContact( current_id, url, properties, 0 );
+                            idRemoved++;
+                        }
+                        else
+                        {
+                            // Person still exists in DB
+                            // No need to continue processing this person
+                            // Debug.WriteLine( "Contact with id found in Rock. Skipping contact" );
+                            idCorrect++;
+                            break;
                         }
                     }
 
-                }
-                WriteToLog( string.Format( "    After Email History: {0}", watch.ElapsedMilliseconds ) );
+                    Person person = null;
+                    bool hasMultiEmail = false;
 
-                // Try to mark people that are potential matches, only people who can at least match email or phone and one other thing, only once
-                bool inBucket = false;
-                if ( person == null && contact.properties.has_potential_rock_match != "True" )
-                {
-                    // Matches phone number and one other piece of info
-                    if ( String.IsNullOrEmpty( contact.properties.phone ) == false )
+                    List<int> matchingIds = FindPersonIds( contact );
+                    if ( matchingIds.Count > 1 )
                     {
-                        var phone_matches = personService.Queryable().Where( p => p.PhoneNumbers.Select( pn => pn.Number ).Contains( contact.properties.phone ) ).ToList();
-                        if ( phone_matches.Count() > 0 )
+                        hasMultiEmail = true;
+                    }
+                    else if ( matchingIds.Count == 1 )
+                    {
+                        person = personService.Get( matchingIds.First() );
+                        // New single match found, increment the counter!
+                        idSet++;
+                    }
+
+                    // Debug.WriteLine( "Matching People Found: " + string.IsNullOrEmpty(matchingIds) );
+                    WriteToLog( string.Format( "    After SQL: {0}", watch.ElapsedMilliseconds ) );
+
+                    // Atempt to match 1:1 based on email history making sure we exclude emails with multiple matches in the person table
+                    if ( person == null && hasMultiEmail == false )
+                    {
+                        string email = contact.properties.email.ToLower();
+                        var matches = personSearchKeyService.Queryable().Where( k => k.SearchTypeValueId == 3497 && k.SearchValue == email ).Select( k => k.PersonAlias.PersonId ).Distinct().ToList();
+
+                        if ( matches != null )
                         {
-                            phone_matches = phone_matches.Where( p => HasValueAndEquals( p.FirstName, contact.properties.firstname ) || HasValueAndEquals( p.NickName, contact.properties.firstname ) || HasValueAndEquals( p.Email, contact.properties.email ) || HasValueAndEquals( p.LastName, contact.properties.lastname ) ).ToList();
-                            for ( var j = 0; j < phone_matches.Count(); j++ )
+                            // Debug.WriteLine( "PersonSearchKeyService match count: " + matches.Count() );
+                            if ( matches.Count() == 1 )
+                            {
+                                // If 1:1 Email match and HubSpot has no other info, make it a match
+                                if ( String.IsNullOrEmpty( contact.properties.firstname ) && String.IsNullOrEmpty( contact.properties.lastname ) )
+                                {
+                                    person = personService.Get( matches.First() );
+                                    // New single match found, increment the counter!
+                                    idSet++;
+                                }
+                            }
+                        }
+
+                    }
+                    WriteToLog( string.Format( "    After Email History: {0}", watch.ElapsedMilliseconds ) );
+
+                    // Try to mark people that are potential matches, only people who can at least match email or phone and one other thing, only once
+                    bool inBucket = false;
+                    if ( person == null && contact.properties.has_potential_rock_match != "True" )
+                    {
+                        // Matches phone number and one other piece of info
+                        if ( String.IsNullOrEmpty( contact.properties.phone ) == false )
+                        {
+                            var phone_matches = personService.Queryable().Where( p => p.PhoneNumbers.Select( pn => pn.Number ).Contains( contact.properties.phone ) ).ToList();
+                            if ( phone_matches.Count() > 0 )
+                            {
+                                phone_matches = phone_matches.Where( p => HasValueAndEquals( p.FirstName, contact.properties.firstname ) || HasValueAndEquals( p.NickName, contact.properties.firstname ) || HasValueAndEquals( p.Email, contact.properties.email ) || HasValueAndEquals( p.LastName, contact.properties.lastname ) ).ToList();
+                                for ( var j = 0; j < phone_matches.Count(); j++ )
+                                {
+                                    // Save this information in the excel sheet....
+                                    SaveData( worksheet, row, phone_matches[j], contact );
+                                    inBucket = true;
+                                    row++;
+                                }
+                            }
+                        }
+
+                        // Matches email and one other piece of info
+                        var email_matches = personService.Queryable().ToList().Where( p =>
+                        {
+                            return HasValueAndEquals( p.Email, contact.properties.email );
+                        } ).ToList();
+                        if ( email_matches.Count() > 0 )
+                        {
+                            email_matches = email_matches.Where( p => HasValueAndEquals( p.FirstName, contact.properties.firstname ) || HasValueAndEquals( p.NickName, contact.properties.firstname ) || ( !String.IsNullOrEmpty( contact.properties.phone ) && p.PhoneNumbers.Select( pn => pn.Number ).Contains( contact.properties.phone ) ) || HasValueAndEquals( p.LastName, contact.properties.lastname ) ).ToList();
+                            for ( var j = 0; j < email_matches.Count(); j++ )
                             {
                                 // Save this information in the excel sheet....
-                                SaveData( worksheet, row, phone_matches[j], contact );
+                                SaveData( worksheet, row, email_matches[j], contact );
                                 inBucket = true;
                                 row++;
                             }
                         }
-                    }
-
-                    // Matches email and one other piece of info
-                    var email_matches = personService.Queryable().ToList().Where( p =>
-                    {
-                        return HasValueAndEquals( p.Email, contact.properties.email );
-                    }).ToList();
-                    if ( email_matches.Count() > 0 )
-                    {
-                        email_matches = email_matches.Where( p => HasValueAndEquals( p.FirstName, contact.properties.firstname ) || HasValueAndEquals( p.NickName, contact.properties.firstname ) || ( !String.IsNullOrEmpty( contact.properties.phone ) && p.PhoneNumbers.Select( pn => pn.Number ).Contains( contact.properties.phone ) ) || HasValueAndEquals( p.LastName, contact.properties.lastname ) ).ToList();
-                        for ( var j = 0; j < email_matches.Count(); j++ )
+                        if ( inBucket )
                         {
-                            // Save this information in the excel sheet....
-                            SaveData( worksheet, row, email_matches[j], contact );
-                            inBucket = true;
-                            row++;
+                            WriteToLog( string.Format( "    Added data to bucket!" ) );
                         }
+                        WriteToLog( string.Format( "    After Excel: {0}", watch.ElapsedMilliseconds ) );
                     }
-                    if ( inBucket )
-                    {
-                        WriteToLog( string.Format( "    Added data to bucket!" ) );
-                    }
-                    WriteToLog( string.Format( "    After Excel: {0}", watch.ElapsedMilliseconds ) );
-                }
 
-                // Schedule HubSpot update if 1:1 match
-                if ( person != null )
-                {
-                    var properties = new List<HubSpotPropertyUpdate>() { new HubSpotPropertyUpdate() { property = "rock_person_id", value = person.Id.ToString() } };
-
-                    // If the HubSpot Contact does not have FirstName, LastName, or Phone Number we want to update those...
-                    if ( string.IsNullOrEmpty( contact.properties.firstname ) )
-                    {
-                        properties.Add( new HubSpotPropertyUpdate() { property = "firstname", value = person.NickName } );
-                    }
-                    if ( string.IsNullOrEmpty( contact.properties.lastname ) )
-                    {
-                        properties.Add( new HubSpotPropertyUpdate() { property = "lastname", value = person.LastName } );
-                    }
-                    if ( string.IsNullOrEmpty( contact.properties.phone ) )
-                    {
-                        PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
-                        if ( mobile != null && !mobile.IsUnlisted )
-                        {
-                            properties.Add( new HubSpotPropertyUpdate() { property = "phone", value = mobile.NumberFormatted } );
-                        }
-                    }
-                    var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
-                    UpdateHubSpotContact( current_id, url, properties, 0 );
-                    WriteToLog( string.Format( "    After Request (Id and Props): {0}", watch.ElapsedMilliseconds ) );
-                }
-                else
-                {
-                    if ( inBucket )
-                    {
-                        // We don't have an exact match but we have guesses, so update HubSpot to reflect that.
-                        var properties = new List<HubSpotPropertyUpdate>() { new HubSpotPropertyUpdate() { property = "potential_rock_match", value = "True" } };
-                        var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
-                        UpdateHubSpotContact( current_id, url, properties, 0 );
-
-                        WriteToLog( string.Format( "    After Request (Label): {0}", watch.ElapsedMilliseconds ) );
-                    }
-                }
-                WriteToLog( string.Format( "    End of Iteration: {0}", watch.ElapsedMilliseconds ) );
-                watch.Stop();
-            }
-
-            // Add contacts for people unknown to HubSpot
-            HashSet<int> HubSpotPersonIds = new HashSet<int>();
-            HashSet<string> HubSpotPersonEmails = new HashSet<string>();
-            foreach ( var contact in Contacts )
-            {
-                HubSpotPersonIds.Add( contact.properties.rock_person_id.AsInteger() );
-                if ( string.IsNullOrEmpty( contact.properties.email ) ==  false )
-                {
-                    HubSpotPersonEmails.Add( contact.properties.email.ToLower() );
-                }
-            }
-            // Debug.WriteLine( string.Format( "HubSpotPersonIds is this big: {0}", HubSpotPersonIds.Count ) );
-
-            int[] personIds = GetAllPersonIds(); // All Person Ids 18 years of age or older and is ACTIVE
-            foreach ( int id in personIds )
-            {
-                if ( HubSpotPersonIds.Contains( id ) == false )
-                {
-                    // Debug.WriteLine( string.Format( "HubSpotPersonIds does not contain: {0}", id ) );
-                    Person person = personService.Get( id );
+                    // Schedule HubSpot update if 1:1 match
                     if ( person != null )
                     {
-                        // If this person's email is already in HubSpot don't include the email with this newly added person.
-                        var personEmail = string.IsNullOrEmpty( person.Email ) == false ? person.Email.ToLower() : "";
-                        if ( HubSpotPersonEmails.Contains( personEmail ) || HubSpotPersonIds.Contains( person.Id ) )
+                        var properties = new Dictionary<string, string>
                         {
-                            continue;
-                        }
+                            { "rock_person_id", person.Id.ToString() }
+                        };
 
-                        List<HubSpotPropertyUpdate> properties = new List<HubSpotPropertyUpdate>();
-                        properties.Add( new HubSpotPropertyUpdate() { property = "firstname", value = person.NickName } );
-                        properties.Add( new HubSpotPropertyUpdate() { property = "lastname", value = person.LastName } );
-                        properties.Add( new HubSpotPropertyUpdate() { property = "rock_person_id", value = person.Id.ToString() } );
-                        PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
-                        if ( mobile != null && !mobile.IsUnlisted && mobile.IsMessagingEnabled )
+                        // If the HubSpot Contact does not have FirstName, LastName, or Phone Number we want to update those...
+                        if ( string.IsNullOrEmpty( contact.properties.firstname ) )
                         {
-                            properties.Add( new HubSpotPropertyUpdate() { property = "phone", value = mobile.NumberFormatted } );
+                            properties["firstname"] = person.NickName;
                         }
-
-                        bool verifiedEmail = false;
-                        if ( personEmail != "" )
+                        if ( string.IsNullOrEmpty( contact.properties.lastname ) )
                         {
-                            try
+                            properties["lastname"] = person.LastName;
+                        }
+                        if ( string.IsNullOrEmpty( contact.properties.phone ) )
+                        {
+                            PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
+                            if ( mobile != null && !mobile.IsUnlisted )
                             {
-                                var addr = new System.Net.Mail.MailAddress( personEmail );
-                                verifiedEmail = addr.Address == personEmail.Trim();
-                            }
-                            catch
-                            {
-                                verifiedEmail = false;
+                                properties["phone"] = mobile.NumberFormatted;
                             }
                         }
-
-                        if ( person.CanReceiveEmail( true ) && HubSpotPersonEmails.Contains( personEmail ) == false && verifiedEmail )
+                        var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
+                        UpdateHubSpotContact( current_id, url, properties, 0 );
+                        WriteToLog( string.Format( "    After Request (Id and Props): {0}", watch.ElapsedMilliseconds ) );
+                    }
+                    else
+                    {
+                        if ( inBucket )
                         {
-                            properties.Add( new HubSpotPropertyUpdate() { property = "email", value = personEmail } );
-                        }
+                            // We don't have an exact match but we have guesses, so update HubSpot to reflect that.
+                            var properties = new Dictionary<string, string>
+                            {
+                                { "potential_rock_match", "True" }
+                            };
+                            var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{contact.id}";
+                            UpdateHubSpotContact( current_id, url, properties, 0 );
 
-                        var url = $"https://api.hubapi.com/crm/v3/objects/contacts/";
-                        AddHubSpotContact( url, properties, 0 );
-                        idAdded++;
+                            WriteToLog( string.Format( "    After Request (Label): {0}", watch.ElapsedMilliseconds ) );
+                        }
+                    }
+                    WriteToLog( string.Format( "    End of Iteration: {0}", watch.ElapsedMilliseconds ) );
+                    watch.Stop();
+                }
+
+                // Add contacts for people unknown to HubSpot
+                HashSet<int> HubSpotPersonIds = new HashSet<int>();
+                HashSet<string> HubSpotPersonEmails = new HashSet<string>();
+                foreach ( var contact in Contacts )
+                {
+                    HubSpotPersonIds.Add( contact.properties.rock_person_id.AsInteger() );
+                    if ( string.IsNullOrEmpty( contact.properties.email ) == false )
+                    {
+                        HubSpotPersonEmails.Add( contact.properties.email.ToLower() );
                     }
                 }
+                // Debug.WriteLine( string.Format( "HubSpotPersonIds is this big: {0}", HubSpotPersonIds.Count ) );
+
+                int[] personIds = GetAllPersonIds(); // All Person Ids 18 years of age or older and is ACTIVE
+                foreach ( int id in personIds )
+                {
+                    if ( HubSpotPersonIds.Contains( id ) == false )
+                    {
+                        // Debug.WriteLine( string.Format( "HubSpotPersonIds does not contain: {0}", id ) );
+                        Person person = personService.Get( id );
+                        if ( person != null )
+                        {
+                            // If this person's email is already in HubSpot don't include the email with this newly added person.
+                            var personEmail = string.IsNullOrEmpty( person.Email ) == false ? person.Email.ToLower() : "";
+                            if ( HubSpotPersonEmails.Contains( personEmail ) || HubSpotPersonIds.Contains( person.Id ) )
+                            {
+                                continue;
+                            }
+
+                            var properties = new Dictionary<string, string>
+                            {
+                                { "firstname", person.NickName },
+                                { "lastname", person.LastName },
+                                { "rock_person_id", person.Id.ToString() }
+                            };
+                            PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
+                            if ( mobile != null && !mobile.IsUnlisted && mobile.IsMessagingEnabled )
+                            {
+                                properties["phone"] = mobile.NumberFormatted;
+                            }
+
+                            bool verifiedEmail = false;
+                            if ( personEmail != "" )
+                            {
+                                try
+                                {
+                                    var addr = new System.Net.Mail.MailAddress( personEmail );
+                                    verifiedEmail = addr.Address == personEmail.Trim();
+                                }
+                                catch
+                                {
+                                    verifiedEmail = false;
+                                }
+                            }
+
+                            if ( person.CanReceiveEmail( true ) && HubSpotPersonEmails.Contains( personEmail ) == false && verifiedEmail )
+                            {
+                                properties["email"] = personEmail;
+                            }
+
+                            var url = $"https://api.hubapi.com/crm/v3/objects/contacts/";
+                            AddHubSpotContact( url, properties, 0 );
+                            idAdded++;
+                        }
+                    }
+                }
+
+                // Output Job Stats
+                var resultMsg = new StringBuilder();
+                resultMsg.AppendFormat( "{0} contacts with Rock person id added or updated", idSet );
+                resultMsg.AppendFormat( ", {0} contacts with Rock person id removed", idRemoved );
+                resultMsg.AppendFormat( ", {0} contacts with Rock person id that is valid", idCorrect );
+                resultMsg.AppendFormat( ", {0} contacts with no match in Rock", idEmpty );
+                resultMsg.AppendFormat( ", {0} new contacts imported into HubSpot", idAdded );
+                UpdateLastStatusMessage( resultMsg.ToString() );
+
+                // Write excel file
+                byte[] sheetbytes = excel.GetAsByteArray();
+                string path = AppDomain.CurrentDomain.BaseDirectory + "\\Plugins\\org_thecrossingchurch\\Assets\\Generated\\" + GetAttributeValue( "PotentialMatchesFileName" ) + ".xlsx";
+                FileInfo file = new FileInfo( path );
+                file.Directory.Create();
+                File.WriteAllBytes( path, sheetbytes );
             }
-
-            // Output Job Stats
-            var resultMsg = new StringBuilder();
-            resultMsg.AppendFormat( "{0} contacts with Rock person id added or updated", idSet );
-            resultMsg.AppendFormat( ", {0} contacts with Rock person id removed", idRemoved );
-            resultMsg.AppendFormat( ", {0} contacts with Rock person id that is valid", idCorrect );
-            resultMsg.AppendFormat( ", {0} contacts with no match in Rock", idEmpty );
-            resultMsg.AppendFormat( ", {0} new contacts imported into HubSpot", idAdded );
-            UpdateLastStatusMessage( resultMsg.ToString() );
-
-            // Write excel file
-            byte[] sheetbytes = excel.GetAsByteArray();
-            string path = AppDomain.CurrentDomain.BaseDirectory + "\\Plugins\\org_thecrossingchurch\\Assets\\Generated\\" + GetAttributeValue( "PotentialMatchesFileName" ) + ".xlsx";
-            FileInfo file = new FileInfo( path );
-            file.Directory.Create();
-            File.WriteAllBytes( path, sheetbytes );
         }
 
-        private void AddHubSpotContact( string url, List<HubSpotPropertyUpdate> properties, int attempt )
+        private void AddHubSpotContact( string url, Dictionary<string, string> properties, int attempt )
         {
             // Add new HubSpot Contact
             try
@@ -380,7 +387,7 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
                 request.AddHeader( "accept", "application/json" );
                 request.AddHeader( "content-type", "application/json" );
                 request.AddHeader( "Authorization", $"Bearer {Key}" );
-                request.AddParameter( "application/json", $"{{\"properties\": {{ {String.Join( ",", properties.Select( p => $"\"{p.property}\": \"{p.value}\"" ) )} }} }}", ParameterType.RequestBody );
+                request.AddParameter( "application/json", $"{{\"properties\": {{ {String.Join( ",", properties.Select( p => $"\"{p.Key}\": \"{p.Value}\"" ) )} }} }}", ParameterType.RequestBody );
                 IRestResponse response = client.Execute( request );
                 if ( ( int ) response.StatusCode == 429 )
                 {
@@ -407,7 +414,7 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
             }
         }
 
-        private void UpdateHubSpotContact( int current_id, string url, List<HubSpotPropertyUpdate> properties, int attempt )
+        private void UpdateHubSpotContact( int current_id, string url, Dictionary<string, string> properties, int attempt )
         {
             // Update the HubSpot Contact
             try
@@ -419,7 +426,7 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
                 request.AddHeader( "accept", "application/json" );
                 request.AddHeader( "content-type", "application/json" );
                 request.AddHeader( "Authorization", $"Bearer {Key}" );
-                request.AddParameter( "application/json", $"{{\"properties\": {{ {String.Join( ",", properties.Select( p => $"\"{p.property}\": \"{p.value}\"" ) )} }} }}", ParameterType.RequestBody );
+                request.AddParameter( "application/json", $"{{\"properties\": {{ {String.Join( ",", properties.Select( p => $"\"{p.Key}\": \"{p.Value}\"" ) )} }} }}", ParameterType.RequestBody );
                 IRestResponse response = client.Execute( request );
                 if ( ( int )response.StatusCode == 429 ) // To many requests
                 {
@@ -653,82 +660,75 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
             return false;
         }
 
-    }
-
-    public class HubSpotPropertyUpdate
-    {
-        public string property { get; set; }
-        public string value { get; set; }
-    }
-
-    public class HubSpotContactProperties
-    {
-        public string createdate { get; set; }
-        public string email { get; set; }
-        public string firstname { get; set; }
-        public string lastname { get; set; }
-        public string lastmodifieddate { get; set; }
-        private string _phone { get; set; }
-        public string phone
+        public class HubSpotContactProperties
         {
-            get
+            public string createdate { get; set; }
+            public string email { get; set; }
+            public string firstname { get; set; }
+            public string lastname { get; set; }
+            public string lastmodifieddate { get; set; }
+            public string _phone { get; set; }
+            public string phone
             {
-                return !String.IsNullOrEmpty( _phone ) ? _phone.Replace( " ", "" ).Replace( "(", "" ).Replace( ")", "" ).Replace( "-", "" ) : "";
+                get
+                {
+                    return String.IsNullOrEmpty( _phone ) == false ? _phone.Replace( " ", "" ).Replace( "(", "" ).Replace( ")", "" ).Replace( "-", "" ) : "";
+                }
+                set
+                {
+                    _phone = value;
+                }
             }
-            set
+            public string rock_person_id { get; set; }
+
+            public string rock_record_status { get; set; }
+
+            public string has_potential_rock_match { get; set; }
+
+            public override string ToString()
             {
-                _phone = value;
+                return "CreatedDate: " + createdate + "; LastModifiedDate: " + lastmodifieddate + "; First: " + firstname + "; Last:" + lastname + "; Email: " + email + "; Phone: " + phone + "; RockId: " + rock_person_id + "; RockStatus: " + rock_record_status + "; RockPotentialMatch: " + has_potential_rock_match;
             }
         }
-        public string rock_person_id { get; set; }
 
-        public string rock_record_status { get; set; }
-
-        public string has_potential_rock_match { get; set; }
-
-        public override string ToString()
+        [DebuggerDisplay( "Id: {id}, Email: {properties.email}" )]
+        public class HubSpotContactResult
         {
-            return "CreatedDate: " + createdate + "; LastModifiedDate: " + lastmodifieddate + "; First: " + firstname + "; Last:" + lastname + "; Email: " + email + "; Phone: " + phone + "; RockId: " + rock_person_id + "; RockStatus: " + rock_record_status + "; RockPotentialMatch: " + has_potential_rock_match;
-        }
-    }
+            public string id { get; set; }
+            public HubSpotContactProperties properties { get; set; }
+            public string archived { get; set; }
 
-    [DebuggerDisplay( "Id: {id}, Email: {properties.email}" )]
-    public class HubSpotContactResult
-    {
-        public string id { get; set; }
-        public HubSpotContactProperties properties { get; set; }
-        public string archived { get; set; }
-
-        public override string ToString()
-        {
-            return "Id: " + id + "; Properties: " + properties.ToString();
-        }
-    }
-
-    public class HubSpotResultPaging
-    {
-        public HubSpotResultPagingNext next { get; set; }
-    }
-
-    public class HubSpotResultPagingNext
-    {
-        public string link { get; set; }
-    }
-
-    public class HubSpotContactQueryResult
-    {
-        public List<HubSpotContactResult> results { get; set; }
-        public HubSpotResultPaging paging { get; set; }
-
-        public override string ToString()
-        {
-            string ret = "";
-            foreach ( var item in results )
+            public override string ToString()
             {
-                ret += "; " + item.ToString();
+                return "Id: " + id + "; Properties: " + properties.ToString();
             }
-            return ret;
+        }
 
+        public class HubSpotResultPaging
+        {
+            public HubSpotResultPagingNext next { get; set; }
+        }
+
+        public class HubSpotResultPagingNext
+        {
+            public string link { get; set; }
+        }
+
+        public class HubSpotContactQueryResult
+        {
+            public List<HubSpotContactResult> results { get; set; }
+            public HubSpotResultPaging paging { get; set; }
+
+            public override string ToString()
+            {
+                string ret = "";
+                foreach ( var item in results )
+                {
+                    ret += "; " + item.ToString();
+                }
+                return ret;
+
+            }
         }
     }
 }

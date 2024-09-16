@@ -34,9 +34,6 @@ using System.ComponentModel;
 using System.Threading;
 using System.Diagnostics;
 using System.Data.Entity;
-using System.Text;
-using System.Runtime.InteropServices;
-using static Rock.Blocks.Types.Mobile.Groups.GroupRegistration;
 
 namespace org.crossingchurch.HubSpotIntegration.Jobs
 {
@@ -188,7 +185,7 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
                     var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{Contacts[i].id}";
                     // Debug.WriteLine( "Contact Count: " + i+1 + " of " + Contacts.Count() );
                     // Debug.WriteLine( "URL: " + url );
-                    var properties = new List<HubSpotPropertyUpdate>();
+                    var properties = new Dictionary<string, string>();
 
                     foreach ( DefinedValue HubSpotSyncDefinedValue in HubSpotDefinedType.DefinedValues )
                     {
@@ -241,23 +238,23 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
 
                         // Patch it!
                         // Debug.WriteLine( "Patching: " + HubSpotKey + " " + value );
-                        properties.Add( new HubSpotPropertyUpdate() { property = HubSpotKey, value = value } );
+                        properties["HubSpotKey"] = value;
 
                     }
                     
                     // Handle name changes
-                    properties.Add( new HubSpotPropertyUpdate() { property = "firstname", value = person.NickName } );
-                    properties.Add( new HubSpotPropertyUpdate() { property = "lastname", value = person.LastName } );
+                    properties["firstname"] = person.NickName;
+                    properties["lastname"] = person.LastName;
 
                     // Handle Phone
                     PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
                     if ( mobile != null && mobile.IsUnlisted == false && mobile.IsMessagingEnabled )
                     {
-                        properties.Add( new HubSpotPropertyUpdate() { property = "phone", value = mobile.NumberFormatted } );
+                        properties["phone"] = mobile.NumberFormatted;
                     }
                     else
                     {
-                        properties.Add( new HubSpotPropertyUpdate() { property = "phone", value = "" } );
+                        properties["phone"] = "";
                     }
 
                     // Handle Email
@@ -278,16 +275,16 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
 
                     if ( person.CanReceiveEmail( true ) && HubSpotPersonEmails.Contains( personEmail ) == false && verifiedEmail == true )
                     {
-                        properties.Add( new HubSpotPropertyUpdate() { property = "email", value = personEmail } );
+                        properties["email"] = personEmail;
                     }
                     else
                     {
-                        properties.Add( new HubSpotPropertyUpdate() { property = "email", value = "" } );
+                        properties["email"] = "";
                     }
 
                     // eNews Subscriber true or false
                     string eNewsSub = ( person.Email != "" && person.Email != null && eNewsEmails.Contains( person.Email.ToLower() ) ) ? "true" : "false";
-                    properties.Add( new HubSpotPropertyUpdate() { property = "enews_subscriber", value = eNewsSub } );
+                    properties["enews_subscriber"] = eNewsSub;
                     // Debug.WriteLine( "Patching: eNews: " + eNewsSub + " | " + person.Email );
 
                     // Discpleship Step Path step completed date gathering
@@ -310,7 +307,7 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
                             ConvertDate( stepResult.AsDateTime() );
                         }
                         // Debug.WriteLine( "Discpleship Step Path : " + kvp.Value + " | completed date: " + stepResult );
-                        properties.Add( new HubSpotPropertyUpdate() { property = kvp.Value, value = stepResult } );
+                        properties[kvp.Value] = stepResult;
                     }
 
                     try
@@ -334,7 +331,7 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
                 UpdateLastStatusMessage( resultMsg.ToString() );
             }
         }
-        private void MakeRequest( int current_id, string url, List<HubSpotPropertyUpdate> properties, int attempt )
+        private void MakeRequest( int current_id, string url, Dictionary<string, string> properties, int attempt )
         {
             // Update the HubSpot Contact
             try
@@ -348,7 +345,7 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
                 request.AddHeader( "accept", "application/json" );
                 request.AddHeader( "content-type", "application/json" );
                 request.AddHeader( "Authorization", $"Bearer {Key}" );
-                request.AddParameter( "application/json", $"{{\"properties\": {{ {String.Join( ",", properties.Select( p => $"\"{p.property}\": \"{p.value}\"" ) )} }} }}", ParameterType.RequestBody );
+                request.AddParameter( "application/json", $"{{\"properties\": {{ {String.Join( ",", properties.Select( p => $"\"{p.Key}\": \"{p.Value}\"" ) )} }} }}", ParameterType.RequestBody );
                 IRestResponse response = client.Execute( request );
                 if ( ( int )response.StatusCode == 429 )
                 {
@@ -402,26 +399,96 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
                 DateTime today = RockDateTime.Now;
                 if ( today.Year - date.Value.Year < 1000 && today.Year - date.Value.Year > -1000 )
                 {
-                    //date = new DateTime( date.Value.Year, date.Value.Month, date.Value.Day, 0, 0, 0 );
-                    //var d = date.Value.Subtract( new DateTime( 1970, 1, 1 ) ).TotalSeconds * 1000;
                     var d = date.Value.Date.Subtract( new DateTime( 1970, 1, 1 ) ).TotalSeconds * 1000;
                     return d.ToString();
                 }
             }
             return "";
         }
-    }
 
-    [DebuggerDisplay( "Label: {label}, FieldType: {fieldType}" )]
-    public class HubSpotProperty
-    {
-        public string name { get; set; }
-        public string label { get; set; }
-        public string fieldType { get; set; }
-        public string groupName { get; set; }
-    }
-    public class HubSpotPropertyQueryResult
-    {
-        public List<HubSpotProperty> results { get; set; }
+        public class HubSpotContactProperties
+        {
+            public string createdate { get; set; }
+            public string email { get; set; }
+            public string firstname { get; set; }
+            public string lastname { get; set; }
+            public string lastmodifieddate { get; set; }
+            public string _phone { get; set; }
+            public string phone
+            {
+                get
+                {
+                    return String.IsNullOrEmpty( _phone ) == false ? _phone.Replace( " ", "" ).Replace( "(", "" ).Replace( ")", "" ).Replace( "-", "" ) : "";
+                }
+                set
+                {
+                    _phone = value;
+                }
+            }
+            public string rock_person_id { get; set; }
+
+            public string rock_record_status { get; set; }
+
+            public string has_potential_rock_match { get; set; }
+
+            public override string ToString()
+            {
+                return "CreatedDate: " + createdate + "; LastModifiedDate: " + lastmodifieddate + "; First: " + firstname + "; Last:" + lastname + "; Email: " + email + "; Phone: " + phone + "; RockId: " + rock_person_id + "; RockStatus: " + rock_record_status + "; RockPotentialMatch: " + has_potential_rock_match;
+            }
+        }
+
+        [DebuggerDisplay( "Label: {label}, FieldType: {fieldType}" )]
+        public class HubSpotProperty
+        {
+            public string name { get; set; }
+            public string label { get; set; }
+            public string fieldType { get; set; }
+            public string groupName { get; set; }
+        }
+
+        public class HubSpotPropertyQueryResult
+        {
+            public List<HubSpotProperty> results { get; set; }
+        }
+
+        [DebuggerDisplay( "Id: {id}, Email: {properties.email}" )]
+        public class HubSpotContactResult
+        {
+            public string id { get; set; }
+            public HubSpotContactProperties properties { get; set; }
+            public string archived { get; set; }
+
+            public override string ToString()
+            {
+                return "Id: " + id + "; Properties: " + properties.ToString();
+            }
+        }
+
+        public class HubSpotResultPaging
+        {
+            public HubSpotResultPagingNext next { get; set; }
+        }
+
+        public class HubSpotResultPagingNext
+        {
+            public string link { get; set; }
+        }
+
+        public class HubSpotContactQueryResult
+        {
+            public List<HubSpotContactResult> results { get; set; }
+            public HubSpotResultPaging paging { get; set; }
+
+            public override string ToString()
+            {
+                string ret = "";
+                foreach ( var item in results )
+                {
+                    ret += "; " + item.ToString();
+                }
+                return ret;
+
+            }
+        }
     }
 }
