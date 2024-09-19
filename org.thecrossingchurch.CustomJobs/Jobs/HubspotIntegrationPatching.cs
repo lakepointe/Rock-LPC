@@ -111,227 +111,232 @@ namespace org.crossingchurch.HubSpotIntegration.Jobs
             props = props.Where( p => p.groupName == "rock_information" || p.groupName == "contactinformation" ).ToList();
 
             // Save a list of the ones that are Rock attributes
-            RockContext _context = new RockContext();
+            using ( RockContext context = new RockContext() )
+            {
+                Guid transactionTypeGuid = GetAttributeValue( "ContributionTransactionType" ).AsGuid();
+                var transactionTypeDefinedValue = new DefinedValueService( context ).Get( transactionTypeGuid );
+                int transactionTypeValueId = transactionTypeDefinedValue.Id;
+
+                // Create a List of all contacts from HubSpot
+                Contacts = new List<HubSpotContactResult>();
+                RequestCount = 0;
+
+                // Get all HubSpot Contacts that have a Rock Person Id
+                GetContacts( "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=rock_person_id" );
+                // Debug.WriteLine( "Contacts returned: " + Contacts.Count() );
+                // WriteToLog( string.Format( "Total Contacts to Match: {0}", Contacts.Count() ) );
             
-            Guid transactionTypeGuid = GetAttributeValue( "ContributionTransactionType" ).AsGuid();
-            var transactionTypeDefinedValue = new DefinedValueService( _context ).Get( transactionTypeGuid );
-            int transactionTypeValueId = transactionTypeDefinedValue.Id;
-
-            // Create a List of all contacts from HubSpot
-            Contacts = new List<HubSpotContactResult>();
-            RequestCount = 0;
-
-            // Get all HubSpot Contacts that have a Rock Person Id
-            GetContacts( "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=rock_person_id" );
-            // Debug.WriteLine( "Contacts returned: " + Contacts.Count() );
-            // WriteToLog( string.Format( "Total Contacts to Match: {0}", Contacts.Count() ) );
-            
-            PersonAliasService pa_svc = new PersonAliasService( _context );
-            FinancialTransactionService ft_svc = new FinancialTransactionService( _context );
-            AttributeValueService av_svc = new AttributeValueService( _context );
-            var dataViewService = new DataViewService( _context );
-            var enewsDV = dataViewService.Get( GetAttributeValue( "EnewsGuid" ) ); // ENews DataView Id: 2882, Guid: e4f1db79-63c7-41ca-ab45-6ed6b16feb0e
-
-            // ENews from DataView To List
-            var qry = enewsDV.GetQuery();
-            var eNewsData = qry.ToList();
-            HashSet<string> eNewsEmails = new HashSet<string>();
-            // string eNewsEmailList = "";
-            foreach ( var row in eNewsData )
-            {
-                string colVal = string.IsNullOrEmpty( ( string )row.GetPropertyValue( "Email" ) ) == false ? row.GetPropertyValue( "Email" ).ToString().ToLower() : "";
-                if ( colVal != "" )
+                PersonAliasService pa_svc = new PersonAliasService( context );
+                FinancialTransactionService ft_svc = new FinancialTransactionService( context );
+                AttributeValueService av_svc = new AttributeValueService( context );
+                var dataViewService = new DataViewService( context );
+                var enewsDV = dataViewService.Get( GetAttributeValue( "ENewsGuid" ) ); // ENews DataView Id: 2882, Guid: e4f1db79-63c7-41ca-ab45-6ed6b16feb0e
+                if ( enewsDV == null )
                 {
-                    eNewsEmails.Add( colVal );
+                    throw new ArgumentException( "Could not find eNews Dataview." );
                 }
-            }
-            // Debug.WriteLine( string.Format( "{0} Emails on ENews List.",eNewsData.Count ) );
 
-            HashSet<string> HubSpotPersonEmails = new HashSet<string>();
-            foreach ( var contact in Contacts )
-            {
-                if ( string.IsNullOrEmpty( contact.properties.email ) == false )
+                // ENews from DataView To List
+                var qry = enewsDV.GetQuery();
+                var eNewsData = qry.ToList();
+                HashSet<string> eNewsEmails = new HashSet<string>();
+                // string eNewsEmailList = "";
+                foreach ( var row in eNewsData )
                 {
-                    HubSpotPersonEmails.Add( contact.properties.email.ToString().ToLower() );
-                }
-            }
-
-            // WriteToLog( string.Format( "Total Contacts: {0}", contacts.Count() ) );
-            for ( var i = 0; i < Contacts.Count(); i++ )
-            {
-                // Stopwatch watch = new Stopwatch();
-                // watch.Start();
-                Person person = personService.Get( Contacts[i].properties.rock_person_id );
-
-                // For Testing
-                // WriteToLog( string.Format( "{1}i: {0}{1}", i, Environment.NewLine ) );
-                // WriteToLog( string.Format( "    After SQL: {0}{1}", watch.ElapsedMilliseconds, Environment.NewLine ) );
-
-                // If person is null, that means that we have a person in HubSpot w/ a personId that no longer exists in rock
-                // This implies that a merge occurred and we need to look at the alias table to figure out what the new Id is and update it
-                // After updating the ID, we need to find the person object and handle patching
-
-                // Setup for patching
-                // Look up hubspot defined type
-                DefinedTypeService definedTypeService = new DefinedTypeService( _context );
-                DefinedType HubSpotDefinedType = definedTypeService.Get( GetAttributeValue( "DefinedTypeId" ) ); // as of 7/8/24 Dev is 528, Train is 527
-                AttributeValueService attributeValueService = new AttributeValueService( _context );
-                AttributeService attributeService = new AttributeService( _context );
-
-                // Schedule HubSpot update if 1:1 match
-                if ( person != null )
-                {
-                    current_id = person.Id;
-                    var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{Contacts[i].id}";
-                    // Debug.WriteLine( "Contact Count: " + i+1 + " of " + Contacts.Count() );
-                    // Debug.WriteLine( "URL: " + url );
-                    var properties = new Dictionary<string, string>();
-
-                    foreach ( DefinedValue HubSpotSyncDefinedValue in HubSpotDefinedType.DefinedValues )
+                    string colVal = string.IsNullOrEmpty( row.GetPropertyValue( "Email" ).ToString() ) == false ? row.GetPropertyValue( "Email" ).ToString().ToLower() : "";
+                    if ( colVal != "" )
                     {
-                        HubSpotSyncDefinedValue.LoadAttributes();
-                        Dictionary<string, AttributeValueCache> dvAttributes = HubSpotSyncDefinedValue.AttributeValues;
-                        string propertyOrAttribute;
-                        string HubSpotKey;
-                        string type;
-                        string key;
-                        var value = "";
-                        try
-                        {
-                            propertyOrAttribute = dvAttributes.GetValueOrNull( "IsPropertyOrAttribute" ).Value;
-                            HubSpotKey = dvAttributes.GetValueOrNull( "HubSpotAttributeKey" ).Value;
-                            type = dvAttributes.GetValueOrNull( "Type" ).Value;
-                            key = HubSpotSyncDefinedValue.Value;
-                        }
-                        catch
-                        {
-                            throw new Exception( "Missing Defined Value Property or Attribute." );
-                        }
+                        eNewsEmails.Add( colVal );
+                    }
+                }
+                // Debug.WriteLine( string.Format( "{0} Emails on ENews List.",eNewsData.Count ) );
 
-                        // Get Person property or attribute
-                        if ( propertyOrAttribute == "Property" ) // is Person property
+                HashSet<string> HubSpotPersonEmails = new HashSet<string>();
+                foreach ( var contact in Contacts )
+                {
+                    if ( string.IsNullOrEmpty( contact.properties.email ) == false )
+                    {
+                        HubSpotPersonEmails.Add( contact.properties.email.ToString().ToLower() );
+                    }
+                }
+
+                // WriteToLog( string.Format( "Total Contacts: {0}", contacts.Count() ) );
+                for ( var i = 0; i < Contacts.Count(); i++ )
+                {
+                    // Stopwatch watch = new Stopwatch();
+                    // watch.Start();
+                    Person person = personService.Get( Contacts[i].properties.rock_person_id );
+
+                    // For Testing
+                    // WriteToLog( string.Format( "{1}i: {0}{1}", i, Environment.NewLine ) );
+                    // WriteToLog( string.Format( "    After SQL: {0}{1}", watch.ElapsedMilliseconds, Environment.NewLine ) );
+
+                    // If person is null, that means that we have a person in HubSpot w/ a personId that no longer exists in rock
+                    // This implies that a merge occurred and we need to look at the alias table to figure out what the new Id is and update it
+                    // After updating the ID, we need to find the person object and handle patching
+
+                    // Setup for patching
+                    // Look up hubspot defined type
+                    DefinedTypeService definedTypeService = new DefinedTypeService( context );
+                    DefinedType HubSpotDefinedType = definedTypeService.Get( GetAttributeValue( "DefinedTypeId" ) ); // as of 7/8/24 Dev is 528, Train is 527
+                    AttributeValueService attributeValueService = new AttributeValueService( context );
+                    AttributeService attributeService = new AttributeService( context );
+
+                    // Schedule HubSpot update if 1:1 match
+                    if ( person != null )
+                    {
+                        current_id = person.Id;
+                        var url = $"https://api.hubapi.com/crm/v3/objects/contacts/{Contacts[i].id}";
+                        // Debug.WriteLine( "Contact Count: " + i+1 + " of " + Contacts.Count() );
+                        // Debug.WriteLine( "URL: " + url );
+                        var properties = new Dictionary<string, string>();
+
+                        foreach ( DefinedValue HubSpotSyncDefinedValue in HubSpotDefinedType.DefinedValues )
                         {
-                            value = string.IsNullOrEmpty( ( string )person.GetPropertyValue( key ) ) == false ? person.GetPropertyValue( key ).ToString() : "";
-                        }
-                        else // is Person attribute
-                        {
-                            var attributeQry = attributeService.Queryable().Where( a => a.EntityTypeId == 15 && a.Key == key ).AsNoTracking();
-                            // Debug.WriteLine( "Type/Key: " + " " + type + " / " + HubSpotKey );
+                            HubSpotSyncDefinedValue.LoadAttributes();
+                            Dictionary<string, AttributeValueCache> dvAttributes = HubSpotSyncDefinedValue.AttributeValues;
+                            string propertyOrAttribute;
+                            string HubSpotKey;
+                            string type;
+                            string key;
+                            var value = "";
+                            try
+                            {
+                                propertyOrAttribute = dvAttributes.GetValueOrNull( "IsPropertyOrAttribute" ).Value;
+                                HubSpotKey = dvAttributes.GetValueOrNull( "HubSpotAttributeKey" ).Value;
+                                type = dvAttributes.GetValueOrNull( "Type" ).Value;
+                                key = HubSpotSyncDefinedValue.Value;
+                            }
+                            catch
+                            {
+                                throw new Exception( "Missing Defined Value Property or Attribute." );
+                            }
+
+                            // Get Person property or attribute
+                            if ( propertyOrAttribute == "Property" ) // is Person property
+                            {
+                                value = person.GetPropertyValue( key )?.ToString() ?? "";
+                            }
+                            else // is Person attribute
+                            {
+                                var attributeQry = attributeService.Queryable().Where( a => a.EntityTypeId == 15 && a.Key == key ).AsNoTracking();
+                                // Debug.WriteLine( "Type/Key: " + " " + type + " / " + HubSpotKey );
                                 var aVal = attributeValueService.Queryable().Where( av => av.EntityId == current_id )
                                     .Join( attributeQry, av => av.AttributeId,
                                     a => a.Id, ( av, a ) => av ).Select( av => av.Value )
                                     .AsNoTracking().FirstOrDefault();
-                                value = string.IsNullOrEmpty( aVal ) == false ? aVal.ToString() : "";
-                        }
+                                value = aVal ?? "";
+                            }
 
-                        // Set date values to HubSpot required format
-                        if ( type == "Date" )
-                        {
-                            if ( string.IsNullOrEmpty( value ) == false )
+                            // Set date values to HubSpot required format
+                            if ( type == "Date" )
                             {
-                                if ( value.AsDateTime() != null )
+                                if ( string.IsNullOrEmpty( value ) == false )
                                 {
-                                    value = ConvertDate( value.AsDateTime() );
+                                    if ( value.AsDateTime() != null )
+                                    {
+                                        value = ConvertDate( value.AsDateTime() );
+                                    }
                                 }
                             }
+
+                            // Patch it!
+                            // Debug.WriteLine( "Patching: " + HubSpotKey + " " + value );
+                            properties[HubSpotKey] = value;
+
                         }
-
-                        // Patch it!
-                        // Debug.WriteLine( "Patching: " + HubSpotKey + " " + value );
-                        properties["HubSpotKey"] = value;
-
-                    }
                     
-                    // Handle name changes
-                    properties["firstname"] = person.NickName;
-                    properties["lastname"] = person.LastName;
+                        // Handle name changes
+                        properties["firstname"] = person.NickName;
+                        properties["lastname"] = person.LastName;
 
-                    // Handle Phone
-                    PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
-                    if ( mobile != null && mobile.IsUnlisted == false && mobile.IsMessagingEnabled )
-                    {
-                        properties["phone"] = mobile.NumberFormatted;
-                    }
-                    else
-                    {
-                        properties["phone"] = "";
-                    }
-
-                    // Handle Email
-                    bool verifiedEmail = false;
-                    var personEmail = string.IsNullOrEmpty( person.Email ) == false ? person.Email.ToLower() : "";
-                    if ( personEmail != "" )
-                    {
-                        try
+                        // Handle Phone
+                        PhoneNumber mobile = person.PhoneNumbers.FirstOrDefault( n => n.NumberTypeValueId == 12 );
+                        if ( mobile != null && mobile.IsUnlisted == false && mobile.IsMessagingEnabled )
                         {
-                            var addr = new System.Net.Mail.MailAddress( personEmail );
-                            verifiedEmail = addr.Address == personEmail.Trim();
-                        }
-                        catch
-                        {
-                            verifiedEmail = false;
-                        }
-                    }
-
-                    if ( person.CanReceiveEmail( true ) && HubSpotPersonEmails.Contains( personEmail ) == false && verifiedEmail == true )
-                    {
-                        properties["email"] = personEmail;
-                    }
-                    else
-                    {
-                        properties["email"] = "";
-                    }
-
-                    // eNews Subscriber true or false
-                    string eNewsSub = ( person.Email != "" && person.Email != null && eNewsEmails.Contains( person.Email.ToLower() ) ) ? "true" : "false";
-                    properties["enews_subscriber"] = eNewsSub;
-                    // Debug.WriteLine( "Patching: eNews: " + eNewsSub + " | " + person.Email );
-
-                    // Discpleship Step Path step completed date gathering
-                    Dictionary<int, string> stepsPath = new Dictionary<int, string>()
-                    {
-                        { 26, "baptism" },
-                        { 27, "life_groups" },
-                        { 29, "first_time_serving" }
-                    };
-                    foreach ( KeyValuePair<int, string> kvp in stepsPath )
-                    {
-                        var stepService = new StepService( _context );
-                        var stepResult = stepService.Queryable()
-                            .Where( s => s.StepTypeId == kvp.Key && s.PersonAlias.PersonId == person.Id )
-                            .Select( s => s.CompletedDateTime )
-                            .OrderBy( s => s )
-                            .FirstOrDefault();
-
-                        if ( stepResult != null )
-                        {
-                            properties[kvp.Value] = ConvertDate( stepResult );
+                            properties["phone"] = mobile.NumberFormatted;
                         }
                         else
                         {
-                            properties[kvp.Value] = "";
+                            properties["phone"] = "";
+                        }
+
+                        // Handle Email
+                        bool verifiedEmail = false;
+                        var personEmail = string.IsNullOrEmpty( person.Email ) == false ? person.Email.ToLower() : "";
+                        if ( personEmail != "" )
+                        {
+                            try
+                            {
+                                var addr = new System.Net.Mail.MailAddress( personEmail );
+                                verifiedEmail = addr.Address == personEmail.Trim();
+                            }
+                            catch
+                            {
+                                verifiedEmail = false;
+                            }
+                        }
+
+                        if ( person.CanReceiveEmail( true ) && HubSpotPersonEmails.Contains( personEmail ) == false && verifiedEmail == true )
+                        {
+                            properties["email"] = personEmail;
+                        }
+                        else
+                        {
+                            properties["email"] = "";
+                        }
+
+                        // eNews Subscriber true or false
+                        string eNewsSub = ( person.Email != "" && person.Email != null && eNewsEmails.Contains( person.Email.ToLower() ) ) ? "true" : "false";
+                        properties["enews_subscriber"] = eNewsSub;
+                        // Debug.WriteLine( "Patching: eNews: " + eNewsSub + " | " + person.Email );
+
+                        // Discpleship Step Path step completed date gathering
+                        Dictionary<int, string> stepsPath = new Dictionary<int, string>()
+                        {
+                            { 26, "baptism" },
+                            { 27, "life_groups" },
+                            { 29, "first_time_serving" }
+                        };
+                        foreach ( KeyValuePair<int, string> kvp in stepsPath )
+                        {
+                            var stepService = new StepService( context );
+                            var stepResult = stepService.Queryable()
+                                .Where( s => s.StepTypeId == kvp.Key && s.PersonAlias.PersonId == person.Id )
+                                .Select( s => s.CompletedDateTime )
+                                .OrderBy( s => s )
+                                .FirstOrDefault();
+
+                            if ( stepResult != null )
+                            {
+                                properties[kvp.Value] = ConvertDate( stepResult );
+                            }
+                            else
+                            {
+                                properties[kvp.Value] = "";
+                            }
+                        }
+
+                        try
+                        {
+                            // Update the Contact in HubSpot
+                            MakeRequest( current_id, url, properties, 0 );
+                            // WriteToLog( string.Format( "    After Request: {0}", watch.ElapsedMilliseconds ) );
+                        }
+                        catch ( Exception e )
+                        {
+                            ExceptionLogService.LogException( new Exception( $"HubSpot Sync Error{Environment.NewLine}{e}{Environment.NewLine}Current Id: {current_id}{Environment.NewLine}Exception from Job:{Environment.NewLine}{e.Message}{Environment.NewLine} - Record Count:{i}" ) );
                         }
                     }
+                    // WriteToLog( string.Format( "    End of iteration: {0}", watch.ElapsedMilliseconds ) );
+                    // watch.Stop();
+                    // WriteToLog( string.Format( i + " of " + Contacts.Count() + " Contacts Patched." ) );
+                    // WriteToLog( string.Format( "Last Person: " + person.FullName + "( " + person.Id + " )" ) );
 
-                    try
-                    {
-                        // Update the Contact in HubSpot
-                        MakeRequest( current_id, url, properties, 0 );
-                        // WriteToLog( string.Format( "    After Request: {0}", watch.ElapsedMilliseconds ) );
-                    }
-                    catch ( Exception e )
-                    {
-                        ExceptionLogService.LogException( new Exception( $"HubSpot Sync Error{Environment.NewLine}{e}{Environment.NewLine}Current Id: {current_id}{Environment.NewLine}Exception from Job:{Environment.NewLine}{e.Message}{Environment.NewLine} - Record Count:{i}" ) );
-                    }
+                    // Output Job Status
+                    var resultMsg = ( $"{ i } of { Contacts.Count()+1 } Contacts Patched." );
+                    UpdateLastStatusMessage( resultMsg.ToString() );
                 }
-                // WriteToLog( string.Format( "    End of iteration: {0}", watch.ElapsedMilliseconds ) );
-                // watch.Stop();
-                // WriteToLog( string.Format( i + " of " + Contacts.Count() + " Contacts Patched." ) );
-                // WriteToLog( string.Format( "Last Person: " + person.FullName + "( " + person.Id + " )" ) );
-
-                // Output Job Status
-                var resultMsg = ( $"{ i } of { Contacts.Count()+1 } Contacts Patched." );
-                UpdateLastStatusMessage( resultMsg.ToString() );
             }
         }
         private void MakeRequest( int current_id, string url, Dictionary<string, string> properties, int attempt )
