@@ -4,11 +4,15 @@
         <NotificationBox v-if="discountCodeWarningMessage" alertType="warning">{{ discountCodeWarningMessage }}</NotificationBox>
         <NotificationBox v-if="discountCodeSuccessMessage" alertType="success">{{ discountCodeSuccessMessage }}</NotificationBox>
         <div class="form-group pull-right">
-            <label class="control-label">{{ discountCodeTermTitleCase }}</label>
+            <!-- LPC MODIFIED CODE -->
+            <label class="control-label">{{ getLang() == "es" ? "Código de Descuento" : discountCodeTermTitleCase }}</label>
+            <!-- END LPC MODIFIED CODE -->
             <div class="input-group">
                 <input type="text" :disabled="loading || !isDiscountCodeAllowed" class="form-control input-width-md input-sm" v-model="discountCodeInput" />
                 <RockButton v-if="isDiscountCodeAllowed" btnSize="sm" :isLoading="loading" class="margin-l-sm" @click="tryDiscountCode(false)">
+                    <!-- LPC MODIFIED CODE -->
                     Apply
+                    <!-- END LPC MODIFIED CODE -->
                 </RockButton>
             </div>
         </div>
@@ -25,6 +29,11 @@
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { toTitleCase } from "@Obsidian/Utility/stringUtils";
     import { RegistrationEntryInitializationBox } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrationEntryInitializationBox";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
 
     type CheckDiscountCodeResult = {
         discountCode: string;
@@ -167,8 +176,22 @@
             return `Your ${discountText} ${discountCodeTermLowerCase.value} was successfully applied to the maximum allowed number of ${discountMaxRegistrants} ${registrantTerm}`;
         }
 
-        return `Your ${discountText} ${discountCodeTermLowerCase.value} for all registrants was successfully applied.`;
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? `Tu codigo de descuento ha sido aplicado por ${discountText} para todos los registrados.` : `Your ${discountText} ${discountCodeTermLowerCase.value} for all registrants was successfully applied.`;
+        // END LPC MODIFIED CODE
     }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 
     // #endregion
 

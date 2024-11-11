@@ -9,7 +9,9 @@
                                   saveAccountCheckBoxLabel="Save account information for future payments"
                                   class="well">
             <template #header>
-                <h3>Make Payments Even Easier</h3>
+                <!-- LPC MODIFIED CODE -->
+                <h3>{{ getLang() == "es" ? "Haz Los Pagos Más Fáciles" : "Make Payments Even Easier" }}</h3>
+                <!-- END LPC MODIFIED CODE -->
             </template>
         </SaveFinancialAccountForm>
     </div>
@@ -21,6 +23,11 @@
     import SaveFinancialAccountForm from "@Obsidian/Controls/saveFinancialAccountForm.obs";
     import { Guid } from "@Obsidian/Types";
     import { toGuidOrNull } from "@Obsidian/Utility/guid";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
 
     const registrationEntryState = use(CurrentRegistrationEntryState);
 
@@ -58,4 +65,16 @@
     });
 
     // #endregion
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 </script>

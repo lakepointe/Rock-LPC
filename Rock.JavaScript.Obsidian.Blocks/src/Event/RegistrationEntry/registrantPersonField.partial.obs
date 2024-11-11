@@ -18,6 +18,11 @@
     import { RegistrationPersonFieldType } from "@Obsidian/Enums/Event/registrationPersonFieldType";
     import { Guid } from "@Obsidian/Types";
     import { RegistrationEntryFormFieldBag } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrationEntryFormFieldBag";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
 
     const props = defineProps({
         field: {
@@ -107,17 +112,53 @@
             disabled: props.disabled
         };
 
+        // LPC CODE
+        if (getLang() == 'es') {
+            for (let i = 0; i < (registrationEntryState.viewModel.maritalStatuses?.length ?? 0); i++) {
+                if (registrationEntryState.viewModel.maritalStatuses) {
+                    if (registrationEntryState.viewModel.maritalStatuses[i].text == "Married") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Casado";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Single") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Soltero";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Engaged") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Comprometido";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Divorced") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Divorciado";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Unknown") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Desconocido";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Widowed") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Viudo";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Separated") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Separado";
+                    }
+                }
+            }
+        }
+        // END LPC CODE
+
         switch (props.field.personFieldType) {
             case RegistrationPersonFieldType.FirstName:
-                componentProps.label = "First Name";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Nombre" : "First Name";
+                // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.LastName:
-                componentProps.label = "Last Name";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Apellido" : "Last Name";
+                // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.MiddleName:
-                componentProps.label = "Middle Name";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Segundo Nombre" : "Middle Name";
+                // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.Campus:
@@ -133,42 +174,60 @@
                 break;
 
             case RegistrationPersonFieldType.Birthdate:
-                componentProps.label = "Birthday";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Fecha de Nacimiento" : "Birthday";
+                // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.AnniversaryDate:
-                componentProps.label = "Anniversary Date";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Fecha de Aniversario" : "Anniversary Date";
+                // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.Address:
-                componentProps.label = "Address";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Dirección" : "Address";
+                // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.MaritalStatus:
-                componentProps.label = "Marital Status";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Estado Civil" : "Marital Status";
+                // END LPC MODIFIED CODE
                 componentProps.items = [...registrationEntryState.viewModel.maritalStatuses ?? []];
                 break;
 
             case RegistrationPersonFieldType.ConnectionStatus:
-                componentProps.label = "Connection Status";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Estatus de Conexión" : "Connection Status";
+                // END LPC MODIFIED CODE
                 componentProps.items = [...registrationEntryState.viewModel.connectionStatuses ?? []];
                 break;
 
             case RegistrationPersonFieldType.Grade:
-                componentProps.label = "Grade";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Grado Escolar" : "Grade";
+                // END LPC MODIFIED CODE
                 componentProps.items = [...registrationEntryState.viewModel.grades ?? []];
                 break;
 
             case RegistrationPersonFieldType.HomePhone:
-                componentProps.label = "Home Phone";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Teléfono de Casa" : "Home Phone";
+                // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.WorkPhone:
-                componentProps.label = "Work Phone";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Teléfono de Trabajo" : "Work Phone";
+                // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.MobilePhone:
-                componentProps.label = "Mobile Phone";
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Teléfono Celular" : "Mobile Phone";
+                // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.Race:
@@ -190,6 +249,18 @@
     });
 
     // #endregion
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 
     // Set the default value if needed
     if (!(props.field.guid in props.fieldValues)) {

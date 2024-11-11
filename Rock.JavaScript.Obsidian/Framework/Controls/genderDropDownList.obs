@@ -1,6 +1,8 @@
 ﻿<!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <DropDownList v-model="internalValue" label="Gender" :items="options" :showBlankItem="false" :rules="computedRules" />
+    <!-- LPC MODIFIED CODE -->
+    <DropDownList v-model="internalValue" :label="getLang() == 'es' ? 'Género' : 'Gender'" :items="options" :showBlankItem="false" :rules="computedRules" />
+    <!-- END LPC MODIFIED CODE -->
 </template>
 
 <script setup lang="ts">
@@ -10,6 +12,11 @@
     import DropDownList from "./dropDownList.obs";
     import { Gender } from "@Obsidian/Enums/Crm/gender";
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
 
     const props = defineProps({
         modelValue: {
@@ -28,8 +35,10 @@
 
     const options: ListItemBag[] = [
         { text: " ", value: Gender.Unknown.toString() },
-        { text: "Male", value: Gender.Male.toString() },
-        { text: "Female", value: Gender.Female.toString() }
+        // LPC MODIFIED CODE
+        { text: getLang() == "es" ? "Masculino" : "Male", value: Gender.Male.toString() },
+        { text: getLang() == "es" ? "Femenino" : "Female", value: Gender.Female.toString() }
+        // END LPC MODIFIED CODE
     ];
 
     const computedRules = computed(() => {
@@ -42,4 +51,16 @@
 
         return rules;
     });
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 </script>

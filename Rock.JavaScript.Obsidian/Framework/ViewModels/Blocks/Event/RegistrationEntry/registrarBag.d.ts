@@ -39,4 +39,12 @@ export type RegistrarBag = {
 
     /** Gets or sets a value indicating whether [update email]. */
     updateEmail: boolean;
+
+    // LPC CODE
+    /** Gets or sets the mobile phone number */
+    mobilePhone?: string | null;
+
+    /** Gets or sets the preferred language */
+    preferredLanguage?: string | null;
+    // END LPC CODE
 };

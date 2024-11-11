@@ -7,12 +7,16 @@
             <div class="actions row">
                 <div class="col-xs-6">
                     <RockButton v-if="showPrevious" btnType="default" @click="onPrevious">
-                        Previous
+                        <!-- LPC MODIFIED CODE -->
+                        {{ getLang() == "es" ? "Anterior" : "Previous" }}
+                        <!-- END LPC MODIFIED CODE -->
                     </RockButton>
                 </div>
                 <div class="col-xs-6 text-right">
                     <RockButton btnType="primary" type="submit">
-                        Next
+                        <!-- LPC MODIFIED CODE -->
+                        {{ getLang() == "es" ? "Siguiente" : "Next" }}
+                        <!-- END LPC MODIFIED CODE -->
                     </RockButton>
                 </div>
             </div>
@@ -26,6 +30,11 @@
     import RockButton from "@Obsidian/Controls/rockButton.obs";
     import RockForm from "@Obsidian/Controls/rockForm.obs";
     import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
 
     const emit = defineEmits<{
         (e: "next"): void,
@@ -75,6 +84,18 @@
     function onNext(): void {
         emit("next");
     }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 
     // #endregion
 

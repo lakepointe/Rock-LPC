@@ -1,11 +1,15 @@
 ﻿<!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
     <NotificationBox v-show="hasErrors" alertType="validation">
-        Please correct the following:
+        <!-- LPC MODIFIED CODE -->
+        {{ getLang() == "es" ? "Por favor, corregir lo siguiente:" : "Please correct the following:" }}
+        <!-- END LPC MODIFIED CODE -->
         <ul>
             <li v-for="error of errors">
                 <strong>{{ error.name }}</strong>
-                {{ error.text }}
+                <!-- LPC MODIFIED CODE -->
+                {{ (getLang() == "es" && error.text == "is required") ? "es necesario" : error.text }}
+                <!-- END LPC MODIFIED CODE -->
             </li>
         </ul>
     </NotificationBox>
@@ -15,6 +19,21 @@
     import NotificationBox from "./notificationBox.obs";
     import { computed, PropType } from "vue";
     import { FormError } from "@Obsidian/Utility/form";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 
     const props = defineProps({
         /** The errors that should be displayed. */

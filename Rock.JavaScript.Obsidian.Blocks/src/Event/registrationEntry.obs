@@ -49,6 +49,15 @@
             <NotificationBox v-else alertType="danger">Invalid State: '{{ currentStep }}'</NotificationBox>
 
             <SessionRenewal :isSessionExpired="isSessionExpired" @success="onSessionRenewalSuccess" />
+
+            <!-- LPC CODE -->
+            <component is="style">
+                .hide-label label.control-label, .SpanishLabel, .SpanishOption {
+                    display: none !important;
+                }
+                {{ generalTranslationStyles }}
+            </component>
+            <!-- END LPC CODE -->
         </template>
     </div>
 </template>
@@ -95,7 +104,9 @@
     const invokeBlockAction = useInvokeBlockAction();
     const config = useConfigurationValues<RegistrationEntryInitializationBox>();
     const notFound = !!config.registrationInstanceNotFoundMessage || !config.registrationAttributesStart;
-    const notFoundMessage = config.registrationInstanceNotFoundMessage || "The selected registration could not be found or is no longer active.";
+    // LPC MODIFIED CODE
+    const notFoundMessage = getLang() == "es" ? "La inscripción seleccionada no se encuentra o ya no está activa." : config.registrationInstanceNotFoundMessage || "The selected registration could not be found or is no longer active.";
+    // END LPC MODIFIED CODE
     const hasPreAttributes = (config.registrationAttributesStart?.length ?? 0) > 0;
     const hasPostAttributes = (config.registrationAttributesEnd?.length ?? 0) > 0;
 
@@ -136,6 +147,10 @@
             nickName: "",
             lastName: "",
             email: "",
+            // LPC CODE
+            mobilePhone: "",
+            preferredLanguage: "",
+            // END LPC CODE
             updateEmail: true,
             familyGuid: null
         },
@@ -221,15 +236,28 @@
     });
 
     const uppercaseRegistrantTerm = computed<string>(() => {
-        return StringFilter.toTitleCase(config.registrantTerm ?? "");
+        // LPC MODIFIED CODE
+        return StringFilter.toTitleCase(getLang() == "es" ? "persona" : config.registrantTerm ?? "");
+        // END LPC MODIFIED CODE
     });
 
     const currentRegistrantTitle = computed<string>(() => {
-        const ordinal = NumberFilter.toOrdinal(registrationEntryState.value.currentRegistrantIndex + 1);
-        let title = StringFilter.toTitleCase(
-            registrationEntryState.value.registrants.length <= 1 ?
-                uppercaseRegistrantTerm.value :
-                ordinal + " " + uppercaseRegistrantTerm.value);
+        // LPC MODIFIED CODE
+        const ordinal = NumberFilter.toOrdinal(registrationEntryState.value.currentRegistrantIndex + 1, getLang());
+        let title = "";
+        if (getLang() == "es") {
+            title = StringFilter.toTitleCase(
+                registrationEntryState.value.registrants.length <= 1 ?
+                    "Persona" :
+                    ordinal + " Persona");
+        }
+        else {
+            title = StringFilter.toTitleCase(
+                registrationEntryState.value.registrants.length <= 1 ?
+                    "Persona" :
+                    ordinal + " " + "Persona");
+        }
+        // END LPC MODIFIED CODE
 
         if (registrationEntryState.value.currentRegistrantFormIndex > 0) {
             title += " (cont)";
@@ -240,6 +268,12 @@
 
     const stepTitleHtml = computed<string>(() => {
         if (currentStep.value === Step.RegistrationStartForm) {
+            // LPC CODE
+            if (getLang() == "es") {
+                return "Información de Registro";
+            }
+            // END LPC CODE
+
             return config.registrationAttributeTitleStart ?? "";
         }
 
@@ -248,14 +282,37 @@
         }
 
         if (currentStep.value === Step.RegistrationEndForm) {
+            // LPC CODE
+            if (getLang() == "es") {
+                return "Información de Registro";
+            }
+            // END LPC CODE
+
             return config.registrationAttributeTitleEnd ?? "";
         }
 
         if (currentStep.value === Step.Review) {
+            // LPC CODE
+            if (getLang() == "es") {
+                return "Revisión de Registro";
+            }
+            // END LPC CODE
+
             return "Review Registration";
         }
 
         if (currentStep.value === Step.Success) {
+            // LPC CODE
+            if (getLang() == "es") {
+                let output = "Felicidades " + store.state.currentPerson?.nickName;
+                const englishTitle = registrationEntryState.value.successViewModel?.titleHtml || "";
+                if (englishTitle.toLowerCase().includes("almost there")) {
+                    output = "Casi Terminamos, " + store.state.currentPerson?.nickName;
+                }
+                return output;
+            }
+            // END LPC CODE
+
             return registrationEntryState.value.successViewModel?.titleHtml || "Congratulations";
         }
 
@@ -269,24 +326,30 @@
         if (registrationEntryState.value.firstStep === Step.Intro) {
             items.push({
                 key: "Start",
-                title: "Start",
-                subtitle: config.registrationTerm ?? ""
+                // LPC MODIFIED CODE
+                title: getLang() == "es" ? "Iniciar" : "Start",
+                subtitle: registrationTerm.value ?? ""
+                // END LPC MODIFIED CODE
             });
         }
 
         if (hasPreAttributes) {
             items.push({
                 key: "Pre",
-                title: config.registrationAttributeTitleStart ?? "",
-                subtitle: config.registrationTerm ?? ""
+                // LPC MODIFIED CODE
+                title: getLang() == "es" ? "Información de" : config.registrationAttributeTitleStart ?? "",
+                subtitle: registrationTerm.value ?? ""
+                // END LPC MODIFIED CODE
             });
         }
 
         if (!registrationEntryState.value.registrants.length) {
             items.push({
                 key: "Registrant",
-                title: toTitleCase(config.registrantTerm ?? ""),
-                subtitle: config.registrationTerm ?? ""
+                // LPC MODIFIED CODE
+                title: uppercaseRegistrantTerm.value ?? "",
+                subtitle: registrationTerm.value ?? ""
+                // END LPC MODIFIED CODE
             });
         }
 
@@ -304,8 +367,10 @@
             else {
                 items.push({
                     key: `Registrant-${registrant.guid}`,
-                    title: toTitleCase(config.registrantTerm ?? ""),
-                    subtitle: toTitleCase(toWord(i + 1))
+                    // LPC MODIFIED CODE
+                    title: toTitleCase(uppercaseRegistrantTerm.value ?? ""),
+                    subtitle: toTitleCase(toWord(i + 1, getLang()))
+                    // END LPC MODIFIED CODE
                 });
             }
         }
@@ -314,14 +379,18 @@
             items.push({
                 key: "Post",
                 title: config.registrationAttributeTitleEnd ?? "",
-                subtitle: config.registrationTerm ?? ""
+                // LPC MODIFIED CODE
+                subtitle: registrationTerm.value ?? ""
+                // END LPC MODIFIED CODE
             });
         }
 
         items.push({
             key: "Finalize",
-            title: "Finalize",
-            subtitle: config.registrationTerm ?? ""
+            // LPC MODIFIED CODE
+            title: getLang() == "es" ? "Finalizar" : "Finalize",
+            subtitle: registrationTerm.value ?? ""
+            // END LPC MODIFIED CODE
         });
 
         return items;
@@ -366,16 +435,31 @@
     });
 
     const registrationTerm = computed<string>(() => {
-        return (config.registrationTerm || "registration").toLowerCase();
+        // LPC MODIFIED CODE
+        return (getLang() == "es" ? "registro" : (config.registrationTerm || "registration")).toLowerCase();
+        // END LPC MODIFIED CODE
     });
 
     const registrationTermPlural = computed<string>(() => {
-        return (config.pluralRegistrationTerm || "registrations").toLowerCase();
+        // LPC MODIFIED CODE
+        return (getLang() == "es" ? "registros" : (config.pluralRegistrationTerm || "registrations")).toLowerCase();
+        // END LPC MODIFIED CODE
     });
 
     const registrationTermTitleCase = computed<string>(() => {
         return toTitleCase(registrationTerm.value);
     });
+
+    // LPC CODE
+    const generalTranslationStyles = computed<string>(() => {
+        if (getLang() == "es") {
+            return ".EnglishText { display: none !important; }";
+        }
+        else {
+            return ".SpanishText { display: none !important; }";
+        }
+    });
+    // END LPC CODE
 
     // #endregion
 
@@ -525,6 +609,18 @@
         registrationEntryState.value.navBack = false;
         scrollToTopAfterNextRender();
     }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 
     // #endregion
 

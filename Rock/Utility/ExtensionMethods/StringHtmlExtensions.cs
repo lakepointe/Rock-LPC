@@ -209,7 +209,7 @@ namespace Rock
         [RockObsolete( "1.16" )]
         public static bool IsValidEmail( this string email )
         {
-            Match match = Regex.Match( email, @"[\w\.\'_%-]+(\+[\w\.\'_%-]*)?@([\w-]+\.)+[\w-]+" ); // LPC change to improve + email address handling
+            Match match = Regex.Match( email, @"[\w\.\'_%-]+(\+[\w-]*)?@([\w-]+\.)+[\w-]+" );
             if ( !match.Success || match.Index != 0 )
             {
                 return false;

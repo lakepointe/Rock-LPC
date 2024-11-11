@@ -6,13 +6,17 @@
             <Registrar />
 
             <div v-if="hasPaymentCost">
-                <h4>Payment Summary</h4>
+                <!-- LPC MODIFIED CODE -->
+                <h4>{{ getLang() == "es" ? "Resumen de pago" : "Payment Summary" }}</h4>
+                <!-- END LPC MODIFIED CODE -->
                 <DiscountCodeForm />
                 <CostSummary />
             </div>
 
             <div v-else class="margin-b-md">
-                <p>The following {{ registrantOrRegistrantsTermLowerCase }} will be registered for {{ instanceName }}:</p>
+                <!-- LPC MODIFIED CODE -->
+                <p>{{ getLang() == "es" ? "La siguiente persona será registrada a" : `The following ${registrantOrRegistrantsTermLowerCase} will be registered for` }} {{ instanceName }}:</p>
+                <!-- END LPC MODIFIED CODE -->
                 <ul>
                     <li v-for="r in registrantInfos" :key="r.guid">
                         <strong>{{ r.firstName }} {{ r.lastName }}</strong>
@@ -24,7 +28,9 @@
 
             <div class="actions text-right">
                 <RockButton v-if="viewModel.allowRegistrationUpdates" class="pull-left" btnType="default" @click="onPrevious" :isLoading="loading" autoDisable>
-                    Previous
+                    <!-- LPC MODIFIED CODE -->
+                    {{ getLang() == "es" ? "Anterior" : "Previous" }}
+                        <!-- END LPC MODIFIED CODE -->
                 </RockButton>
                 <RockButton btnType="primary" type="submit" :isLoading="loading" autoDisable>
                     {{ finishButtonText }}
@@ -52,6 +58,11 @@
     import { useInvokeBlockAction } from "@Obsidian/Utility/block";
     import { RegistrationEntryInitializationBox } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrationEntryInitializationBox";
     import { RegistrationEntrySuccessBag } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrationEntrySuccessBag";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
 
     const getRegistrationEntryBlockArgs = use(GetPersistSessionArgs);
     const invokeBlockAction = useInvokeBlockAction();
@@ -162,10 +173,14 @@
     /** The text to be displayed on the "Finish" button */
     const finishButtonText = computed<string>(() => {
         if (isMakingPayment.value) {
-            return viewModel.value.isRedirectGateway ? "Pay" : "Next";
+            // LPC MODIFIED CODE
+            return viewModel.value.isRedirectGateway ? (getLang() == "es" ? "Pagar" : "Pay") : (getLang() == "es" ? "Siguiente" : "Next");
+            // END LPC MODIFIED CODE
         }
         else {
-            return "Finish";
+            // LPC MODIFIED CODE
+            return getLang() == "es" ? "Terminar" : "Finish";
+            // END LPC MODIFIED CODE
         }
     });
 
@@ -246,6 +261,18 @@
 
         return result.data || "";
     }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 
     // #endregion
 

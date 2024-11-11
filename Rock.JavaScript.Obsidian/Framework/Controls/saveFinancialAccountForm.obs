@@ -15,19 +15,31 @@
             </NotificationBox>
             <InlineCheckBox :label="saveAccountCheckBoxLabel" v-model="doSave" />
             <RockForm v-if="doSave" @submit="onSubmit">
-                <TextBox label="Name for the account" rules="required" v-model="savedAccountName" />
+                <!-- LPC MODIFIED CODE -->
+                <TextBox :label="getLang() == 'es' ? 'Nombre de la cuenta' : 'Name for the account'" rules="required" v-model="savedAccountName" />
+                <!-- END LPC MODIFIED CODE -->
                 <template v-if="isLoginCreationNeeded">
-                    <NotificationBox alertType="info">
+                    <!-- LPC MODIFIED CODE -->
+                    <NotificationBox v-if="getLang() == 'es'" alertType="info">
+                        <strong>Nota:</strong>
+                        Por seguridad, necesitarás iniciar sesión para usar tu información guardada. Para crear una cuenta,
+                        por favor provee un usuario y contraseña a continuación. Te enviaremos un email con la información
+                        de la cuenta como recordatorio.
+                    </NotificationBox>
+                    <NotificationBox v-else alertType="info">
                         <strong>Note:</strong>
                         For security purposes you will need to login to use your saved account information. To create
                         a login account please provide a user name and password below. You will be sent an email with
                         the account information above as a reminder.
                     </NotificationBox>
-                    <TextBox label="Username" v-model="username" rules="required" />
-                    <TextBox label="Password" v-model="password" type="password" rules="required" />
-                    <TextBox label="Confirm Password" v-model="confirmPassword" type="password" rules="required" />
+                    <TextBox :label="getLang() == 'es' ? 'Usuario' : 'Username'" v-model="username" rules="required" />
+                    <TextBox :label="getLang() == 'es' ? 'Contraseña' : 'Password'" v-model="password" type="password" rules="required" />
+                    <TextBox :label="getLang() == 'es' ? 'Confirmar Contraseña' : 'Confirm Password'" v-model="confirmPassword" type="password" rules="required" />
+                    <!-- END LPC MODIFIED CODE -->
                 </template>
-                <RockButton :isLoading="isLoading" btnType="primary" type="submit">Save Account</RockButton>
+                <!-- LPC MODIFIED CODE -->
+                <RockButton :isLoading="isLoading" btnType="primary" type="submit">{{ getLang() == "es" ? "Guardar Cuenta" : "Save Account" }}</RockButton>
+                <!-- END LPC MODIFIED CODE -->
             </RockForm>
         </template>
     </div>
@@ -65,7 +77,9 @@
         },
         saveAccountCheckBoxLabel: {
             type: String as PropType<string>,
-            default: "Save account information for future gifts"
+            // LPC MODIFIED CODE
+            default: getLang() == "es" ? "Guardar información para futuros pagos" : "Save account information for future gifts"
+            // END LPC MODIFIED CODE
         }
     });
 
@@ -136,4 +150,16 @@
 
         isLoading.value = false;
     }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 </script>

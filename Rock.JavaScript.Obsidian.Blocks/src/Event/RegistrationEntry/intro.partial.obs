@@ -2,21 +2,34 @@
 <template>
     <div class="registrationentry-intro">
         <NotificationBox v-if="isFull && numberToAddToWaitlist !== numberOfRegistrants" class="text-left" alertType="warning">
-            <strong>{{ registrationTermTitleCase }} Full</strong>
-            <p>
+            <!-- LPC MODIFIED CODE -->
+            <strong>{{ registrationTermTitleCase }} {{ getLang() == "es" ? "Lleno" : "Full" }}</strong>
+            <p v-if="getLang() == 'es'">
+                No hay más {{ registrationsTermLowerCase }} disponibles para {{ config.instanceName }}.
+            </p>
+            <p v-else>
                 There are not any more {{ registrationsTermLowerCase }} available for {{ config.instanceName }}.
             </p>
+            <!-- END LPC MODIFIED CODE -->
         </NotificationBox>
         <NotificationBox v-if="showRemainingCapacity" class="text-left" alertType="warning">
-            <strong>{{ registrationTermTitleCase }} Full</strong>
-            <p>
+            <!-- LPC MODIFIED CODE -->
+            <strong>{{ registrationTermTitleCase }} {{ getLang() == "es" ? "Lleno" : "Full" }}</strong>
+            <p v-if="getLang() == 'es'">
+                Este {{ registrationTermLowerCase }} solo tiene capacidad para {{ remainingCapacityPhrase }}.
+            </p>
+            <p v-else>
                 This {{ registrationTermLowerCase }} only has capacity for {{ remainingCapacityPhrase }}.
             </p>
+            <!-- END LPC MODIFIED CODE -->
         </NotificationBox>
         <div class="text-left" v-html="config.instructionsHtml">
         </div>
         <div v-if="config.maxRegistrants > 1" class="registrationentry-intro mb-3">
-            <h1>How many {{ registrantsTermLowerCase }} will you be registering?</h1>
+            <!-- LPC MODIFIED CODE -->
+            <h1 v-if="getLang() == 'es'">¿Cuántas {{ registrantsTermLowerCase }} estarás registrando?</h1>
+            <h1 v-else>How many {{ registrantsTermLowerCase }} will you be registering?</h1>
+            <!-- END LPC MODIFIED CODE -->
             <NumberUpDown v-model="numberOfRegistrants" class="margin-t-sm" numberIncrementClasses="input-lg" :max="config.maxRegistrants" />
         </div>
         <NotificationBox v-if="config.timeoutMinutes" alertType="info" class="text-left">
@@ -25,17 +38,31 @@
             of inactivity.
         </NotificationBox>
         <NotificationBox v-if="numberToAddToWaitlist === numberOfRegistrants" class="text-left" alertType="warning">
-            This {{ registrationTermLowerCase }} has reached its capacity. Complete the {{ registrationTermLowerCase }} to be added to the waitlist.
+            <!-- LPC MODIFIED CODE -->
+            <p v-if="getLang() == 'es'">Este {{ registrationTermLowerCase }} ha llegado a su capacidad. Si lo deseas, puedes completar el {{ registrationTermLowerCase }} para agregarte a una lista de espera.</p>
+            <p v-else>This {{ registrationTermLowerCase }} has reached its capacity. Complete the {{ registrationTermLowerCase }} to be added to the waitlist.</p>
+            <!-- END LPC MODIFIED CODE -->
         </NotificationBox>
         <NotificationBox v-else-if="numberToAddToWaitlist" class="text-left" alertType="warning">
-            This {{ registrationTermLowerCase }} only has capacity for {{ remainingCapacityPhrase }}.
-            The first {{ pluralConditional(config.spotsRemaining ?? 0, registrantTermLowerCase, config.spotsRemaining + ' ' + registrantsTermLowerCase) }} you add will be registered for {{ config.instanceName }}.
-            The remaining {{ pluralConditional(numberToAddToWaitlist, registrantTermLowerCase, numberToAddToWaitlist + ' ' + registrantsTermLowerCase) }} will be added to the waitlist.
+            <!-- LPC MODIFIED CODE -->
+            <p v-if="getLang() == 'es'">
+                Este {{ registrationTermLowerCase }} solo tiene capacidad para {{ remainingCapacityPhrase }}.
+                La primera {{ pluralConditional(config.spotsRemaining ?? 0, registrantTermLowerCase, config.spotsRemaining + ' ' + registrantsTermLowerCase) }} que agregue se registrará para {{ config.instanceName }}.
+                El resto se agregarán a la lista de espera.
+            </p>
+            <p v-else>
+                This {{ registrationTermLowerCase }} only has capacity for {{ remainingCapacityPhrase }}.
+                The first {{ pluralConditional(config.spotsRemaining ?? 0, registrantTermLowerCase, config.spotsRemaining + ' ' + registrantsTermLowerCase) }} you add will be registered for {{ config.instanceName }}.
+                The remaining {{ pluralConditional(numberToAddToWaitlist, registrantTermLowerCase, numberToAddToWaitlist + ' ' + registrantsTermLowerCase) }} will be added to the waitlist.
+            </p>
+            <!-- END LPC MODIFIED CODE -->
         </NotificationBox>
 
         <div v-if="canContinue" class="actions text-right">
             <RockButton btnType="primary" @click="onNext">
-                Next
+                <!-- LPC MODIFIED CODE -->
+                {{ getLang() == "es" ? "Siguiente" : "Next" }}
+                <!-- END LPC MODIFIED CODE -->
             </RockButton>
         </div>
     </div>
@@ -108,6 +135,12 @@
             return "";
         }
 
+        // LPC CODE
+        if (getLang() == "es") {
+            return pluralConditional(spotsRemaining.value, `1 ${registrantTermLowerCase.value} más`, `${spotsRemaining.value} ${registrantsTermLowerCase.value} más`);
+        }
+        // END LPC CODE
+
         return pluralConditional(spotsRemaining.value, `1 more ${registrantTermLowerCase.value}`, `${spotsRemaining.value} more ${registrantsTermLowerCase.value}`);
     });
 
@@ -127,27 +160,37 @@
 
     /** The registrant term (singular) (lower case). */
     const registrantTermLowerCase = computed<string>(() => {
-        return registrationEntryState.viewModel.registrantTerm?.toLowerCase() || "registrant";
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "persona" : (registrationEntryState.viewModel.registrantTerm?.toLowerCase() || "registrant");
+        // END LPC MODIFIED CODE
     });
 
     /** The registrants term (plural) (lower case). */
     const registrantsTermLowerCase = computed<string>(() => {
-        return registrationEntryState.viewModel.pluralRegistrantTerm?.toLowerCase() || "registrants";
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "personas" : (registrationEntryState.viewModel.pluralRegistrantTerm?.toLowerCase() || "registrants");
+        // END LPC MODIFIED CODE
     });
 
     /** The registration term (singular) (lower case). */
     const registrationTermLowerCase = computed<string>(() => {
-        return registrationEntryState.viewModel.registrationTerm?.toLowerCase() || "registration";
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "registro" : (registrationEntryState.viewModel.registrationTerm?.toLowerCase() || "registration");
+        // END LPC MODIFIED CODE
     });
 
     /** The registrations term (plural) (lower case). */
     const registrationsTermLowerCase = computed<string>(() => {
-        return registrationEntryState.viewModel.pluralRegistrationTerm?.toLowerCase() || "registrations";
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "registros" : (registrationEntryState.viewModel.pluralRegistrationTerm?.toLowerCase() || "registrations");
+        // END LPC MODIFIED CODE
     });
 
     /** The registration term (singular) (title case). */
     const registrationTermTitleCase = computed<string>(() => {
-        return toTitleCase(registrationEntryState.viewModel.registrationTerm ?? null) || "Registration";
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "Registro" : (toTitleCase(registrationEntryState.viewModel.registrationTerm ?? null) || "Registration");
+        // END LPC MODIFIED CODE
     });
 
     // #endregion
@@ -185,6 +228,18 @@
 
         emit("next");
     }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 
     // #endregion
 

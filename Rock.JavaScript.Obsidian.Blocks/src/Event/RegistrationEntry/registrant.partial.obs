@@ -5,11 +5,15 @@
             <template v-if="isDataForm">
                 <template v-if="currentFormIndex === 0">
                     <div v-if="familyOptions.length > 1" class="well">
-                        <RadioButtonList :label="`${firstName || registrantTermTitleCase} is in the same ${viewModel.familyTerm || 'immediate family'} as`" rules="required" :modelValue="currentRegistrant.familyGuid ?? undefined" @update:modelValue="onSetFamilyGuid" :items="familyOptions" validationTitle="Family" />
+                        <!-- LPC MODIFIED CODE -->
+                        <RadioButtonList :label="`${firstName || registrantTermTitleCase} ${getLang() == 'es' ? 'está en la misma familia inmediata que' : `is in the same ${viewModel.familyTerm || 'immediate family'} as`}`" rules="required" :modelValue="currentRegistrant.familyGuid ?? undefined" @update:modelValue="onSetFamilyGuid" :items="familyOptions" validationTitle="Family" />
+                        <!-- END LPC MODIFIED CODE -->
                     </div>
                     <div v-if="isFamilyMembersDropDownVisible" class="row">
                         <div class="col-md-6">
-                            <DropDownList :modelValue="currentRegistrant.personGuid ?? ''" @update:modelValue="onSetPersonGuid" :items="familyMemberOptions" label="Family Member to Register" />
+                            <!-- LPC MODIFIED CODE -->
+                            <DropDownList :modelValue="currentRegistrant.personGuid ?? ''" @update:modelValue="onSetPersonGuid" :items="familyMemberOptions" :label="getLang() == 'es' ? 'Miembro de la familia para registrarse' : 'Family Member to Register'" />
+                            <!-- END LPC MODIFIED CODE -->
                         </div>
                     </div>
                 </template>
@@ -38,7 +42,10 @@
             </template>
 
             <div v-if="isSignatureForm" class="registrant-signature-document styled-scroll">
-                <h2 class="signature-header">Please Sign the {{ signatureDocumentTermTitleCase }} for {{ firstName }}</h2>
+                <!-- LPC MODIFIED CODE -->
+                <h2 class="signature-header" v-if="getLang() == 'es'">Por favor firma la exoneración para {{ firstName }}</h2>
+                <h2 class="signature-header" v-else>Please Sign the {{ signatureDocumentTermTitleCase }} for {{ firstName }}</h2>
+                <!-- END LPC MODIFIED CODE -->
                 <div class="signaturedocument-container">
                     <iframe src="javascript: window.frameElement.getAttribute('srcdoc');" onload="this.style.height = this.contentWindow.document.body.scrollHeight + 'px'" class="signaturedocument-iframe" border="0" frameborder="0" :srcdoc="signatureSource"></iframe>
                 </div>
@@ -51,12 +58,16 @@
             <div class="actions row">
                 <div class="col-xs-6">
                     <RockButton v-if="showPrevious" btnType="default" @click="onPrevious">
-                        Previous
+                        <!-- LPC MODIFIED CODE -->
+                        {{ getLang() == "es" ? "Anterior" : "Next" }}
+                        <!-- END LPC MODIFIED CODE -->
                     </RockButton>
                 </div>
                 <div class="col-xs-6 text-right">
                     <RockButton v-if="isNextVisible" btnType="primary" type="submit" :disabled="isNextDisabled">
-                        Next
+                        <!-- LPC MODIFIED CODE -->
+                        {{ getLang() == "es" ? "Siguiente" : "Next" }}
+                        <!-- END LPC MODIFIED CODE -->
                     </RockButton>
                 </div>
             </div>
@@ -100,6 +111,9 @@
     import { Gender, GenderDescription } from "@Obsidian/Enums/Crm/gender";
     import { toNumber } from "@Obsidian/Utility/numberUtils";
     import { AddressControlBag } from "@Obsidian/ViewModels/Controls/addressControlBag";
+    // LPC CODE
+    import Page from "@Obsidian/Utility/page";
+    // END LPC CODE
 
     const props = defineProps({
         currentRegistrant: {
@@ -223,8 +237,69 @@
 
     /** The filtered fields to show on the current form */
     const currentFormFields = computed<RegistrationEntryFormFieldBag[]>(() => {
-        return (currentForm.value?.fields || [])
+        // LPC MODIFIED CODE
+        var formFields = (currentForm.value?.fields || [])
             .filter(f => !props.isWaitList || f.showOnWaitList);
+        
+        if (getLang() == "es") {
+            // Get Translations
+            var optionTranslations = new Map();
+            var allFields = currentForm.value?.fields || [];
+            // Search all fields' Pre-HTML for elements with the class "SpanishOption"
+            // For each element found, add its "option" attribute and its text content to the optionTranslations dictionary
+            for (let i = 0; i < allFields.length; i++) {
+                var el = document.createElement('div');
+                if (allFields[i] != null && allFields[i].preHtml != null) {
+                    el.innerHTML = allFields[i].preHtml ?? "";
+                    let options = el.getElementsByClassName("SpanishOption");
+                    for (var j = 0; j < options.length; j++) {
+                        optionTranslations.set(options[j].getAttribute("option"), options[j].textContent);
+                    }
+                }
+            }
+            // Translate Options
+            for (var x = 0; x < formFields.length; x++) {
+                if (formFields[x] != null && formFields[x].attribute != null && formFields[x].attribute!.configurationValues != null) {
+                    var configValues = formFields[x].attribute!.configurationValues ?? {};
+                    var values = configValues["values"];
+                    var trueText = configValues["truetext"];
+                    var falseText = configValues["falsetext"];
+                    // Handle Booleans
+                    if (trueText != null && trueText != "") {
+                        if (optionTranslations.has(trueText)) {
+                            formFields[x].attribute!.configurationValues!["truetext"] = optionTranslations.get(trueText);
+                        }
+                    }
+                    if (falseText != null && falseText != "") {
+                        if (optionTranslations.has(falseText)) {
+                            formFields[x].attribute!.configurationValues!["falsetext"] = optionTranslations.get(falseText);
+                        }
+                    }
+                    // Expected values examples:
+                    // [{"value":"1","text":"One"},{"value":"2","text":"Two"},{"value":"3","text":"Three"}]
+                    // [{"value":"1","text":"One","description":"The first value"},{"value":"2","text":"Two","description":"The second value"},{"value":"3","text":"Three","description":"The third value"}]
+                    if (values != null && values != "" && values.includes("value") && values.includes("text")) {
+                        let valuesObjects = JSON.parse(values);
+                        for (var y = 0; y < valuesObjects.length; y++) {
+                            if (valuesObjects[y].hasOwnProperty('text')) {
+                                let originalText = valuesObjects[y].text;
+                                if (optionTranslations.has(originalText)) {
+                                    valuesObjects[y].text = optionTranslations.get(originalText);
+                                    if (valuesObjects[y].hasOwnProperty('description')) {
+                                        valuesObjects[y].description = optionTranslations.get(originalText);
+                                    }
+                                }
+                            }
+                        }
+                        // Replace values property with the results
+                        formFields[x].attribute!.configurationValues!["values"] = JSON.stringify(valuesObjects);
+                    }
+                }
+            }
+        }
+
+        return formFields;
+        // END LPC MODIFIED CODE
     });
 
     /** The filtered fields to show on the current form augmented to remove pre/post HTML from non-visible fields */
@@ -273,6 +348,9 @@
             .map(f => ({
                 preHtml: f.preHtml ?? "",
                 postHtml: f.postHtml ?? "",
+                // LPC CODE
+                required: f.isRequired,
+                // END LPC CODE
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 slotName: f.guid!
             }));
@@ -326,7 +404,9 @@
             ? newGuid()
             : props.currentRegistrant.familyGuid;
         options.push({
-            text: "None of the above",
+            // LPC MODIFIED CODE
+            text: getLang() == "es" ? "Ninguno de los anteriores" : "None of the above",
+            // END LPC MODIFIED CODE
             value: familyGuid
         });
 
@@ -379,7 +459,9 @@
 
     /** The registrant term (singular) (title case). */
     const registrantTermTitleCase = computed<string>(() => {
-        return toTitleCase(viewModel.value.registrantTerm ?? null) || "Registrant";
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "Registrante" : (toTitleCase(viewModel.value.registrantTerm ?? null) || "Registrant");
+        // END LPC MODIFIED CODE
     });
 
     const firstName = computed<string>(() => {
@@ -810,6 +892,32 @@
         }
     }
 
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+
+    function disableScroll(): void {
+        // Get the current page scroll position
+        let yPos = window.scrollY;
+        let xPos = window.scrollX;
+        // if any scroll is attempted, set this to the previous value
+        window.onscroll = function () {
+            window.scrollTo(xPos, yPos);
+        };
+    }
+
+    function enableScroll(): void {
+        window.onscroll = function () { };
+    }
+    // END LPC CODE
+
     // #endregion
 
     // #region Watchers
@@ -852,6 +960,14 @@
             copyValuesFromFamilyMember(clearRegistrantFieldWhenFamilyFieldEmpty);
         }
     });
+
+    // LPC CODE
+    watch(prePostHtmlItems, (newValue, oldValue) => {
+        // Disable scroll during the rerender
+        disableScroll();
+        setTimeout(() => enableScroll());
+    });
+    // END LPC CODE
 
     // #endregion
 

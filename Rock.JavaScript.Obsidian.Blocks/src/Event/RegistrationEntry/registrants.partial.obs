@@ -2,10 +2,16 @@
 <template>
     <div class="registrationentry-registrant">
         <NotificationBox v-if="hasWaitlist && !isOnWaitlist" alertType="success">
-            This {{ registrantTermLowerCase }} will be fully registered.
+            <!-- LPC MODIFIED CODE -->
+            <p v-if="getLang() == 'es'">Esta {{ registrantTermLowerCase }} estará completamente registrada.</p>
+            <p v-else>This {{ registrantTermLowerCase }} will be fully registered.</p>
+            <!-- END LPC MODIFIED CODE -->
         </NotificationBox>
         <NotificationBox v-else-if="isOnWaitlist" alertType="warning">
-            This {{ registrantTermLowerCase }} will be on the waiting list.
+            <!-- LPC MODIFIED CODE -->
+            <p v-if="getLang() == 'es'">Esta {{ registrantTermLowerCase }} estará en la lista de espera.</p>
+            <p v-else>This {{ registrantTermLowerCase }} will be on the waiting list.</p>
+            <!-- END LPC MODIFIED CODE -->
         </NotificationBox>
         <template v-for="(r, i) in registrants" :key="r.guid">
             <Registrant v-show="currentRegistrantIndex === i" :currentRegistrant="r" :isWaitList="isOnWaitlist" @next="onNext" @previous="onPrevious" />
@@ -18,6 +24,11 @@
     import { CurrentRegistrationEntryState, PersistSession, scrollToTopAfterNextRender, use } from "./utils.partial";
     import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
     import { RegistrantBag } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrantBag";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
 
     const registrationEntryState = use(CurrentRegistrationEntryState);
     const persistSession = use(PersistSession);
@@ -115,6 +126,18 @@
             }
         }
     }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 
     // #endregion
 

@@ -2,9 +2,13 @@
 <template>
     <div class="registrationentry-payment">
         <RockForm @submit="onNext">
-            <h4>Payment Information</h4>
+            <!-- LPC MODIFIED CODE -->
+            <h4>{{ getLang() == "es" ? "Información De Pago" : "Payment Information" }}</h4>
+            <!-- END LPC MODIFIED CODE -->
             <div>
-                Payment Amount: {{ amountToPayText }}
+                <!-- LPC MODIFIED CODE -->
+                {{ getLang() == "es" ? "Cantidad de Pago" : "Payment Amount" }}: {{ amountToPayText }}
+                <!-- END LPC MODIFIED CODE -->
             </div>
 
             <hr />
@@ -52,7 +56,9 @@
                 </RockButton>
 
                 <RockButton v-if="gatewayControlModel" btnType="primary" type="submit" :isLoading="loading" autoDisable>
-                    Pay
+                    <!-- LPC MODIFIED CODE -->
+                    {{ getLang() == "es" ? "Pagar" : "Pay" }}
+                    <!-- END LPC MODIFIED CODE -->
                 </RockButton>
             </div>
         </RockForm>
@@ -74,6 +80,11 @@
     import { GatewayControlBag } from "@Obsidian/ViewModels/Controls/gatewayControlBag";
     import { SavedFinancialAccountListItemBag } from "@Obsidian/ViewModels/Finance/savedFinancialAccountListItemBag";
     import { RegistrationEntryInitializationBox } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrationEntryInitializationBox";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
 
     const submitPayment = provideSubmitPayment();
     const getRegistrationEntryBlockArgs = use(GetPersistSessionArgs);
@@ -308,6 +319,18 @@
 
         return result.isSuccess;
     }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
 
     // #endregion
 </script>
