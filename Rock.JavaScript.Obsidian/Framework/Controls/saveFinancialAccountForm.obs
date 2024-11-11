@@ -13,7 +13,7 @@
                 <strong v-if="errorTitle">{{ errorTitle }}:</strong>
                 {{ errorMessage }}
             </NotificationBox>
-            <InlineCheckBox :label="saveAccountCheckBoxLabel" v-model="doSave" />
+            <InlineCheckBox :label="getLang() == 'es' ? 'Guardar información para futuros pagos' : saveAccountCheckBoxLabel" v-model="doSave" />
             <RockForm v-if="doSave" @submit="onSubmit">
                 <!-- LPC MODIFIED CODE -->
                 <TextBox :label="getLang() == 'es' ? 'Nombre de la cuenta' : 'Name for the account'" rules="required" v-model="savedAccountName" />
@@ -77,9 +77,7 @@
         },
         saveAccountCheckBoxLabel: {
             type: String as PropType<string>,
-            // LPC MODIFIED CODE
-            default: getLang() == "es" ? "Guardar información para futuros pagos" : "Save account information for future gifts"
-            // END LPC MODIFIED CODE
+            default: "Save account information for future gifts"
         }
     });
 

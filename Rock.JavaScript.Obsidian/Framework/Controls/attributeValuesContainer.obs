@@ -278,7 +278,10 @@
                 items[ac.guid].push({
                     slotName: attr.attributeGuid,
                     preHtml,
-                    postHtml
+                    postHtml,
+                    // LPC CODE
+                    isRequired: attr.isRequired
+                    // END LPC CODE
                 });
             });
         });

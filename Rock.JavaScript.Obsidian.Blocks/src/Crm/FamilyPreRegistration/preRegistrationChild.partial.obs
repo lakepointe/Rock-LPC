@@ -272,7 +272,7 @@
     import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
     // LPC CODE
     import ImageTaker from "@Obsidian/Controls/imageTaker.obs";
-    import Toggle from "@Obsidian/Controls/toggle";
+    import Toggle from "@Obsidian/Controls/toggle.obs";
     import { useStore } from "@Obsidian/PageState";
     import { onMounted } from "vue";
 

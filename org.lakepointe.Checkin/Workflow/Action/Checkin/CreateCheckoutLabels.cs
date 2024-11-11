@@ -67,7 +67,7 @@ namespace org.lakepointe.Checkin.Workflow.Action.Checkin
 
                     foreach ( var person in family.CheckOutPeople.Where( p => p.Selected ) )
                     {
-                        person.Labels = new List<CheckInLabel>();
+                        person.Labels = new List<Rock.CheckIn.CheckInLabel>();
 
                         var attendanceRecs = attendanceService
                             .Queryable()
@@ -133,7 +133,7 @@ namespace org.lakepointe.Checkin.Workflow.Action.Checkin
                                         mergeObjects.Add( "Checkout", "true" );
 
                                         //string debugInfo = mergeObjects.lavaDebugInfo();
-                                        var label = new CheckInLabel( labelCache, mergeObjects, person.Person.Id );
+                                        var label = new Rock.CheckIn.CheckInLabel( labelCache, mergeObjects, person.Person.Id );
                                         label.LabelKey = string.Format( "{0}:{1}:{2}", attendanceRec.Occurrence.Group.Id, attendanceRec.Occurrence.Location.Id, labelCache.Guid );
                                         label.FileGuid = labelCache.Guid;
                                         label.PrintFrom = checkInState.Kiosk.Device.PrintFrom;

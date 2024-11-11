@@ -405,7 +405,7 @@ namespace Rock.Blocks.Event
         /// <param name="args">The arguments.</param>
         /// <returns>The person's mobile phone number.</returns>
         [BlockAction]
-        public BlockActionResult GetMobilePhone( RegistrationEntryBlockArgs args )
+        public BlockActionResult GetMobilePhone( RegistrationEntryArgsBag args )
         {
             using ( var rockContext = new RockContext() )
             {
@@ -437,7 +437,7 @@ namespace Rock.Blocks.Event
         /// <param name="args">The arguments.</param>
         /// <returns>The person's preferred language.</returns>
         [BlockAction]
-        public BlockActionResult GetPreferredLanguage( RegistrationEntryBlockArgs args )
+        public BlockActionResult GetPreferredLanguage( RegistrationEntryArgsBag args )
         {
             using ( var rockContext = new RockContext() )
             {
