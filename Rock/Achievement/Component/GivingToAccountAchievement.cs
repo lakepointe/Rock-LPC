@@ -155,7 +155,7 @@ namespace Rock.Achievement.Component
             var includeChildAccounts = GetAttributeValue( achievementTypeCache, AttributeKey.IncludeChildFinancialAccounts ).AsBoolean();
             if ( includeChildAccounts )
             {
-                financialAccountIds.AddRange( FinancialAccountCache.Get( accountId.Value ).ChildAccounts.Select( x => x.Id ) );
+                financialAccountIds.AddRange( FinancialAccountCache.Get( accountId.Value ).GetDescendentFinancialAccountIds() );
             }
 
             return details.Any( t => financialAccountIds.Contains( t.AccountId ) );
@@ -378,6 +378,12 @@ namespace Rock.Achievement.Component
         public override string GetSourceName( AchievementTypeCache achievementTypeCache )
         {
             return GetFinancialAccountName( achievementTypeCache );
+        }
+
+        /// <inheritdoc/>
+        protected internal override int? GetTargetCount( AchievementType achievementType )
+        {
+            return achievementType.GetAttributeValue( AttributeKey.NumberToAccumulate ).AsIntegerOrNull();
         }
 
         #region Helpers

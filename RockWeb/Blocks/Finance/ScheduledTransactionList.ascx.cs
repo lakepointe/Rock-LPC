@@ -70,6 +70,13 @@ namespace RockWeb.Blocks.Finance
         Order = 4,
         Key = AttributeKey.PersonTokenUsageLimit )]
 
+    [BooleanField( "Show Transaction Type Column",
+        Description = "Show the Transaction Type column.",
+        IsRequired = false,
+        DefaultBooleanValue = false,
+        Order = 5,
+        Key = AttributeKey.ShowTransactionTypeColumn )]
+
     [ContextAware]
     [Rock.SystemGuid.BlockTypeGuid( "694FF260-8C6F-4A59-93C9-CF3793FE30E6" )]
     public partial class ScheduledTransactionList : RockBlock, ISecondaryBlock, ICustomGridColumns
@@ -101,6 +108,10 @@ namespace RockWeb.Blocks.Finance
             /// The person token usage limit
             /// </summary>
             public const string PersonTokenUsageLimit = "PersonTokenUsageLimit";
+            /// <summary>
+            /// The show transaction type column attribute key
+            /// </summary>
+            public const string ShowTransactionTypeColumn = "ShowTransactionTypeColumn";
         }
 
         #endregion Keys
@@ -192,11 +203,11 @@ namespace RockWeb.Blocks.Finance
         /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>
         protected void gfSettings_ApplyFilterClick( object sender, EventArgs e )
         {
-            gfSettings.SaveUserPreference( "Amount", nreAmount.DelimitedValues );
-            gfSettings.SaveUserPreference( "Frequency", dvpFrequency.SelectedValue != All.Id.ToString() ? dvpFrequency.SelectedValue : string.Empty );
-            gfSettings.SaveUserPreference( "Created", drpDates.DelimitedValues );
-            gfSettings.SaveUserPreference( "Account", ddlAccount.SelectedValue != All.Id.ToString() ? ddlAccount.SelectedValue : string.Empty );
-            gfSettings.SaveUserPreference( "Include Inactive", cbIncludeInactive.Checked ? "Yes" : string.Empty );
+            gfSettings.SetFilterPreference( "Amount", nreAmount.DelimitedValues );
+            gfSettings.SetFilterPreference( "Frequency", dvpFrequency.SelectedValue != All.Id.ToString() ? dvpFrequency.SelectedValue : string.Empty );
+            gfSettings.SetFilterPreference( "Created", drpDates.DelimitedValues );
+            gfSettings.SetFilterPreference( "Account", ddlAccount.SelectedValue != All.Id.ToString() ? ddlAccount.SelectedValue : string.Empty );
+            gfSettings.SetFilterPreference( "Include Inactive", cbIncludeInactive.Checked ? "Yes" : string.Empty );
             BindGrid();
         }
 
@@ -316,17 +327,17 @@ namespace RockWeb.Blocks.Finance
         /// </summary>
         private void BindFilter()
         {
-            nreAmount.DelimitedValues = gfSettings.GetUserPreference( "Amount" );
+            nreAmount.DelimitedValues = gfSettings.GetFilterPreference( "Amount" );
 
             dvpFrequency.DefinedTypeId = DefinedTypeCache.Get( Rock.SystemGuid.DefinedType.FINANCIAL_FREQUENCY.AsGuid() ).Id;
             dvpFrequency.Items.Insert( 0, new ListItem( string.Empty, string.Empty ) );
-            string freqPreference = gfSettings.GetUserPreference( "Frequency" );
+            string freqPreference = gfSettings.GetFilterPreference( "Frequency" );
             if ( !string.IsNullOrWhiteSpace( freqPreference ) )
             {
                 dvpFrequency.SetValue( freqPreference );
             }
 
-            drpDates.DelimitedValues = gfSettings.GetUserPreference( "Created" );
+            drpDates.DelimitedValues = gfSettings.GetFilterPreference( "Created" );
 
             var accountService = new FinancialAccountService( new RockContext() );
             var accounts = accountService
@@ -338,11 +349,11 @@ namespace RockWeb.Blocks.Finance
             foreach ( FinancialAccount account in accounts.OrderBy( a => a.Order ) )
             {
                 ListItem li = new ListItem( account.Name, account.Id.ToString() );
-                li.Selected = account.Id.ToString() == gfSettings.GetUserPreference( "Account" );
+                li.Selected = account.Id.ToString() == gfSettings.GetFilterPreference( "Account" );
                 ddlAccount.Items.Add( li );
             }
 
-            cbIncludeInactive.Checked = !string.IsNullOrWhiteSpace( gfSettings.GetUserPreference( "Include Inactive" ) );
+            cbIncludeInactive.Checked = !string.IsNullOrWhiteSpace( gfSettings.GetFilterPreference( "Include Inactive" ) );
         }
 
         /// <summary>
@@ -374,8 +385,34 @@ namespace RockWeb.Blocks.Finance
             {
                 var rockContext = new RockContext();
                 var qry = new FinancialScheduledTransactionService( rockContext )
-                    .Queryable( "ScheduledTransactionDetails,FinancialPaymentDetail.CurrencyTypeValue,FinancialPaymentDetail.CreditCardTypeValue" )
-                    .AsNoTracking();
+                    .Queryable()
+                    .Include( t => t.ScheduledTransactionDetails )
+                    .Include( t => t.FinancialPaymentDetail.CurrencyTypeValue )
+                    .Include( t => t.FinancialPaymentDetail.CreditCardTypeValue );
+
+                // Show/hide the "Transaction Type" column.
+                var dvfTransactionTypeValue = gList.ColumnsOfType<DefinedValueField>().FirstOrDefault( c => c.DataField == "TransactionTypeValueId" );
+                if ( GetAttributeValue( AttributeKey.ShowTransactionTypeColumn ).AsBoolean() )
+                {
+                    // Include the TransactionTypeValue when the column should be shown.
+                    qry = qry.Include( t => t.TransactionTypeValue );
+
+                    if ( dvfTransactionTypeValue != null )
+                    {
+                        // Show the column.
+                        dvfTransactionTypeValue.Visible = true;
+                    }
+                }
+                else
+                {
+                    if ( dvfTransactionTypeValue != null )
+                    {
+                        // Hide the column.
+                        dvfTransactionTypeValue.Visible = false;
+                    }
+                }
+
+                qry = qry.AsNoTracking();
 
                 // Valid Accounts
                 var accountGuids = GetAttributeValue( AttributeKey.Accounts ).SplitDelimitedValues().AsGuidList();
@@ -386,7 +423,7 @@ namespace RockWeb.Blocks.Finance
 
                 // Amount Range
                 var nre = new NumberRangeEditor();
-                nre.DelimitedValues = gfSettings.GetUserPreference( "Amount" );
+                nre.DelimitedValues = gfSettings.GetFilterPreference( "Amount" );
                 if ( nre.LowerValue.HasValue )
                 {
                     qry = qry.Where( t => t.ScheduledTransactionDetails.Sum( d => d.Amount ) >= nre.LowerValue.Value );
@@ -398,7 +435,7 @@ namespace RockWeb.Blocks.Finance
                 }
 
                 // Frequency
-                int? frequencyTypeId = gfSettings.GetUserPreference( "Frequency" ).AsIntegerOrNull();
+                int? frequencyTypeId = gfSettings.GetFilterPreference( "Frequency" ).AsIntegerOrNull();
                 if ( frequencyTypeId.HasValue )
                 {
                     qry = qry.Where( t => t.TransactionFrequencyValueId == frequencyTypeId.Value );
@@ -406,7 +443,7 @@ namespace RockWeb.Blocks.Finance
 
                 // Date Range
                 var drp = new DateRangePicker();
-                drp.DelimitedValues = gfSettings.GetUserPreference( "Created" );
+                drp.DelimitedValues = gfSettings.GetFilterPreference( "Created" );
                 if ( drp.LowerValue.HasValue )
                 {
                     qry = qry.Where( t => t.CreatedDateTime >= drp.LowerValue.Value );
@@ -420,13 +457,13 @@ namespace RockWeb.Blocks.Finance
 
                 // Account Id
                 int accountId = int.MinValue;
-                if ( int.TryParse( gfSettings.GetUserPreference( "Account" ), out accountId ) && ddlAccount.Visible )
+                if ( int.TryParse( gfSettings.GetFilterPreference( "Account" ), out accountId ) && ddlAccount.Visible )
                 {
                     qry = qry.Where( t => t.ScheduledTransactionDetails.Any( d => d.AccountId == accountId ) );
                 }
 
                 // Active only (no filter)
-                if ( string.IsNullOrWhiteSpace( gfSettings.GetUserPreference( "Include Inactive" ) ) )
+                if ( string.IsNullOrWhiteSpace( gfSettings.GetFilterPreference( "Include Inactive" ) ) )
                 {
                     qry = qry.Where( t => t.IsActive );
                 }

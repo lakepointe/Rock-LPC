@@ -39,6 +39,7 @@ namespace Rock.Migrations.RockStartup
         /// </summary>
         public static List<Guid> startupRunOnceJobGuids = new List<Guid>
         {
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_170_CHOP_SHORTENED_LINKS_BLOCK.AsGuid(),
             SystemGuid.ServiceJob.DATA_MIGRATIONS_120_UPDATE_INTERACTION_INDEXES.AsGuid(),
             SystemGuid.ServiceJob.DATA_MIGRATIONS_120_ADD_COMMUNICATIONRECIPIENT_INDEX.AsGuid(),
             SystemGuid.ServiceJob.DATA_MIGRATIONS_120_ADD_COMMUNICATION_GET_QUEUED_INDEX.AsGuid(),
@@ -63,6 +64,32 @@ namespace Rock.Migrations.RockStartup
             SystemGuid.ServiceJob.DATA_MIGRATIONS_150_MOBILE_APPLICATION_USERS_REST_GROUP.AsGuid(),
             SystemGuid.ServiceJob.DATA_MIGRATIONS_151_DUPLICATE_MOBILE_INTERACTIONS_CLEANUP.AsGuid(),
             SystemGuid.ServiceJob.DATA_MIGRATIONS_150_REPLACE_WEB_FORMS_BLOCKS_WITH_OBSIDIAN_BLOCKS.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_152_REPLACE_WEB_FORMS_BLOCKS_WITH_OBSIDIAN_BLOCKS.AsGuid(),
+			SystemGuid.ServiceJob.DATA_MIGRATIONS_152_IX_VALUE_AS_PERSON_ID.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_154_UPDATE_AGE_BRACKET_VALUES.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_MOVE_PERSON_PREFERENCES.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_UPDATE_INTERACTION_SESSION_SESSION_START_DATE_KEY.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_UPDATE_INTERACTION_SESSION_INTERACTION_CHANNEL_ID.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_UPDATE_INTERACTION_SESSION_AND_INTERACTION_INDICES.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_POPULATE_INTERACTION_SESSION_DATA.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_UPDATE_PERSON_PRIMARY_PERSON_ALIAS_ID.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_UPDATE_WORKFLOWID_COLUMNS.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_UPDATE_NOTE_DATA.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_SWAP_NOTES_BLOCK.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_CHOP_BLOCKS_GROUP_1.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_CHOP_BLOCKS_GROUP_REGISTRATION.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_160_UPDATE_MEDIA_ELEMENT_DEFAULT_URLS.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_161_SWAP_FINANCIAL_BATCH_LIST.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_161_SWAP_BLOCK_GROUP_SCHEDULE_TOOLBOX_V1.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_161_CHOP_BLOCK_GROUP_SCHEDULE_TOOLBOX_V2.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_161_REMOVE_OBSIDIAN_GROUP_SCHEDULE_TOOLBOX_BACK_BUTTONS.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_161_CHOP_ACCOUNTENTRY_AND_LOGIN.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_161_CHOP_SECURITY_BLOCKS.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_162_CHOP_EMAIL_PREFERENCE_ENTRY.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_166_UPDATE_ACHIEVEMENTTYPE_TARGETCOUNT_COLUMN.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_166_ADD_INTERACTION_CREATED_DATE_TIME_INDEX.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_166_ADD_COMMUNICATION_RECIPIENT_INDEX.AsGuid(),
+            SystemGuid.ServiceJob.DATA_MIGRATIONS_166_CHOP_OBSIDIAN_BLOCKS.AsGuid()
         };
 
 

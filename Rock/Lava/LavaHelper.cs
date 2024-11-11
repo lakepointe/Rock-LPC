@@ -21,15 +21,18 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Web;
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 using Rock.Data;
 using Rock.Model;
 using Rock.Web.Cache;
 using Rock.Web.UI;
 
+using UAParser;
+
 using Context = DotLiquid.Context;
 using Template = DotLiquid.Template;
-
-using UAParser;
 
 namespace Rock.Lava
 {
@@ -38,6 +41,13 @@ namespace Rock.Lava
     /// </summary>
     public static class LavaHelper
     {
+        /// <summary>
+        /// The merge field prefix for internal merge fields. These merge fields
+        /// will be marked as internal so they are not available to Lava template
+        /// itself but can be used by filters and such.
+        /// </summary>
+        internal static readonly string InternalMergeFieldPrefix = "$_";
+
         #region Constructors
 
         static LavaHelper()
@@ -98,19 +108,6 @@ namespace Rock.Lava
                 else if ( HttpContext.Current != null && HttpContext.Current.Items.Contains( "CurrentPerson" ) )
                 {
                     currentPerson = HttpContext.Current.Items["CurrentPerson"] as Person;
-                }
-            }
-
-            if ( options.GetLegacyGlobalMergeFields )
-            {
-                var globalAttributes = GlobalAttributesCache.Get();
-                if ( globalAttributes.LavaSupportLevel != Lava.LavaSupportLevel.NoLegacy )
-                {
-                    var legacyGlobalAttributeMergeFields = GlobalAttributesCache.GetLegacyMergeFields( currentPerson );
-                    foreach ( var legacyGlobalAttributeMergeField in legacyGlobalAttributeMergeFields )
-                    {
-                        mergeFields.Add( legacyGlobalAttributeMergeField.Key, legacyGlobalAttributeMergeField.Value );
-                    }
                 }
             }
 
@@ -555,6 +552,66 @@ namespace Rock.Lava
             return false;
         }
 
+        /// <summary>
+        /// Converts an object that came from JavaScript into an object that
+        /// can be used with Lava. Because <paramref name="input"/> is an unknown
+        /// we can't just pass it to Lava otherwise it will deny access to
+        /// the object values. This also converts any camelCase keys into PascalCase.
+        /// </summary>
+        /// <param name="input">The input object to be converted.</param>
+        /// <returns>A new object that represents <paramref name="input"/>.</returns>
+        internal static object JavaScriptObjectToLavaObject( object input )
+        {
+            if ( input == null )
+            {
+                return null;
+            }
+
+            // Even though we expect the input parameter to be a JToken, we don't
+            // know that for sure. So if it isn't then serialize and deserialize it
+            // so it is forced into a known format.
+            if ( !( input is JToken rootToken ) )
+            {
+                rootToken = JsonConvert.DeserializeObject<JToken>( input.ToJson() );
+            }
+
+            return JavaScriptObjectToLavaObjectInternal( rootToken );
+        }
+
+        /// <summary>
+        /// Internal converter to take an object that came from JavaScript and
+        /// coerce it into something that can be used in Lava.
+        /// </summary>
+        /// <param name="input">The input object to be converted.</param>
+        /// <returns>A new object that represents the <paramref name="input"/>.</returns>
+        private static object JavaScriptObjectToLavaObjectInternal( JToken input )
+        {
+            switch ( input )
+            {
+                case JObject jObject:
+                    var dict = new Dictionary<string, object>();
+                    foreach ( var item in jObject )
+                    {
+                        // Force the key to be uppercase since JavaScript probably
+                        // gave us a camelCase string.
+                        var key = $"{item.Key.Substring( 0, 1 ).ToUpper()}{item.Key.Substring( 1 )}";
+                        var value = JavaScriptObjectToLavaObjectInternal( item.Value );
+
+                        dict.AddOrReplace( key, value );
+                    }
+                    return dict;
+
+                case JArray jArray:
+                    return jArray.Select( JavaScriptObjectToLavaObjectInternal ).ToList();
+
+                case JValue jValue:
+                    return jValue.Value;
+
+                default:
+                    return input;
+            }
+        }
+
         #region Lava Comments
 
         private static string LavaTokenBlockCommentStart = @"/-";
@@ -734,7 +791,7 @@ namespace Rock.Lava
         ///  http://stackoverflow.com/a/16538131/1755417
         ///  http://stackoverflow.com/a/25776530/1755417
         /// </summary>
-        private static Regex _hasLavaTags = new Regex( @"(?<=\{).+(?<=\})", RegexOptions.Compiled );
+        private static Regex _hasLavaTags = new Regex( @"(?<=\{)[\S\s]+(?<=\})", RegexOptions.Compiled );
 
         /// <summary>
         /// Determines whether a string potentially contains Lava tags.

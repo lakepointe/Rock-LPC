@@ -14,8 +14,8 @@
 // limitations under the License.
 // </copyright>
 //
+using System;
 using System.Collections.Generic;
-using Rock.Enums.Blocks.Security.AccountEntry;
 
 namespace Rock.ViewModels.Blocks.Security.AccountEntry
 {
@@ -24,11 +24,6 @@ namespace Rock.ViewModels.Blocks.Security.AccountEntry
     /// </summary>
     public class AccountEntryInitializationBox
     {
-        /// <summary>
-        /// The account entry step.
-        /// </summary>
-        public AccountEntryStep? Step { get; set; }
-
         /// <summary>
         /// Gets or sets a value indicating whether phone numbers shown.
         /// </summary>
@@ -141,5 +136,50 @@ namespace Rock.ViewModels.Blocks.Security.AccountEntry
         /// Indicates whether username availability checking is disabled.
         /// </summary>
         public bool IsUsernameAvailabilityCheckDisabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the account entry step box.
+        /// </summary>
+        /// <value>
+        /// The  account entry step box.
+        /// </value>
+        public AccountEntryRegisterResponseBox AccountEntryRegisterStepBox { get; set; }
+
+        /// <summary>
+        /// Indicating whether the Gender dropdown is shown.
+        /// </summary>
+        public bool IsGenderPickerShown { get; set; }
+
+        /// <summary>
+        /// Gets or sets the person details if there is an identified user.
+        /// </summary>
+        /// <value>
+        /// The account entry person information bag.
+        /// </value>
+        public AccountEntryPersonInfoBag AccountEntryPersonInfoBag { get; set; }
+
+        /// <summary>
+        /// If set to true if the Captcha verification step should not be performed.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if Captcha is disabled; otherwise, <c>false</c>.
+        /// </value>
+        public bool DisableCaptchaSupport { get; set; }
+
+        /// <summary>
+        /// Campus status defined value guids that limit which campuses are included in the list of available campuses in the campus picker.
+        /// </summary>
+        /// <value>
+        /// The campus status filter.
+        /// </value>
+        public List<Guid> CampusStatusFilter { get; set; }
+
+        /// <summary>
+        /// Campus type defined value guids that limit which campuses are included in the list of available campuses in the campus picker.
+        /// </summary>
+        /// <value>
+        /// The campus type filter.
+        /// </value>
+        public List<Guid> CampusTypeFilter { get; set; }
     }
 }

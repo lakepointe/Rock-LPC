@@ -82,8 +82,8 @@
                                 </div>
 
                                 <div class="actions margin-t-md">
-                                    <asp:LinkButton ID="lbEdit" runat="server" CssClass="btn btn-primary" Text="Edit" OnClick="lbEdit_Click" AccessKey="m" ToolTip="Alt+m" />
-                                    <asp:LinkButton ID="lbCancel" runat="server" CssClass="btn btn-link" Text="Cancel" OnClick="lbCancel_Click" CausesValidation="false" AccessKey="c" ToolTip="Alt+c" />
+                                    <asp:LinkButton ID="lbEdit" runat="server" CssClass="btn btn-primary" Text="Edit" OnClick="lbEdit_Click" data-shortcut-key="e" AccessKey="m" ToolTip="Alt+e" />
+                                    <asp:LinkButton ID="lbCancel" runat="server" CssClass="btn btn-link" Text="Cancel" OnClick="lbCancel_Click" CausesValidation="false" data-shortcut-key="c" ToolTip="Alt+c" />
                                     <div class="pull-right">
                                         <asp:LinkButton ID="lbDeploy" runat="server" CssClass="btn btn-default" OnClick="lbDeploy_Click" OnClientClick="Rock.dialogs.confirmPreventOnCancel( event, 'Are you sure you wish to replace the current package and deploy a new one?');"><i class="fa fa-upload"></i> Deploy</asp:LinkButton>
                                     </div>
@@ -117,7 +117,7 @@
                                     </div>
                                 </Rock:RockControlWrapper>
 
-                                
+
                                 <div class="row">
                                     <div class="col-md-4">
                                         <Rock:RockCheckBox ID="cbNavbarTransclucent" runat="server" AutoPostBack="true" OnCheckedChanged="CbNavbarTransclucent_CheckedChanged" Label="Enable Navigation Bar Transparency" Help="Please note, your bar background color must have an opacity less than 100% for this to work. Enable to view different blurring options. (iOS Only)" />
@@ -350,13 +350,57 @@
                             </div>
                         </div>
 
-                         <div class="row">
+                        <div class="row">
                             <div class="col-md-6">
-                                <Rock:RockTextBox ID="tbAuth0ClientId" runat="server" Label="Auth0 Client ID" Help="Set this to reflect the value in your configured Auth0 application to add support for Auth0 based login in your mobile application." />
+                                <Rock:NumberBox ID="nbPageViewRetentionPeriodDays" runat="server" Label="Page View Retention Period" Help="The number of days to keep page views logged. Leave blank to keep page views logged indefinitely." />
                             </div>
-
                             <div class="col-md-6">
-                                <Rock:RockTextBox ID="tbAuth0ClientDomain" runat="server" Label="Auth0 Domain" Help="Set this to reflect the value in your configured Auth0 application to add support for Auth0 based login in your mobile application." />
+                                <Rock:RockCheckBox ID="cbEnablePageViewGeoTracking" runat="server" Label="Enable Page View Geo Tracking" Help="Enabling this feature will allow the PopulateInteractionSessionData job to begin performing geolocation lookup on the IP addresses in the Interaction Session data. This also requires setting up a IP Address Location Service found under System Settings." />
+                            </div>
+                        </div>
+
+                    </Rock:PanelWidget>
+
+                    <Rock:PanelWidget ID="pwAuthenticationSettings" runat="server" Title="Authentication Settings">
+                        <div class="rock-header">
+                            <h3 class="title mb-2">Auth0</h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <Rock:RockTextBox ID="tbAuth0ClientId" runat="server" Label="Auth0 Client ID" Help="Set this to reflect the value in your configured Auth0 application to add support for Auth0 based login in your mobile application." />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <Rock:RockTextBox ID="tbAuth0ClientDomain" runat="server" Label="Auth0 Domain" Help="Set this to reflect the value in your configured Auth0 application to add support for Auth0 based login in your mobile application." />
+                                </div>
+                            </div>
+                            <hr class="section-header-hr" />
+                        </div>
+
+                        <div class="rock-header">
+                            <h3 class="title mb-2">Microsoft Entra (Azure AD)</h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <Rock:RockTextBox ID="tbEntraClientId" runat="server" Label="Entra Client ID" Help="The client ID of the Microsoft Entra application to add authentication support for." />
+                                </div>
+                                <div class="col-md-6">
+                                    <Rock:RockTextBox ID="tbEntraTenantId" runat="server" Label="Entra Tenant ID" Help="The tenant ID of the Microsoft Entra application to add authentication support for." />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <Rock:ComponentPicker ID="compEntraAuthComponent" runat="server" Label="Microsoft Entra Authentication Provider" ContainerType="Rock.Security.AuthenticationContainer, Rock" Help="The authentication component used for web Entra authentication. This is typically provided through a plugin." />
+                                </div>
+                            </div>
+                            <hr class="section-header-hr, hidden" />
+                        </div>
+
+                        <div class="hidden">
+                            <div class="row">
+                                <div class="col-md-6">
+                                </div>
+
+                                <div class="col-md-6">
+                                </div>
                             </div>
                         </div>
                     </Rock:PanelWidget>
@@ -364,7 +408,6 @@
                     <Rock:PanelWidget ID="pwEditDeepLinkSettings" runat="server" Title="Deep Link Settings">
                         <Rock:RockCheckBox ID="cbEnableDeepLinking" OnCheckedChanged="cbEnableDeepLinking_CheckedChanged" runat="server" Label="Enable Deep Linking" Help="Determines if specific web links should open in the app if it’s installed on the individual’s phone." AutoPostBack="true" />
                         <asp:Panel runat="server" class="info alert-info" Width="40%">
-                            
                         </asp:Panel>
                         <asp:Panel ID="pnlDeepLinkSettings" runat="server">
                             <Rock:NotificationBox ID="nbDeepLinks" runat="server" Visible="false" NotificationBoxType="Danger" />
@@ -381,8 +424,8 @@
                     </Rock:PanelWidget>
 
                     <div class="actions margin-t-md">
-                        <asp:LinkButton ID="lbEditSave" runat="server" CssClass="btn btn-primary" Text="Save" OnClick="lbEditSave_Click" AccessKey="s" ToolTip="Alt+s" />
-                        <asp:LinkButton ID="lbEditCancel" runat="server" CssClass="btn btn-link" Text="Cancel" OnClick="lbEditCancel_Click" CausesValidation="false" AccessKey="c" ToolTip="Alt+c" />
+                        <asp:LinkButton ID="lbEditSave" runat="server" CssClass="btn btn-primary" Text="Save" OnClick="lbEditSave_Click" data-shortcut-key="s" ToolTip="Alt+s" />
+                        <asp:LinkButton ID="lbEditCancel" runat="server" CssClass="btn btn-link" Text="Cancel" OnClick="lbEditCancel_Click" CausesValidation="false" data-shortcut-key="c" ToolTip="Alt+c" />
                     </div>
                 </asp:Panel>
             </div>

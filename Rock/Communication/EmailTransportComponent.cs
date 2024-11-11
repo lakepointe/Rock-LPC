@@ -601,6 +601,8 @@ namespace Rock.Communication
             templateRockEmailMessage.SendSeperatelyToEachRecipient = emailMessage.SendSeperatelyToEachRecipient;
             templateRockEmailMessage.ThemeRoot = emailMessage.ThemeRoot;
 
+            templateRockEmailMessage.FromPersonId = emailMessage.FromPersonId;
+
             var fromAddress = GetFromAddress( emailMessage, mergeFields, globalAttributes );
             var fromName = GetFromName( emailMessage, mergeFields, globalAttributes );
 
@@ -641,6 +643,9 @@ namespace Rock.Communication
 
             // Communication record for tracking opens & clicks
             templateRockEmailMessage.MessageMetaData = emailMessage.MessageMetaData;
+
+            // Headers
+            templateRockEmailMessage.EmailHeaders = new Dictionary<string, string>( emailMessage.EmailHeaders );
 
             return templateRockEmailMessage;
         }
@@ -716,7 +721,7 @@ namespace Rock.Communication
 
             foreach ( var mergeField in mergeFields )
             {
-                rockMessageRecipient.MergeFields.AddOrIgnore( mergeField.Key, mergeField.Value );
+                rockMessageRecipient.MergeFields.TryAdd( mergeField.Key, mergeField.Value );
             }
 
             // To
@@ -739,6 +744,7 @@ namespace Rock.Communication
             recipientEmail.ReplyToEmail = GetRecipientReplyToAddress( emailMessage, mergeFields, checkResult );
 
             // From
+            recipientEmail.FromPersonId = emailMessage.FromPersonId;
             if ( checkResult.IsUnsafeDomain && checkResult.SafeFromAddress != null )
             {
                 recipientEmail.FromName = checkResult.SafeFromAddress.DisplayName;
@@ -775,6 +781,10 @@ namespace Rock.Communication
             Guid? recipientGuid = null;
             recipientEmail.SystemCommunicationId = emailMessage.SystemCommunicationId;
             recipientEmail.CreateCommunicationRecord = emailMessage.CreateCommunicationRecord;
+
+            // Headers
+            recipientEmail.EmailHeaders = new Dictionary<string, string>( emailMessage.EmailHeaders );
+
             if ( emailMessage.CreateCommunicationRecord )
             {
                 recipientGuid = Guid.NewGuid();
@@ -844,6 +854,7 @@ namespace Rock.Communication
             recipientEmail.ReplyToEmail = GetRecipientReplyToAddress( emailMessage, mergeFields, checkResult );
 
             // From
+            recipientEmail.FromPersonId = emailMessage.FromPersonId;
             if ( checkResult.IsUnsafeDomain && checkResult.SafeFromAddress != null )
             {
                 recipientEmail.FromName = checkResult.SafeFromAddress.DisplayName;
@@ -944,74 +955,111 @@ namespace Rock.Communication
             
             if ( communication.ListGroupId.HasValue )
             {
-                recipientEmail.MessageMetaData[ListIdHeaderKey] = $"{communication.ListGroup?.Name ?? globalAttributes.GetValue( "OrganizationName" )} <{communication.ListGroupId.Value}.{hostDomain}>";
+                recipientEmail.EmailHeaders[ListIdHeaderKey] = $"{communication.ListGroup?.Name ?? globalAttributes.GetValue( "OrganizationName" )} <{communication.ListGroupId.Value}.{hostDomain}>";
             }
             else
             {
-                recipientEmail.MessageMetaData[ListIdHeaderKey] = $"{globalAttributes.GetValue( "OrganizationName" )} <general.{hostDomain}>";
+                recipientEmail.EmailHeaders[ListIdHeaderKey] = $"{globalAttributes.GetValue( "OrganizationName" )} <general.{hostDomain}>";
             }
         }
 
         private void AddListUnsubscribeEmailHeaders( RockEmailMessage recipientEmail, Rock.Model.Communication communication, CommunicationRecipient communicationRecipient, IDictionary<string, string> mediumAttributes, GlobalAttributesCache globalAttributes, IDictionary<string, object> mergeFields )
         {
+            const string ListUnsubscribeHeaderKey = "List-Unsubscribe";
+            const string ListUnsubscribePostHeaderKey = "List-Unsubscribe-Post";
             var listUnsubscribeHeaderValues = new List<string>();
 
+            /*
+                2/27/2024 - JMH 
+
+                The order the List-Unsubscribe header values are added is important.
+                Per https://www.ietf.org/rfc/rfc2369.txt, page 2 states,
+                "The URLs have order of preference from left to right.
+                The client application should use the left most protocol that it supports,
+                or knows how to access by a separate application."
+                The HTTP value should be added first if possible, then the MAILTO value should be added.
+            
+                Reason: One-Click Unsubscribe not working as intended.
+                https://github.com/SparkDevNetwork/Rock/issues/5770
+             */
+            if ( mediumAttributes.TryGetValue( "UnsubscribeURL", out var unsubscribeUrl )
+                 && unsubscribeUrl.IsNotNullOrWhiteSpace())
+            {
+                // Add the UnsubscribeURL value to the List-Unsubscribe header if it is defined.
+                var httpValue = unsubscribeUrl.ResolveMergeFields( mergeFields, recipientEmail.CurrentPerson, recipientEmail.EnabledLavaCommands );
+                if ( httpValue.IsNotNullOrWhiteSpace() )
+                {
+                    try
+                    {
+                        // Add a utm=email-header parameter to the one-click unsubscribe URL
+                        // to identify when this URL is used to unsubscribe a person from email communications.
+                        var uriBuilder = new UriBuilder( httpValue );
+                        var queryString = uriBuilder.Query?.ParseQueryString() ?? new System.Collections.Specialized.NameValueCollection();
+                        queryString.Add( "utm", "email-header" );
+                        uriBuilder.Query = queryString.ToString();
+                        httpValue = uriBuilder.Uri.ToString();
+                    }
+                    catch ( UriFormatException ex )
+                    {
+                        // This could happen if the Email medium has an invalid UnsubscribeURL value.
+                        // Log the exception and move on.
+                        ExceptionLogService.LogException( ex, null );
+                    }
+
+                    listUnsubscribeHeaderValues.Add( $"<{httpValue}>" );
+                }
+            }
+            
             var unsubscribeEmail = mediumAttributes.GetValueOrNull( "RequestUnsubscribeEmail" );
             if ( unsubscribeEmail.IsNullOrWhiteSpace() )
             {
                 // Default to the organization email if the RequestUnsubscribeEmail attribute value is missing or white space.
                 unsubscribeEmail = globalAttributes.GetValue( "OrganizationEmail" );
             }
+            
             if ( unsubscribeEmail.IsNotNullOrWhiteSpace() )
             {
+                // Ensure the mailto address has the "subject=" email header.
+
+                var hasSubjectHeader = unsubscribeEmail.IndexOf( "?subject=", StringComparison.OrdinalIgnoreCase ) >= 0
+                    || unsubscribeEmail.IndexOf( "&subject=", StringComparison.OrdinalIgnoreCase ) >= 0;
+
+                if ( !hasSubjectHeader )
+                {
+                    string subjectHeaderValue;
+                    if ( communication?.Subject.IsNotNullOrWhiteSpace() == true )
+                    {
+                        subjectHeaderValue = $"unsubscribe {communication.Subject}".UrlEncode();
+                    }
+                    else
+                    {
+                        subjectHeaderValue = "unsubscribe";
+                    }
+                    
+                    string headerSeparator;
+                    if ( unsubscribeEmail.Contains( "?" ) )
+                    {
+                        headerSeparator = "&";
+                    }
+                    else
+                    {
+                        headerSeparator = "?";
+                    }
+
+                    unsubscribeEmail = $"{unsubscribeEmail}{headerSeparator}subject={subjectHeaderValue}";
+                }
+                
                 listUnsubscribeHeaderValues.Add( $"<mailto:{unsubscribeEmail}>" );
-            }
-
-            var isOneClickUnsubscribeEnabled = mediumAttributes.GetValueOrNull( "EnableOneClickUnsubscribe" ).AsBoolean();
-            if ( isOneClickUnsubscribeEnabled )
-            {
-                // If Enable One-Click Unsubscribe is true, then the URL should be the People API Unsubscribe endpoint.
-                var personActionIdentifier = communicationRecipient.PersonAlias.Person.GetPersonActionIdentifier( "Unsubscribe" );
-                var rootUrl = globalAttributes.GetValue( "PublicApplicationRoot" ).RemoveTrailingForwardslash();
-                var queryParams = new List<string>();
-
-                if ( communication?.ListGroupId.HasValue == true )
-                {
-                    queryParams.Add( $"communicationListIdKey={communication.ListGroup?.IdKey ?? communication.ListGroupId.ToString()}" );
-                }
-
-                if ( communication != null )
-                {
-                    queryParams.Add( $"communicationIdKey={communication.IdKey}" );
-                }
-
-                var queryString = string.Empty;
-                if ( queryParams.Any() )
-                {
-                    queryString = $"?{string.Join( "&", queryParams )}";
-                }
-
-                listUnsubscribeHeaderValues.Add( $"<{rootUrl}/api/People/OneClickUnsubscribe/{personActionIdentifier}{queryString}>" );
-            }
-            else if ( mediumAttributes.TryGetValue( "UnsubscribeURL", out var unsubscribeUrl )
-                      && unsubscribeUrl.IsNotNullOrWhiteSpace() )
-            {
-                // If Enable One-Click Unsubscribe is false, then use the UnsubscribeURL value.
-                var httpValue = unsubscribeUrl.ResolveMergeFields( mergeFields, recipientEmail.CurrentPerson, recipientEmail.EnabledLavaCommands );
-                if ( httpValue.IsNotNullOrWhiteSpace() )
-                {
-                    listUnsubscribeHeaderValues.Add( $"<{httpValue}>" );
-                }
             }
 
             if ( listUnsubscribeHeaderValues.Any() )
             {
-                recipientEmail.MessageMetaData["List-Unsubscribe"] = string.Join( ", ", listUnsubscribeHeaderValues );
+                recipientEmail.EmailHeaders[ListUnsubscribeHeaderKey] = string.Join( ", ", listUnsubscribeHeaderValues );
 
                 // Only add the post header if the List-Unsubscribe header is added.
-                if ( isOneClickUnsubscribeEnabled )
+                if ( mediumAttributes.GetValueOrNull( "EnableOneClickUnsubscribe" ).AsBoolean() )
                 {
-                    recipientEmail.MessageMetaData["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+                    recipientEmail.EmailHeaders[ListUnsubscribePostHeaderKey] = "List-Unsubscribe=One-Click";
                 }
             }
         }
@@ -1189,6 +1237,7 @@ namespace Rock.Communication
                     recipientEmailMessage.Subject,
                     recipientEmailMessage.Message );
 
+                transaction.FromPersonId = recipientEmailMessage.FromPersonId;
                 transaction.SystemCommunicationId = recipientEmailMessage.SystemCommunicationId;
 
                 transaction.RecipientGuid = recipientEmailMessage.MessageMetaData["communication_recipient_guid"].AsGuidOrNull();

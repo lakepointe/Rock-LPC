@@ -77,6 +77,8 @@ export const Attribute = {
     CurrencyCodeSymbol: "1268AD58-5459-4C1C-A036-B7A6D948198F",
     /** The Currency type DefinedType &gt; IconCssClass DefinedValue Attribute Guid */
     DefinedTypeCurrencyTypeIconcssclass: "CB1E9401-E1FD-4DBB-B15F-4E6994602723",
+    /** The Financial Frequency DefinedType &gt; Interval Days DefinedValue Attribute Guid */
+    DefinedTypeFinancialFrequencyIntervalDays: "E18CB1D2-08A9-4D12-BCEA-33369193C869",
     /** The Template DefinedType &gt; Icon DefinedValue Attribute Guid */
     DefinedTypeTemplateIcon: "831403EB-262E-4BC5-8B5E-F16153493BF5",
     /** The Template DefinedType &gt; TemplateBlock DefinedValue Attribute Guid */
@@ -121,6 +123,8 @@ export const Attribute = {
     GlobalPublicApplicationRoot: "49AD7AD6-9BAC-4743-B1E8-B917F6271924",
     /** Group attribute to store the age range of the group */
     GroupAgeRange: "43511B8F-71D9-423A-85BF-D1CD08C1998E",
+    /** Group attribute to store the birth month range of the group */
+    GroupBirthMonthRange: "C86610F1-A011-474A-BB60-1E131F2EEE95",
     /** Group attribute to store the birthdate range of the group */
     GroupBirthdateRange: "F1A43EAB-D682-403F-A05E-CCFFBF879F32",
     /** Group attribute for groups of GroupType CommunicationList to define category */
@@ -131,6 +135,8 @@ export const Attribute = {
     GroupmemberCommunicationListPreferredCommunicationMedium: "D7941908-1F65-CC9B-416C-CCFABE4221B9",
     /** The Sign-up Group - Group Type's project type attribute */
     GrouptypeSignupGroupProjectType: "46FFBB10-6E4B-4B3A-A560-61B36C6B0E09",
+    /** The Active attribute for the observability HTTP filter. */
+    HttpModuleObservabilityActive: "DAC40EF2-1616-4E15-A897-8CCD7CF2C588",
     /** Language in ISO639-1 */
     Iso6391: "F5E8B6D2-6483-0F8D-4C20-07C51E7548AD",
     /** Language in ISO639 */

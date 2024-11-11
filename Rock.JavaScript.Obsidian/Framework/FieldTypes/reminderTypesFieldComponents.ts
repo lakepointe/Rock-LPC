@@ -14,17 +14,15 @@
 // limitations under the License.
 // </copyright>
 //
-import { Guid } from "@Obsidian/Types";
 import { computed, defineComponent, ref, SetupContext, watch } from "vue";
 import { getFieldConfigurationProps, getFieldEditorProps } from "./utils";
-import CheckBox from "@Obsidian/Controls/checkBox";
-import NumberBox from "@Obsidian/Controls/numberBox";
-import CheckBoxList from "@Obsidian/Controls/checkBoxList";
-import DropDownList from "@Obsidian/Controls/dropDownList";
+import CheckBox from "@Obsidian/Controls/checkBox.obs";
+import NumberBox from "@Obsidian/Controls/numberBox.obs";
+import CheckBoxList from "@Obsidian/Controls/checkBoxList.obs";
+import DropDownList from "@Obsidian/Controls/dropDownList.obs";
 import { toNumberOrNull } from "@Obsidian/Utility/numberUtils";
 import { ConfigurationValueKey } from "./reminderTypesField.partial";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
-import { areEqual } from "@Obsidian/Utility/guid";
 import { asBoolean, asTrueFalseOrNull } from "@Obsidian/Utility/booleanUtils";
 import { updateRefValue } from "@Obsidian/Utility/component";
 

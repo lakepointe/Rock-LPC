@@ -26,6 +26,7 @@ using Rock;
 using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
+using Rock.Observability;
 using Rock.Reporting;
 using Rock.Security;
 using Rock.Utility;
@@ -148,11 +149,11 @@ namespace RockWeb.Blocks.Communication
         /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>
         protected void rFilter_ApplyFilterClick( object sender, EventArgs e )
         {
-            rFilter.SaveUserPreference( "Subject", tbSubject.Text );
-            rFilter.SaveUserPreference( "Communication Type", ddlType.SelectedValue );
-            rFilter.SaveUserPreference( "Status", ddlStatus.SelectedValue );
+            rFilter.SetFilterPreference( "Subject", tbSubject.Text );
+            rFilter.SetFilterPreference( "Communication Type", ddlType.SelectedValue );
+            rFilter.SetFilterPreference( "Status", ddlStatus.SelectedValue );
             int personId = ppSender.PersonId ?? 0;
-            rFilter.SaveUserPreference( "Created By", canApprove ? personId.ToString() : string.Empty );
+            rFilter.SetFilterPreference( "Created By", canApprove ? personId.ToString() : string.Empty );
 
             if ( !drpCreatedDates.LowerValue.HasValue && !drpCreatedDates.UpperValue.HasValue )
             {
@@ -160,10 +161,10 @@ namespace RockWeb.Blocks.Communication
                 drpCreatedDates.LowerValue = RockDateTime.Today.AddDays( -7 );
             }
 
-            rFilter.SaveUserPreference( "Created Date Range", drpCreatedDates.DelimitedValues );
-            rFilter.SaveUserPreference( "Recipient Count", nreRecipientCount.DelimitedValues );
-            rFilter.SaveUserPreference( "Sent Date Range", drpSentDates.DelimitedValues );
-            rFilter.SaveUserPreference( "Content", tbContent.Text );
+            rFilter.SetFilterPreference( "Created Date Range", drpCreatedDates.DelimitedValues );
+            rFilter.SetFilterPreference( "Recipient Count", nreRecipientCount.DelimitedValues );
+            rFilter.SetFilterPreference( "Sent Date Range", drpSentDates.DelimitedValues );
+            rFilter.SetFilterPreference( "Content", tbContent.Text );
 
             BindGrid();
         }
@@ -346,23 +347,23 @@ namespace RockWeb.Blocks.Communication
         /// </summary>
         private void SetFilter()
         {
-            tbSubject.Text = rFilter.GetUserPreference( "Subject" );
+            tbSubject.Text = rFilter.GetFilterPreference( "Subject" );
 
             ddlType.BindToEnum<CommunicationType>( true );
-            ddlType.SetValue( rFilter.GetUserPreference( "Communication Type" ) );
+            ddlType.SetValue( rFilter.GetFilterPreference( "Communication Type" ) );
 
             ddlStatus.BindToEnum<CommunicationStatus>();
 
             // Replace the Transient status with an empty value (need an empty one, and don't need transient value)
             ddlStatus.Items[0].Text = string.Empty;
             ddlStatus.Items[0].Value = string.Empty;
-            ddlStatus.SelectedValue = rFilter.GetUserPreference( "Status" );
+            ddlStatus.SelectedValue = rFilter.GetFilterPreference( "Status" );
 
-            int? personId = rFilter.GetUserPreference( "Created By" ).AsIntegerOrNull();
+            int? personId = rFilter.GetFilterPreference( "Created By" ).AsIntegerOrNull();
             if ( !canApprove || !personId.HasValue )
             {
                 personId = CurrentPersonId;
-                rFilter.SaveUserPreference( "Created By", personId.Value.ToString() );
+                rFilter.SetFilterPreference( "Created By", personId.Value.ToString() );
             }
 
             if ( personId.HasValue && personId.Value != 0 )
@@ -375,19 +376,19 @@ namespace RockWeb.Blocks.Communication
                 }
             }
 
-            drpCreatedDates.DelimitedValues = rFilter.GetUserPreference( "Created Date Range" );
+            drpCreatedDates.DelimitedValues = rFilter.GetFilterPreference( "Created Date Range" );
             if ( !drpCreatedDates.LowerValue.HasValue && !drpCreatedDates.UpperValue.HasValue )
             {
                 // If a date range has not been selected, default to last 7 days
                 drpCreatedDates.LowerValue = RockDateTime.Today.AddDays( -7 );
-                rFilter.SaveUserPreference( "Created Date Range", drpCreatedDates.DelimitedValues );
+                rFilter.SetFilterPreference( "Created Date Range", drpCreatedDates.DelimitedValues );
             }
 
-            nreRecipientCount.DelimitedValues = rFilter.GetUserPreference( "Recipient Count" );
+            nreRecipientCount.DelimitedValues = rFilter.GetFilterPreference( "Recipient Count" );
 
-            drpSentDates.DelimitedValues = rFilter.GetUserPreference( "Sent Date Range" );
+            drpSentDates.DelimitedValues = rFilter.GetFilterPreference( "Sent Date Range" );
 
-            tbContent.Text = rFilter.GetUserPreference( "Content" );
+            tbContent.Text = rFilter.GetFilterPreference( "Content" );
         }
 
         /// <summary>
@@ -618,13 +619,20 @@ namespace RockWeb.Blocks.Communication
             {
                 var communicationService = new CommunicationService( rockContext );
 
-                var newCommunication = communicationService.Copy( e.RowKeyId, CurrentPersonAliasId );
-                if ( newCommunication != null )
+                using ( var activity = ObservabilityHelper.StartActivity( "COMMUNICATION: List > Copy Communication" ) )
                 {
-                    communicationService.Add( newCommunication );
-                    rockContext.SaveChanges();
+                    var newCommunication = communicationService.Copy( e.RowKeyId, CurrentPersonAliasId );
+                    if ( newCommunication != null )
+                    {
+                        activity?.AddTag( "rock.communication_to_copy_id", e.RowKeyId );
 
-                    newCommunicationId = newCommunication.Id;
+                        communicationService.Add( newCommunication );
+                        rockContext.SaveChanges();
+
+                        newCommunicationId = newCommunication.Id;
+
+                        activity?.AddTag( "rock.new_communication_id", newCommunicationId );
+                    }
                 }
             }
 

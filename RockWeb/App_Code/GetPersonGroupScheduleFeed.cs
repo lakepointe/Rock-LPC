@@ -149,6 +149,9 @@ namespace RockWeb
                     iCalEvent.DtStart = new CalDateTime( attendance.StartDateTime, icalendar.TimeZones[0].TzId );
                     iCalEvent.Duration = duration;
 
+                    // Set a unique identifier for this occurrence. Google Calendar does not import events that have duplicate identifiers.
+                    iCalEvent.Uid = attendance.Occurrence?.Guid.ToString();
+
                     // Don't set the description prop for outlook to force it to use the X-ALT-DESC property which can have markup.
                     if ( interactionDeviceType != "Outlook" )
                     {
@@ -204,6 +207,7 @@ namespace RockWeb
                 var attendanceService = new AttendanceService( rockContext );
                 var attendances = attendanceService
                     .GetConfirmedScheduled()
+                    .Include( a => a.Occurrence )
                     .AsNoTracking()
                     .Where( a => a.PersonAlias.PersonId == calendarProps.PersonId )
                     .Where( a => a.Occurrence.OccurrenceDate >= calendarProps.StartDate )

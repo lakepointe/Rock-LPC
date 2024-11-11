@@ -61,6 +61,21 @@
                     <Rock:NotificationBox ID="nbWarningMessage" runat="server" NotificationBoxType="Warning" />
                     <asp:ValidationSummary ID="ValidationSummary1" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" />
                     <Rock:NotificationBox ID="nbEditModeMessage" runat="server" NotificationBoxType="Info" />
+                        
+                    <asp:HiddenField ID="hfContentLibraryItemGuid" runat="server" />
+                    <Rock:PanelWidget ID="pwContentLibraryUploaded" runat="server" Visible="false" Title="Uploaded to Community Content Library">
+                        <div>This content channel item was uploaded to the library<asp:Literal ID="lContentLibraryUploadedOn" runat="server" /><asp:Literal ID="lContentLibraryUploadedBy" runat="server" />.</div>
+                    </Rock:PanelWidget>
+
+                    <Rock:PanelWidget ID="pwContentLibraryDownloaded" runat="server" Visible="false" Title="Downloaded from Community Content Library">
+                        <div class="row">
+                            <div class="col-md-10">
+                                This content channel item was downloaded from the library<asp:Literal ID="lContentLibraryDownloadedOn" runat="server" /><asp:Literal ID="lContentLibraryDownloadedBy" runat="server" />. Be sure to follow all of the license requirements of the <a id="aContentLibraryDownloadedLicense" runat="server" />.</div>
+                            <div class="col-md-2">
+                                <Rock:BootstrapButton ID="bRedownloadAndRefresh" runat="server" CssClass="btn btn-xs btn-default pull-right" OnClick="bRedownloadAndRefresh_Click">Re-download and Refresh</Rock:BootstrapButton>
+                            </div>
+                        </div>
+                    </Rock:PanelWidget>
 
                     <asp:Panel ID="pnlEditDetails" runat="server" CssClass="js-item-details">
 
@@ -128,7 +143,12 @@
                                         </div>
                                     </div>
                                 </Rock:RockControlWrapper>
+                                
+                                <Rock:RockRadioButtonList ID="rblExperienceLevel" runat="server" Label="Experience Level" RepeatDirection="Horizontal" Help="Required when uploading to the Content Library." Visible="false" />
 
+                                <Rock:RockDropDownList ID="ddlTopic" runat="server" Label="Topic" EnhanceForLongLists="true" DataTextField="Text" DataValueField="Value" Help="Required when uploading to the Content Library." Visible="false" />
+
+                                <Rock:DefinedValuesPickerEnhanced ID="dvpContentChannelItemIntents" runat="server" Label="Content Intent" Help="Helps classify the purpose of the content channel item. This is written to interactions as individuals view the content channel item. You can provide options here by editing the Interaction Intent Defined Type." />
                             </div>
                         </div>
 
@@ -241,6 +261,12 @@
                 <asp:HiddenField ID="hfRemoveChildItem" runat="server" />
                 <asp:LinkButton ID="lbRemoveChildItem" runat="server" CssClass="btn btn-primary btn-block" Text="Remove Child Item" OnClick="lbRemoveChildItem_Click" />
                 <asp:LinkButton ID="lbDeleteChildItem" runat="server" CssClass="btn btn-primary btn-block" Text="Delete Child Item" OnClick="lbDeleteChildItem_Click" />
+            </Content>
+        </Rock:ModalDialog>
+
+        <Rock:ModalDialog ID="mdRedownload" runat="server" SaveButtonText="Yes" OnSaveClick="mdRedownload_SaveClick" Title="Re-download and Refresh">
+            <Content>
+                <Rock:NotificationBox ID="nbRedownloadWarning" runat="server" NotificationBoxType="Warning" Text="The action you are about to perform will overwrite the existing content of the article. Any changes will be lost. Are you sure you want to proceed with the update?" />
             </Content>
         </Rock:ModalDialog>
 

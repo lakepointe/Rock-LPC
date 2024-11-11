@@ -10,13 +10,16 @@
             <div class="panel-body">
 
                 <div class="form-inline margin-b-md row">
-                    <asp:Panel ID="pnlGroupType" runat="server" CssClass="col-sm-4">
+                    <asp:Panel ID="pnlGroupType" runat="server" CssClass="col-sm-3">
                         <Rock:GroupTypePicker ID="ddlGroupType" runat="server" OnSelectedIndexChanged="ddlGroupType_SelectedIndexChanged" AutoPostBack="true" />
                     </asp:Panel>
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
                         <Rock:LocationItemPicker ID="pkrParentLocation" runat="server" Label="Parent Location" OnSelectItem="pkrParentLocation_SelectItem" />
                     </div>
-                    <div class="col-sm-4">
+                     <div class="col-sm-3">
+                         <Rock:GroupTypePicker ID="ddlArea" runat="server" Label="Area" OnSelectedIndexChanged="ddlArea_SelectedIndexChanged" AutoPostBack="true" />
+                     </div>
+                    <div class="col-sm-3">
                         <Rock:CategoryPicker ID="pCategory" runat="server" AllowMultiSelect="false" Label="Schedule Category" OnSelectItem="pCategory_SelectItem"/>
                     </div>
                 </div>
@@ -33,10 +36,10 @@
                 </div>
 
                 <div class="actions">
-                        <Rock:BootstrapButton ID="btnSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click"
+                        <Rock:BootstrapButton ID="btnSave" runat="server" data-shortcut-key="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click"
                             DataLoadingText="&lt;i class='fa fa-refresh fa-spin'&gt;&lt;/i&gt; Saving"
                             CompletedText ="Done" CompletedMessage="<div class='margin-t-md alert alert-success'>Changes have been saved.</div>" CompletedDuration="3"/>
-                    <asp:LinkButton ID="btnCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="btnCancel_Click" />
+                    <asp:LinkButton ID="btnCancel" runat="server" data-shortcut-key="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="btnCancel_Click" />
                 </div>
 
             </div>

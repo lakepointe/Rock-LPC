@@ -14,9 +14,12 @@
 // limitations under the License.
 // </copyright>
 //
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+
+using Rock.Configuration;
 
 namespace Rock.Data
 {
@@ -114,7 +117,7 @@ namespace Rock.Data
         /// <returns></returns>
         public static IDataReader GetDataReader( string query, CommandType commandType, Dictionary<string, object> parameters )
         {
-            string connectionString = GetRockContextConnectionString();
+            string connectionString = RockApp.Current.InitializationSettings.ConnectionString;
             if ( !string.IsNullOrWhiteSpace( connectionString ) )
             {
                 SqlConnection con = new SqlConnection( connectionString );
@@ -208,7 +211,7 @@ namespace Rock.Data
         /// <returns>DataSet.</returns>
         private static DataSet GetDataSet( string query, CommandType commandType, Dictionary<string, object> parameters, int? timeOut = null, bool schemaOnly = false )
         {
-            string connectionString = GetRockContextConnectionString();
+            string connectionString = RockApp.Current.InitializationSettings.ConnectionString;
             if ( !string.IsNullOrWhiteSpace( connectionString ) )
             {
                 using ( SqlConnection con = new SqlConnection( connectionString ) )
@@ -263,39 +266,54 @@ namespace Rock.Data
         /// <exception cref="System.NotImplementedException"></exception>
         public static int ExecuteCommand( string query, CommandType commandType = CommandType.Text, Dictionary<string, object> parameters = null, int? commandTimeout = null )
         {
-            string connectionString = GetRockContextConnectionString();
-            if ( !string.IsNullOrWhiteSpace( connectionString ) )
+            var connectionString = RockApp.Current.InitializationSettings.ConnectionString;
+            return ExecuteCommand( connectionString, query, commandType, parameters, commandTimeout );
+        }
+
+        /// <summary>
+        /// Executes the query, and returns number of rows affected
+        /// </summary>
+        /// <param name="connectionString">The database connection string.</param>
+        /// <param name="query">The query.</param>
+        /// <param name="commandType">Type of the command.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="commandTimeout">The command timeout (seconds)</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static int ExecuteCommand( string connectionString, string query, CommandType commandType = CommandType.Text, Dictionary<string, object> parameters = null, int? commandTimeout = null )
+        {
+            if ( string.IsNullOrWhiteSpace( connectionString ) )
             {
-                using ( SqlConnection con = new SqlConnection( connectionString ) )
-                {
-                    con.Open();
-
-                    using ( SqlCommand sqlCommand = new SqlCommand( query, con ) )
-                    {
-                        sqlCommand.CommandType = commandType;
-
-                        if ( parameters != null )
-                        {
-                            foreach ( var parameter in parameters )
-                            {
-                                SqlParameter sqlParam = new SqlParameter();
-                                sqlParam.ParameterName = parameter.Key.StartsWith( "@" ) ? parameter.Key : "@" + parameter.Key;
-                                sqlParam.Value = parameter.Value;
-                                sqlCommand.Parameters.Add( sqlParam );
-                            }
-                        }
-
-                        if ( commandTimeout.HasValue )
-                        {
-                            sqlCommand.CommandTimeout = commandTimeout.Value;
-                        }
-
-                        return sqlCommand.ExecuteNonQuery();
-                    }
-                }
+                return 0;
             }
 
-            return 0;
+            using ( SqlConnection con = new SqlConnection( connectionString ) )
+            {
+                con.Open();
+
+                using ( SqlCommand sqlCommand = new SqlCommand( query, con ) )
+                {
+                    sqlCommand.CommandType = commandType;
+
+                    if ( parameters != null )
+                    {
+                        foreach ( var parameter in parameters )
+                        {
+                            SqlParameter sqlParam = new SqlParameter();
+                            sqlParam.ParameterName = parameter.Key.StartsWith( "@" ) ? parameter.Key : "@" + parameter.Key;
+                            sqlParam.Value = parameter.Value;
+                            sqlCommand.Parameters.Add( sqlParam );
+                        }
+                    }
+
+                    if ( commandTimeout.HasValue )
+                    {
+                        sqlCommand.CommandTimeout = commandTimeout.Value;
+                    }
+
+                    return sqlCommand.ExecuteNonQuery();
+                }
+            }
         }
 
         // LPC MODIFIED CODE
@@ -308,55 +326,123 @@ namespace Rock.Data
         /// <param name="parameters">The parameters.</param>
         /// <param name="commandTimeout">The command timeout (seconds)</param>
         /// <returns></returns>
-        public static object ExecuteScaler( string query, CommandType commandType = CommandType.Text, Dictionary<string, object> parameters = null, int? commandTimeout = null )
+        [RockObsolete( "1.16" )]
+        [Obsolete( @"Please use the static method ExecuteScalar( string query, CommandType commandType = CommandType.Text, Dictionary<string, object> parameters = null, int? commandTimeout = null ) instead" )]
+        public static object ExecuteScaler( string query, CommandType commandType = CommandType.Text, Dictionary<string, object> parameters = null )
         {
-            string connectionString = GetRockContextConnectionString();
-            if ( !string.IsNullOrWhiteSpace( connectionString ) )
-            {
-                using ( SqlConnection con = new SqlConnection( connectionString ) )
-                {
-                    con.Open();
-
-                    using ( SqlCommand sqlCommand = new SqlCommand( query, con ) )
-                    {
-                        sqlCommand.CommandType = commandType;
-                        if ( commandTimeout.HasValue )
-                        {
-                            sqlCommand.CommandTimeout = commandTimeout.Value;
-                        }
-                        // END OF LPC MODIFIED CODE
-
-                        if ( parameters != null )
-                        {
-                            foreach ( var parameter in parameters )
-                            {
-                                SqlParameter sqlParam = new SqlParameter();
-                                sqlParam.ParameterName = parameter.Key.StartsWith( "@" ) ? parameter.Key : "@" + parameter.Key;
-                                sqlParam.Value = parameter.Value;
-                                sqlCommand.Parameters.Add( sqlParam );
-                            }
-                        }
-
-                        return sqlCommand.ExecuteScalar();
-                    }
-                }
-            }
-
-            return null;
+            return ExecuteScalar( query, commandType, parameters, null );
         }
 
         /// <summary>
-        /// Gets the ConnectionString using the 'RockContext' specified in web.ConnectionStrings.config.
+        /// Executes the query, and returns the first column of the first row in the
+        /// result set returned by the query. Additional columns or rows are ignored.
         /// </summary>
-        /// <returns>System.String.</returns>
-        private static string GetRockContextConnectionString()
+        /// <param name="query">The query.</param>
+        /// <param name="commandType">Type of the command.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="commandTimeout">The command timeout (seconds)</param>
+        /// <returns></returns>
+        public static object ExecuteScalar( string query, CommandType commandType = CommandType.Text, Dictionary<string, object> parameters = null, int? commandTimeout = null )
         {
-            var connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["RockContext"];
-            if ( connectionString != null )
+            string connectionString = RockApp.Current.InitializationSettings.ConnectionString;
+            return ExecuteScalar( connectionString, query, commandType, parameters, commandTimeout );
+        }
+
+        /// <summary>
+        /// Executes the query, and returns the first column of the first row in the
+        /// result set returned by the query. Additional columns or rows are ignored.
+        /// </summary>
+        /// <param name="connectionString">The database connection string.</param>
+        /// <param name="query">The query.</param>
+        /// <param name="commandType">Type of the command.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
+        public static object ExecuteScalar( string connectionString, string query, CommandType commandType = CommandType.Text, Dictionary<string, object> parameters = null )
+        {
+            return ExecuteScalar( connectionString, query, commandType, parameters, null );
+        }
+
+        /// <summary>
+        /// Executes the query, and returns the first column of the first row in the
+        /// result set returned by the query. Additional columns or rows are ignored.
+        /// </summary>
+        /// <param name="connectionString">The database connection string.</param>
+        /// <param name="query">The query.</param>
+        /// <param name="commandType">Type of the command.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="commandTimeout">The command timeout (seconds)</param>
+        /// <returns></returns>
+        public static object ExecuteScalar( string connectionString, string query, CommandType commandType, Dictionary<string, object> parameters, int? commandTimeout )
+        {
+            if ( string.IsNullOrWhiteSpace( connectionString ) )
             {
-                return connectionString.ConnectionString;
+                return null;
             }
-            return null;
+
+            using ( SqlConnection con = new SqlConnection( connectionString ) )
+            {
+                return ExecuteScalar( con, query, commandType, parameters, commandTimeout );
+            }
+        }
+
+        /// <summary>
+        /// Executes the query, and returns the first column of the first row in the
+        /// result set returned by the query. Additional columns or rows are ignored.
+        /// </summary>
+        /// <param name="connection">The database connection.</param>
+        /// <param name="query">The query.</param>
+        /// <param name="commandType">Type of the command.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
+        public static object ExecuteScalar( SqlConnection connection, string query, CommandType commandType = CommandType.Text, Dictionary<string, object> parameters = null )
+        {
+            return ExecuteScalar( connection, query, commandType, parameters, null );
+        }
+
+        /// <summary>
+        /// Executes the query, and returns the first column of the first row in the
+        /// result set returned by the query. Additional columns or rows are ignored.
+        /// </summary>
+        /// <param name="connection">The database connection.</param>
+        /// <param name="query">The query.</param>
+        /// <param name="commandType">Type of the command.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="commandTimeout">The command timeout (seconds)</param>
+        /// <returns></returns>
+        public static object ExecuteScalar( SqlConnection connection, string query, CommandType commandType, Dictionary<string, object> parameters, int? commandTimeout )
+        {
+            if ( connection == null )
+            {
+                return null;
+            }
+
+            if ( connection.State == System.Data.ConnectionState.Closed )
+            {
+                connection.Open();
+            }
+
+            using ( SqlCommand sqlCommand = new SqlCommand( query, connection ) )
+            {
+                sqlCommand.CommandType = commandType;
+
+                if ( parameters != null )
+                {
+                    foreach ( var parameter in parameters )
+                    {
+                        SqlParameter sqlParam = new SqlParameter();
+                        sqlParam.ParameterName = parameter.Key.StartsWith( "@" ) ? parameter.Key : "@" + parameter.Key;
+                        sqlParam.Value = parameter.Value;
+                        sqlCommand.Parameters.Add( sqlParam );
+                    }
+                }
+
+                if ( commandTimeout.HasValue )
+                {
+                    sqlCommand.CommandTimeout = commandTimeout.Value;
+                }
+
+                return sqlCommand.ExecuteScalar();
+            }
         }
 
         #endregion

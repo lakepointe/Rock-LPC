@@ -124,7 +124,7 @@ namespace RockWeb.Blocks.Prayer
         "Prayed Workflow",
         AllowMultiple = false,
         Key = AttributeKey.PrayedWorkflow,
-        Description = "The workflow type to launch when someone presses the Pray button. Prayer Request will be passed to the workflow as a generic \"Entity\" field type. Additionally if the workflow type has any of the following attribute keys defined, those attribute values will also be set: PrayerOfferedByPersonId.",
+        Description = "The workflow type to launch when someone presses the Pray button. Prayer Request will be passed to the workflow as a generic \"Entity\" field type. Additionally if the workflow type has any of the following attribute keys defined, those attribute values will also be set: PrayerOfferedByPersonAliasGuid, PrayerOfferedByPerson.",
         IsRequired = false,
         Order = 11 )]
     [WorkflowTypeField(
@@ -223,7 +223,7 @@ function ReviewFlag(elem) {
 
         #region Fields
 
-        private const string CAMPUS_SETTING = "PrayerCardView_SelectedCampus";
+        private const string CAMPUS_SETTING = "selected-campus";
 
         #endregion
 
@@ -283,7 +283,11 @@ function ReviewFlag(elem) {
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void cpCampus_SelectedIndexChanged( object sender, EventArgs e )
         {
-            SetUserPreference( CAMPUS_SETTING, cpCampus.SelectedCampusId.ToString() );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( CAMPUS_SETTING, cpCampus.SelectedCampusId.ToString() );
+            preferences.Save();
+
             LoadContent();
             upPrayer.Update();
         }
@@ -420,7 +424,9 @@ function ReviewFlag(elem) {
             cpCampus.Visible = isCampusVisible;
             if ( isCampusVisible )
             {
-                cpCampus.SelectedCampusId = GetUserPreference( CAMPUS_SETTING ).AsIntegerOrNull();
+                var preferences = GetBlockPersonPreferences();
+
+                cpCampus.SelectedCampusId = preferences.GetValue( CAMPUS_SETTING ).AsIntegerOrNull();
             }
         }
 

@@ -135,7 +135,7 @@ namespace Rock.Tests.Integration
 
         public static DateTime GetAnalyticsSourceMinDateForYear( RockContext rockContext, int year )
         {
-            if ( !rockContext.AnalyticsSourceDates.AsQueryable().Any() )
+            if ( !rockContext.Set<AnalyticsSourceDate>().AsQueryable().Any() )
             {
                 var analyticsStartDate = new DateTime( RockDateTime.Today.AddYears( -150 ).Year, 1, 1 );
                 var analyticsEndDate = new DateTime( RockDateTime.Today.AddYears( 101 ).Year, 1, 1 ).AddDays( -1 );
@@ -227,7 +227,6 @@ namespace Rock.Tests.Integration
         #region Campus
 
         public static string MainCampusGuidString = "76882AE3-1CE8-42A6-A2B6-8C0B29CF8CF8";
-        public static string SecondaryCampusGuidString = "089844AF-6310-4C20-9434-A845F982B0C5";
         public static string SecondaryCampusName = "Stepping Stone";
 
         public static Campus GetOrAddCampusSteppingStone( RockContext rockContext )
@@ -235,7 +234,7 @@ namespace Rock.Tests.Integration
             // Add a new campus
             var campusService = new CampusService( rockContext );
 
-            var campus2 = campusService.Get( SecondaryCampusGuidString.AsGuid() );
+            var campus2 = campusService.Get( TestGuids.Crm.CampusSteppingStone.AsGuid() );
 
             if ( campus2 == null )
             {
@@ -245,7 +244,7 @@ namespace Rock.Tests.Integration
             }
 
             campus2.Name = SecondaryCampusName;
-            campus2.Guid = SecondaryCampusGuidString.AsGuid();
+            campus2.Guid = TestGuids.Crm.CampusSteppingStone.AsGuid();
             campus2.IsActive = true;
             campus2.CampusStatusValueId = DefinedValueCache.GetId( SystemGuid.DefinedValue.CAMPUS_STATUS_OPEN.AsGuid() );
             campus2.CampusTypeValueId = DefinedValueCache.GetId( SystemGuid.DefinedValue.CAMPUS_TYPE_PHYSICAL.AsGuid() );
@@ -344,8 +343,6 @@ namespace Rock.Tests.Integration
 
         #region Sample Data
 
-        private static List<string> _loadedFeatureDataSets = new List<string>();
-
         public static class DataSetIdentifiers
         {
             public static string PrayerSampleData = "PrayerSampleData";
@@ -358,11 +355,6 @@ namespace Rock.Tests.Integration
         /// <param name="datasetIdentifier">A <c>SampleDataHelper.DataSetIdentifiers</c> value that uniquely identifies the data set.</param>
         public static void AddTestDataSet( string datasetIdentifier )
         {
-            if ( GetFeatureDataLoadState( datasetIdentifier ) )
-            {
-                return;
-            }
-
             var isValid = false;
 
             if ( datasetIdentifier == DataSetIdentifiers.PrayerSampleData )
@@ -385,17 +377,10 @@ namespace Rock.Tests.Integration
             {
                 throw new Exception( $"Invalid Data Set. The data set \"{datasetIdentifier}\" could not be loaded." );
             }
-
-            SetFeatureDataLoadState( datasetIdentifier );
         }
 
         public static void RemoveTestDataSet( string datasetIdentifier )
         {
-            if ( !GetFeatureDataLoadState( datasetIdentifier ) )
-            {
-                return;
-            }
-
             var isValid = false;
 
             if ( datasetIdentifier == DataSetIdentifiers.PrayerSampleData )
@@ -412,31 +397,6 @@ namespace Rock.Tests.Integration
             if ( !isValid )
             {
                 throw new Exception( $"Invalid Data Set. The data set \"{datasetIdentifier}\" could not be loaded." );
-            }
-
-            SetFeatureDataLoadState( datasetIdentifier );
-        }
-
-        private static bool GetFeatureDataLoadState( string datasetName )
-        {
-            return _loadedFeatureDataSets.Contains( datasetName );
-        }
-
-        private static void SetFeatureDataLoadState( string datasetName, bool isLoaded = true )
-        {
-            if ( _loadedFeatureDataSets.Contains( datasetName ) )
-            {
-                if ( !isLoaded )
-                {
-                    _loadedFeatureDataSets.Remove( datasetName );
-                }
-            }
-            else
-            {
-                if ( isLoaded )
-                {
-                    _loadedFeatureDataSets.Add( datasetName );
-                }
             }
         }
 
@@ -468,9 +428,29 @@ namespace Rock.Tests.Integration
 
         #endregion
 
-        private static RockContext GetActiveRockContext( RockContext rockContext )
+        internal static RockContext GetActiveRockContext( RockContext rockContext )
         {
             return rockContext ?? new RockContext();
         }
+
+        #region Asserts
+
+        /// <summary>
+        /// Asserts that the specified Rock Entity object has a value.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="entity"></param>
+        /// <param name="identifier"></param>
+        public static void AssertRockEntityIsNotNull<T>( T entity, string identifier )
+    where T : IEntity
+        {
+            if ( entity == null )
+            {
+                var entityType = typeof( T );
+                throw new Exception( $"{entityType.GetFriendlyTypeName()} not found. [Identifier={identifier}]" );
+            }
+        }
+
+        #endregion
     }
 }

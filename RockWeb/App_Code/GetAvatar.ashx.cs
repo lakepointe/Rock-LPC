@@ -19,11 +19,13 @@ using System.Data.Entity;
 using System.IO;
 using System.Linq;
 using System.Web;
+
 using Rock;
 using Rock.Data;
 using Rock.Drawing.Avatar;
 using Rock.Model;
 using Rock.Security;
+using Rock.Utility;
 using Rock.Web.Cache;
 
 namespace RockWeb
@@ -31,7 +33,7 @@ namespace RockWeb
     /// <summary>
     /// Handles retrieving file (image) data from storage
     /// </summary>
-    public class GetAvatar : IHttpHandler
+    public class GetAvatar : IHttpAsyncHandler
     {
         // Implemented this as an IHttpAsyncHandler instead of IHttpHandler to improve performance
         // https://stackoverflow.com/questions/48528773/ihttphandler-versus-httptaskasynchandler-performance
@@ -41,6 +43,7 @@ namespace RockWeb
         // Delegate setup variables
         private AsyncProcessorDelegate _Delegate;
         protected delegate void AsyncProcessorDelegate( HttpContext context );
+        private SecuritySettingsService _securitySettingsService = new SecuritySettingsService();
 
         /// <summary>
         /// Called to initialize an asynchronous call to the HTTP handler. 
@@ -74,12 +77,6 @@ namespace RockWeb
         {
             // Read query string parameters
             var settings = ReadSettingsFromRequest( context.Request );
-
-            if ( settings.PhotoId.HasValue && !IsAuthorized( settings.PhotoId.Value ) )
-            {
-                SendNotAuthorized( context );
-                return;
-            }
 
             string cacheFolder = context.Request.MapPath( $"~/App_Data/Avatar/Cache/" );
             string cachedFilePath = $"{cacheFolder}{settings.CacheKey}.png";
@@ -124,7 +121,7 @@ namespace RockWeb
                 context.Response.AddHeader( "ETag", DateTime.Now.ToString().XxHash() );
 
                 // Configure client to cache image locally for 1 week
-                context.Response.Cache.SetCacheability( HttpCacheability.Public ); 
+                context.Response.Cache.SetCacheability( HttpCacheability.Public );
                 context.Response.Cache.SetMaxAge( new TimeSpan( 7, 0, 0, 0, 0 ) );
 
                 context.Response.ContentType = "image/png";
@@ -139,6 +136,26 @@ namespace RockWeb
                     }
                     responseStream.CopyTo( context.Response.OutputStream );
                     context.Response.Flush();
+                }
+            }
+            /*
+                8/31/2023 - PA
+
+                Catch and ignore exceptions caused when the client browser drops the connection before the request is complete.
+
+                Reason: https://github.com/SparkDevNetwork/Rock/issues/5521
+            */
+            catch ( System.Web.HttpException ex )
+            {
+                if ( ex.Message.IsNotNullOrWhiteSpace() && ex.Message.Contains( "The remote host closed the connection." ) )
+                {
+                    // Ignore the exception
+                    context.ClearError();
+                    context.ApplicationInstance.CompleteRequest();
+                }
+                else
+                {
+                    throw;
                 }
             }
             finally
@@ -229,6 +246,25 @@ namespace RockWeb
             // Calculate the physical path to store the cached files to
             settings.CachePath = request.MapPath( $"~/App_Data/Avatar/Cache/" );
 
+            // Use IdHash instead of predictable IDs if the setting is enabled
+            var disablePredictableIds = _securitySettingsService.SecuritySettings.DisablePredictableIds;
+
+            if ( disablePredictableIds )
+            {
+                if ( request.QueryString["fileIdKey"] != null )
+                {
+                    var photoIdKey = request.QueryString["fileIdKey"];
+                    settings.PhotoId = IdHasher.Instance.GetId( photoIdKey );
+                }
+            }
+            else
+            {
+                if ( request.QueryString["PhotoId"] != null )
+                {
+                    settings.PhotoId = request.QueryString["PhotoId"].AsIntegerOrNull();
+                }
+            }
+
             // Colors
             var backgroundColor = string.Empty;
             var foregroundColor = string.Empty;
@@ -309,12 +345,6 @@ namespace RockWeb
                 settings.Text = request.QueryString["Text"];
             }
 
-            // Photo Id
-            if ( request.QueryString["PhotoId"] != null )
-            {
-                settings.PhotoId = request.QueryString["PhotoId"].AsIntegerOrNull();
-            }
-
             // Record Type Guid
             if ( request.QueryString["RecordTypeId"] != null )
             {
@@ -374,6 +404,30 @@ namespace RockWeb
                 }
             }
 
+            // Person Alias Guid
+            if ( request.QueryString["PersonAliasGuid"] != null )
+            {
+                var personAliasGuid = request.QueryString["PersonAliasGuid"].AsGuidOrNull();
+
+                if ( personAliasGuid.HasValue )
+                {
+                    person = new PersonAliasService( new RockContext() ).GetPerson( personAliasGuid.Value );
+                    settings.PersonId = person?.Id;
+                }
+            }
+
+            // Person Alias Id
+            if ( request.QueryString["PersonAliasId"] != null )
+            {
+                var personAliasId = request.QueryString["PersonAliasId"].AsIntegerOrNull();
+
+                if ( personAliasId.HasValue )
+                {
+                    person = new PersonAliasService( new RockContext() ).GetPerson( personAliasId.Value );
+                    settings.PersonId = person?.Id;
+                }
+            }
+
             // Load configuration from the person object
             if ( person != null )
             {
@@ -410,50 +464,6 @@ namespace RockWeb
             {
                 // if it fails, return null, which will result in fetching it from the database instead
                 return null;
-            }
-        }
-
-
-        /// <summary>
-        /// Determines whether the current user is authorized to view the Person Image.
-        /// Returns true without security check if the Person Image BinaryFileType has RequiresViewSecurity set to false.
-        /// The file type will need to be checked before fetching the file (see RockImage.GetPersonImageFromBinaryFileService())
-        /// Validates security and the BinaryFileType if RequiresViewSecurity is true.
-        /// </summary>
-        /// <param name="photoId"></param>
-        /// <returns>
-        ///   <c>true</c> if the current user is authorized; otherwise, <c>false</c>.</returns>
-        private Boolean IsAuthorized( int photoId )
-        {
-            var binaryFileTypeCache = BinaryFileTypeCache.Get( Rock.SystemGuid.BinaryFiletype.PERSON_IMAGE.AsGuid() );
-            if ( binaryFileTypeCache.RequiresViewSecurity == false )
-            {
-                return true;
-            }
-
-            using ( var rockContext = new RockContext() )
-            {
-                var binaryFile = new BinaryFileService( rockContext ).Queryable().AsNoTracking().FirstOrDefault( a => a.Id == photoId );
-                if ( binaryFile == null || binaryFile.BinaryFileTypeId != binaryFileTypeCache.Id )
-                {
-                    return false;
-                }
-
-                var currentUser = new UserLoginService( rockContext ).GetByUserName( UserLogin.GetCurrentUserName() );
-                Person currentPerson = currentUser?.Person;
-                var parentEntityAllowsView = binaryFile.ParentEntityAllowsView( currentPerson );
-
-                // If no parent entity is specified then check if there is security on the BinaryFileType
-                if ( parentEntityAllowsView == null )
-                {
-                    if ( !binaryFile.IsAuthorized( Authorization.VIEW, currentPerson ) )
-                    {
-                        return false;
-                    }
-                }
-
-                // Check if there is parent security and use it if it exists, otherwise return true.
-                return parentEntityAllowsView ?? true;
             }
         }
 

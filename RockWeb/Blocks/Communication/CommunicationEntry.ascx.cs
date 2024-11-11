@@ -434,7 +434,7 @@ namespace RockWeb.Blocks.Communication
             _fullMode = string.IsNullOrWhiteSpace( mode ) || mode != "Simple";
             ppAddPerson.Visible = _fullMode;
             ShowHideIsBulkOption();
-
+            
             ddlTemplate.Visible = _fullMode;
             dtpFutureSend.Visible = _fullMode;
             btnTest.Visible = _fullMode;
@@ -1420,7 +1420,7 @@ namespace RockWeb.Blocks.Communication
             else
             {
                 cbBulk.Visible = _fullMode;
-
+                
                 // Do not force bulk communication since the recipient count has not exceeded the threshold.
                 _isBulkCommunicationForced = false;
             }

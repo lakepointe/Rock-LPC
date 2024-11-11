@@ -15,14 +15,17 @@
 // </copyright>
 //
 import { computed, defineComponent, ref, watch } from "vue";
-import CheckBox from "@Obsidian/Controls/checkBox";
-import DropDownList from "@Obsidian/Controls/dropDownList";
-import RockFormField from "@Obsidian/Controls/rockFormField";
-import TextBox from "@Obsidian/Controls/textBox";
+import CheckBox from "@Obsidian/Controls/checkBox.obs";
+import DropDownList from "@Obsidian/Controls/dropDownList.obs";
+import RockFormField from "@Obsidian/Controls/rockFormField.obs";
+import TextBox from "@Obsidian/Controls/textBox.obs";
 import { asBoolean, asBooleanOrNull, asTrueFalseOrNull } from "@Obsidian/Utility/booleanUtils";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { ClientValue, ConfigurationPropertyKey, ConfigurationValueKey, ValueItem } from "./keyValueListField.partial";
 import { getFieldConfigurationProps, getFieldEditorProps } from "./utils";
+import type { ValidationRule } from "@Obsidian/Types/validationRules";
+import { normalizeRules } from "@Obsidian/ValidationRules";
+import { isNullOrWhiteSpace, containsHtmlTag } from "@Obsidian/Utility/stringUtils";
 
 function parseModelValue(modelValue: string | undefined): ClientValue[] {
     try {
@@ -82,6 +85,10 @@ export const EditComponent = defineComponent({
             return asBoolean(props.configurationValues[ConfigurationValueKey.DisplayValueFirst] ?? "");
         });
 
+        const allowHtml = computed((): boolean => {
+            return asBoolean(props.configurationValues[ConfigurationValueKey.AllowHtml] ?? "");
+        });
+
         watch(() => props.modelValue, () => {
             internalValues.value = parseModelValue(props.modelValue);
         });
@@ -106,7 +113,34 @@ export const EditComponent = defineComponent({
             internalValues.value.splice(index, 1);
         };
 
+        const augmentedRules = computed((): ValidationRule[] => {
+            const rules = [] as ValidationRule[];
+
+            if (!allowHtml.value) {
+                rules.push(function (value: unknown) {
+                    const isArr = Array.isArray(value);
+                    if (isNullOrWhiteSpace(value) || (isArr && value.length === 0)) {
+                        return true;
+                    }
+
+                    if (isArr) {
+                        for (let i = 0; i < value.length; i++) {
+                            const { key: k, value: v } = value[i];
+                            if (containsHtmlTag(String(k)) || containsHtmlTag(String(v))) {
+                                return "contains invalid characters. Please make sure that your entries do not contain any angle brackets like < or >.";
+                            }
+                        }
+                    }
+
+                    return true;
+                });
+            }
+
+            return rules;
+        });
+
         return {
+            augmentedRules,
             internalValues,
             hasValues,
             displayValueFirst,
@@ -122,7 +156,8 @@ export const EditComponent = defineComponent({
 <RockFormField
     :modelValue="internalValues"
     formGroupClasses="key-value-list"
-    name="key-value-list">
+    name="key-value-list"
+    :rules="augmentedRules">
     <template #default="{uniqueId}">
         <div class="control-wrapper">
 <span :id="uniqueId" class="key-value-list">
@@ -238,7 +273,7 @@ export const ConfigurationComponent = defineComponent({
 
         /**
          * Emits the updateConfigurationValue if the value has actually changed.
-         * 
+         *
          * @param key The key that was possibly modified.
          * @param value The new value.
          */

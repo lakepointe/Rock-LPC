@@ -306,7 +306,7 @@ export class RockDateTime {
      * The day of the year represented by this instance.
      */
     public get dayOfYear(): number {
-        return this.dateTime.year;
+        return this.dateTime.ordinal;
     }
 
     /**
@@ -397,6 +397,23 @@ export class RockDateTime {
      */
     public addDays(days: number): RockDateTime {
         const dateTime = this.dateTime.plus({ days: days });
+
+        if (!dateTime.isValid) {
+            throw "Operation produced an invalid date.";
+        }
+
+        return new RockDateTime(dateTime);
+    }
+
+    /**
+     * Creates a new RockDateTime instance that represents the last millisecond
+     * of the end of the month for this instance.
+     *
+     * @example
+     * RockDateTime.fromJSDate(new Date(2014, 3, 3)).endOfMonth().toISOString(); //=> '2014-03-31T23:59:59.999-05:00'
+     */
+    public endOfMonth(): RockDateTime {
+        const dateTime = this.dateTime.endOf("month");
 
         if (!dateTime.isValid) {
             throw "Operation produced an invalid date.";
@@ -690,6 +707,39 @@ export class RockDateTime {
      */
     public isEarlierThan(otherDateTime: RockDateTime): boolean {
         return this.dateTime.toMillis() < otherDateTime.dateTime.toMillis();
+    }
+
+    /**
+     * Calculates the elapsed time between this date and the reference date and
+     * returns that difference in a human friendly way.
+     *
+     * @param otherDateTime The reference date and time. If not specified then 'now' is used.
+     *
+     * @returns A string that represents the elapsed time.
+     */
+    public humanizeElapsed(otherDateTime?: RockDateTime): string {
+        otherDateTime = otherDateTime ?? RockDateTime.now();
+
+        const totalSeconds = Math.floor((otherDateTime.dateTime.toMillis() - this.dateTime.toMillis()) / 1000);
+
+        if (totalSeconds <= 1) {
+            return "right now";
+        }
+        else if (totalSeconds < 60) { // 1 minute
+            return `${totalSeconds} seconds ago`;
+        }
+        else if (totalSeconds < 3600) { // 1 hour
+            return `${Math.floor(totalSeconds / 60)} minutes ago`;
+        }
+        else if (totalSeconds < 86400) { // 1 day
+            return `${Math.floor(totalSeconds / 3600)} hours ago`;
+        }
+        else if (totalSeconds < 31536000) { // 1 year
+            return `${Math.floor(totalSeconds / 86400)} days ago`;
+        }
+        else {
+            return `${Math.floor(totalSeconds / 31536000)} years ago`;
+        }
     }
 
     // #endregion

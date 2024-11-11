@@ -14,24 +14,85 @@
 // limitations under the License.
 // </copyright>
 //
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Dynamic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Rock.Lava;
+using Rock.Lava.Fluid;
 using Rock.Tests.Shared;
 
 namespace Rock.Tests.UnitTests.Lava
 {
-
-
     [TestClass]
     public class CollectionFilterTests : LavaUnitTestBase
     {
         List<string> _TestNameList = new List<string>() { "Ted", "Alisha", "Cynthia", "Brian" };
         List<string> _TestOrderedList = new List<string>() { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
         List<string> _TestDuplicateStringList = new List<string>() { "Item 1", "Item 2 (duplicate)", "Item 2 (duplicate)", "Item 2 (duplicate)", "Item 3" };
+
+        [TestMethod]
+        public void Compact_DocumentationExample_ProducesExpectedOutput()
+        {
+            var template = @"
+{% assign fruits = '' | AddToArray:'apples' | AddToArray:nil | AddToArray:'oranges' | AddToArray:nil | AddToArray:'peaches' %}
+Whole Fruit: {{ fruits | Join:', ' }}
+{% assign squashedFruits = fruits | Compact %}
+Squashed Fruit: {{ squashedFruits | Join:', ' }}
+";
+            var expectedOutput = @"
+Whole Fruit: apples, , oranges, , peaches
+Squashed Fruit: apples, oranges, peaches
+";
+
+            TestHelper.AssertTemplateOutput( typeof( FluidEngine ), expectedOutput, template, ignoreWhitespace: true );
+        }
+
+        [TestMethod]
+        public void Compact_ForArrayWithNullValues_RemovesNullValues()
+        {
+            var names = new List<string>() { null, "Alisha", "Brian", null, "Cynthia" };
+            var mergeValues = new LavaDataDictionary { { "TestList", names } };
+
+            TestHelper.AssertTemplateOutput( typeof( FluidEngine ),
+                "Alisha,Brian,Cynthia",
+                "{{ TestList | Compact | Join:',' }}", mergeValues );
+        }
+
+        [TestMethod]
+        public void Concat_DocumentationExample_ProducesExpectedOutput()
+        {
+            var template = @"
+{% assign primaryColors = 'red, yellow, blue' | Split: ', ' %}
+{% assign secondaryColors = 'orange, green, violet' | Split: ', ' %}
+{% assign allColors = primaryColors | Concat: secondaryColors %}
+{{ allColors | Join:', ' }}
+";
+            var expectedOutput = @"red, yellow, blue, orange, green, violet";
+
+            TestHelper.AssertTemplateOutput( typeof( FluidEngine ), expectedOutput, template, ignoreWhitespace: true );
+        }
+
+        [TestMethod]
+        public void Concat_WithMultipleArrayInput_ProducesSingleArray()
+        {
+            var template = @"
+{% assign fruits = 'apples, oranges, peaches' | Split: ', ' %}
+{% assign vegetables = 'carrots, turnips, potatoes' | Split: ', ' %}
+{% assign everything = fruits | Concat: vegetables %}
+{% for item in everything %}
+{{ item }},
+{% endfor %}
+";
+            var expectedOutput = @"apples, oranges, peaches, carrots, turnips, potatoes,";
+
+            TestHelper.AssertTemplateOutput( typeof( FluidEngine ), expectedOutput, template, ignoreWhitespace: true );
+        }
 
         #region Filter Tests: Distinct
 
@@ -62,6 +123,16 @@ namespace Rock.Tests.UnitTests.Lava
 
             // Only the first person of each family in the collection should be returned.
             TestHelper.AssertTemplateOutput( "TedDecker<br>BillMarble<br>", lavaTemplate, mergeValues, ignoreWhitespace:true );
+        }
+
+        [TestMethod]
+        public void Distinct_IncludedInFilterChain_ProvidesValidInputToNextFilter()
+        {
+            var lavaTemplate = @"
+{% assign testArray = '2,1,3,5,4,2' | Split:',' %}
+{{ testArray  | Distinct | Contains:'2' }}
+";
+            TestHelper.AssertTemplateOutput( "true", lavaTemplate, ignoreWhitespace: true );
         }
 
         #endregion
@@ -173,7 +244,49 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
         }
 
         [TestMethod]
-        public void RemoveFromDictionary_AppliedToArrayOfIntegers_ReturnsCorrectSum()
+        public void AddToDictionary_AddExistingKey_ReplacesExistingValue()
+        {
+            var lavaTemplate = @"
+        {% assign dict = '' | AddToDictionary:'key1','value1' %}
+        {% assign dict = dict | AddToDictionary:'key1','value2' %}
+        {{ dict | ToJSON }}
+";
+
+            TestHelper.AssertTemplateOutput( @"{""key1"":""value2""}", lavaTemplate, LavaRenderParameters.Default, ignoreWhitespace: true );
+        }
+
+        [TestMethod]
+        public void AddToDictionary_DocumentationExample1_ProducesExpectedOutput()
+        {
+            var lavaTemplate = @"
+{% assign colors = '' | AddToDictionary:'success','green' | AddToDictionary:'warning','orange' | AddToDictionary:'error','red' %}
+<div style='color:{{ colors[""success""]}}'>
+    This request is approved.
+</div>
+<div style='color:{{ colors[""warning""]}}'>
+    This request is incomplete.
+</div>
+<div style='color:{{ colors[""error""]}}'>
+    This request is denied.
+</div>
+";
+            var expectedOutput = @"
+<div style='color:green'>
+    This request is approved.
+</div>
+<div style='color:orange'>
+    This request is incomplete.
+</div>
+<div style='color:red'>
+    This request is denied.
+</div>
+";
+
+            TestHelper.AssertTemplateOutput( expectedOutput, lavaTemplate, LavaRenderParameters.Default, ignoreWhitespace: true );
+        }
+
+        [TestMethod]
+        public void RemoveFromDictionary_RemoveExistingKey_ReturnsUpdatedDictionary()
         {
             var lavaTemplate = @"
 {% assign dict = '' | AddToDictionary:'key1','value2' | AddToDictionary:'key2','value2' | AddToDictionary:'key3','value3' %}
@@ -213,6 +326,62 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
             lavaTemplate = lavaTemplate.Replace( "<searchValue>", searchValue );
 
             TestHelper.AssertTemplateOutput( isFound ? "true" : "false", lavaTemplate, mergeValues );
+        }
+
+        [TestMethod]
+        public void Contains_WithInputAsEnumerable_ReturnCorrectMatchIndicators()
+        {
+            var mergeValues = new LavaDataDictionary();
+            var lavaTemplate = @"{{ TestEnumerable | Contains:'2' }}";
+
+            var itemList = new List<string>() { "1", "2", "3" };
+
+            // IEnumerable collection.
+            var enumerableCollection = new Stack( itemList );
+            mergeValues["TestEnumerable"] = enumerableCollection;
+
+            Assert.That.IsTrue( enumerableCollection is IEnumerable
+                && !( enumerableCollection is IEnumerable<object> )
+                && !( enumerableCollection is IList ) );
+
+            TestHelper.AssertTemplateOutput( "true", lavaTemplate, mergeValues, ignoreWhitespace: true );
+
+            // IEnumerable<> collection.
+            var queueCollection = new Queue<string>( itemList );
+            mergeValues["TestEnumerable"] = queueCollection;
+
+            Assert.That.IsTrue( queueCollection is IEnumerable<string>
+                && !( queueCollection is IList ) );
+
+            TestHelper.AssertTemplateOutput( "true", lavaTemplate, mergeValues, ignoreWhitespace:true );
+
+            // IList collection.
+            mergeValues["TestEnumerable"] = itemList;
+
+            TestHelper.AssertTemplateOutput( "true", lavaTemplate, mergeValues, ignoreWhitespace: true );
+        }
+
+        [TestMethod]
+        public void Contains_WithInputAsList_ReturnCorrectMatchIndicators()
+        {
+            var mergeValues = new LavaDataDictionary();
+            var lavaTemplate = @"{{ TestEnumerable | Contains:'2' }}";
+
+            var itemList = new List<string>() { "1", "2", "3" };
+
+            // IList collection.
+            var itemArray = new ArrayList( itemList );
+            mergeValues["TestEnumerable"] = itemArray;
+
+            Assert.That.IsTrue( itemArray is IList
+                && !( itemArray is IList<string> ) );
+
+            TestHelper.AssertTemplateOutput( "true", lavaTemplate, mergeValues, ignoreWhitespace: true );
+
+            // IList<T> collection.
+            mergeValues["TestEnumerable"] = itemList;
+
+            TestHelper.AssertTemplateOutput( "true", lavaTemplate, mergeValues, ignoreWhitespace: true );
         }
 
         #region Filter Tests: Index
@@ -431,6 +600,36 @@ Total: {{ '3,5,7' | Split:',' | Sum }}
             TestHelper.AssertTemplateOutput( "Value1-2;Value2-2;",
                 "{% assign values = Dictionaries | Select:'Key2' %}{% for value in values %}{{ value }};{% endfor %}",
                 mergeValues );
+        }
+
+
+        /// <summary>
+        /// The Sort filter is case-sensitive, sorting alphabetically with uppercase before lowercase values.
+        /// </summary>
+        [TestMethod]
+        public void Sort_ForArrayTarget_IsCaseSensitive()
+        {
+            var unsortedNames = new List<string>() { "Ted", "brian", "Cynthia", "alisha" };
+            var mergeValues = new LavaDataDictionary { { "TestList", unsortedNames } };
+
+            TestHelper.AssertTemplateOutput( typeof( FluidEngine ),
+                "Cynthia,Ted,alisha,brian",
+                "{{ TestList | Sort | Join:',' }}", mergeValues );
+        }
+
+        /// <summary>
+        /// The SortNatural filter is case-insensitive, sorting alphabetically without regard to case.
+        /// </summary>
+        [TestMethod]
+        public void SortNatural_ForArrayTarget_IsCaseSensitive()
+        {
+            var unsortedNames = new List<string>() { "Ted", "brian", "Cynthia", "alisha" };
+            var mergeValues = new LavaDataDictionary { { "TestList", unsortedNames } };
+
+            TestHelper.AssertTemplateOutput( typeof( FluidEngine ),
+                "alisha,brian,Cynthia,Ted",
+                "{{ TestList | SortNatural | Join:',' }}", mergeValues );
+
         }
 
         /// <summary>

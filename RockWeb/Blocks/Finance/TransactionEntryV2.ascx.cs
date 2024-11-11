@@ -1481,7 +1481,7 @@ mission. We are so grateful for your commitment.</p>
                 return;
             }
 
-            var mergeFields = LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new CommonMergeFieldsOptions { GetLegacyGlobalMergeFields = false } );
+            var mergeFields = LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new CommonMergeFieldsOptions() );
             mergeFields.Add( "GiftTerm", this.GetAttributeValue( AttributeKey.GiftTerm ) ?? "Gift" );
 
             Dictionary<string, object> linkedPages = new Dictionary<string, object>();
@@ -2185,7 +2185,8 @@ mission. We are so grateful for your commitment.</p>
                     acAddressIndividual.SetValues( null );
                 }
 
-                if ( GetAttributeValue( AttributeKey.PromptForPhone ).AsBoolean() )
+                var promptForPhone = GetAttributeValue( AttributeKey.PromptForPhone ).AsBoolean();
+                if ( promptForPhone )
                 {
                     var personPhoneNumber = targetPerson.GetPhoneNumber( Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_HOME.AsGuid() );
 
@@ -2194,6 +2195,26 @@ mission. We are so grateful for your commitment.</p>
                     if ( personPhoneNumber == null || string.IsNullOrWhiteSpace( personPhoneNumber.Number ) || personPhoneNumber.IsUnlisted )
                     {
                         personPhoneNumber = targetPerson.GetPhoneNumber( Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE.AsGuid() );
+                    }
+
+                    PhoneNumberBox pnbPhone = pnbPhoneIndividual;
+                    if ( targetPerson.IsBusiness() )
+                    {
+                        pnbPhone = pnbPhoneBusiness;
+                    }
+
+                    if ( personPhoneNumber != null )
+                    {
+                        if ( !personPhoneNumber.IsUnlisted )
+                        {
+                            pnbPhone.CountryCode = personPhoneNumber.CountryCode;
+                            pnbPhone.Number = personPhoneNumber.ToString();
+                        }
+                    }
+                    else
+                    {
+                        pnbPhone.CountryCode = PhoneNumber.DefaultCountryCode();
+                        pnbPhone.Number = string.Empty;
                     }
                 }
 
@@ -2780,6 +2801,7 @@ mission. We are so grateful for your commitment.</p>
             if ( transactionAlreadyExists )
             {
                 ShowTransactionSummary();
+                return;
             }
 
             bool givingAsBusiness = this.GivingAsBusiness();
@@ -3048,7 +3070,7 @@ mission. We are so grateful for your commitment.</p>
             var rockContext = new RockContext();
             var transactionGuid = hfTransactionGuid.Value.AsGuid();
 
-            var mergeFields = LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new CommonMergeFieldsOptions { GetLegacyGlobalMergeFields = false } );
+            var mergeFields = LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new CommonMergeFieldsOptions() );
             var finishLavaTemplate = this.GetAttributeValue( AttributeKey.FinishLavaTemplate );
             IEntity transactionEntity = GetTransactionEntity();
             mergeFields.Add( "TransactionEntity", transactionEntity );
@@ -3172,23 +3194,10 @@ mission. We are so grateful for your commitment.</p>
                 : null;
 
             // Get the batch
-            var batch = batchService.Get(
-                GetAttributeValue( AttributeKey.BatchNamePrefix ),
-                currencyTypeValue,
-                creditCardTypeValue,
-                transaction.TransactionDateTime.Value,
-                financialGateway.GetBatchTimeOffset() );
+            var batch = batchService.GetForNewTransaction( transaction, GetAttributeValue( AttributeKey.BatchNamePrefix ) );
 
             var batchChanges = new History.HistoryChangeList();
-
-            if ( batch.Id == 0 )
-            {
-                batchChanges.AddChange( History.HistoryVerb.Add, History.HistoryChangeType.Record, "Batch" );
-                History.EvaluateChange( batchChanges, "Batch Name", string.Empty, batch.Name );
-                History.EvaluateChange( batchChanges, "Status", null, batch.Status );
-                History.EvaluateChange( batchChanges, "Start Date/Time", null, batch.BatchStartDateTime );
-                History.EvaluateChange( batchChanges, "End Date/Time", null, batch.BatchEndDateTime );
-            }
+            FinancialBatchService.EvaluateNewBatchHistory( batch, batchChanges );
 
             transaction.LoadAttributes( rockContext );
 
@@ -3318,7 +3327,7 @@ mission. We are so grateful for your commitment.</p>
                 {
                     feeCoverageACHAmount = feeCoverageGatewayComponent.GetACHFeeCoverageAmount( this.FinancialGateway );
                 }
-                else if ( cbGetPaymentInfoCoverTheFeeCreditCard.Checked )
+                else if ( !isAch && cbGetPaymentInfoCoverTheFeeCreditCard.Checked )
                 {
                     feeCoverageCreditCardPercent = feeCoverageGatewayComponent.GetCreditCardFeeCoveragePercentage( this.FinancialGateway );
                 }

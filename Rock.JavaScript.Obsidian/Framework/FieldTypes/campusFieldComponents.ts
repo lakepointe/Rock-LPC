@@ -18,9 +18,9 @@
 import { Guid } from "@Obsidian/Types";
 import { computed, defineComponent, ref, watch } from "vue";
 import { getFieldConfigurationProps, getFieldEditorProps } from "./utils";
-import CheckBox from "@Obsidian/Controls/checkBox";
-import CheckBoxList from "@Obsidian/Controls/checkBoxList";
-import DropDownList from "@Obsidian/Controls/dropDownList";
+import CheckBox from "@Obsidian/Controls/checkBox.obs";
+import CheckBoxList from "@Obsidian/Controls/checkBoxList.obs";
+import DropDownList from "@Obsidian/Controls/dropDownList.obs";
 import { ConfigurationPropertyKey, ConfigurationValueKey } from "./campusField.partial";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { asBoolean, asTrueFalseOrNull } from "@Obsidian/Utility/booleanUtils";
@@ -49,7 +49,17 @@ export const EditComponent = defineComponent({
         /** The options to choose from in the drop down list */
         const options = computed((): ListItemBag[] => {
             try {
-                return JSON.parse(props.configurationValues[ConfigurationValueKey.Values] ?? "[]") as ListItemBag[];
+                const optionsListItems = JSON.parse(props.configurationValues[ConfigurationValueKey.Values] ?? "[]") as ListItemBag[];
+                const isIncludeInactive = asBoolean(!props.configurationValues[ConfigurationValueKey.IncludeInactive]);
+                const isValueFoundOnActiveItems = optionsListItems.find(x => x.value == internalValue.value);
+                if (!isIncludeInactive && !isValueFoundOnActiveItems) {
+                    const inactiveListItem = JSON.parse(props.configurationValues[ConfigurationValueKey.ValuesInactive] ?? "[]") as ListItemBag[];
+                    const selectedValue = inactiveListItem.find(x => x.value == internalValue.value);
+                    if (selectedValue) {
+                        optionsListItems.push(selectedValue);
+                    }
+                }
+                return optionsListItems;
             }
             catch {
                 return [];
@@ -60,14 +70,22 @@ export const EditComponent = defineComponent({
 
         watch(internalValue, () => emit("update:modelValue", internalValue.value));
 
+        const shouldHidePicker = computed((): boolean => {
+            return asBoolean(!props.configurationValues[ConfigurationValueKey.ForceVisible])
+            && options.value.length <= 1
+            && props.configurationValues[ConfigurationValueKey.FilterCampusTypes] == ""
+            && props.configurationValues[ConfigurationValueKey.FilterCampusStatus] == "";
+        });
+
         return {
             internalValue,
-            options
+            options,
+            shouldHidePicker
         };
     },
 
     template: `
-<DropDownList v-model="internalValue" :items="options" />
+<DropDownList v-if="!shouldHidePicker" v-model="internalValue" :items="options" />
 `
 });
 
@@ -220,7 +238,7 @@ export const ConfigurationComponent = defineComponent({
 
         /**
          * Emits the updateConfigurationValue if the value has actually changed.
-         * 
+         *
          * @param key The key that was possibly modified.
          * @param value The new value.
          */

@@ -33,6 +33,8 @@ using Rock.Utility;
 using Rock.Web.Cache;
 using Rock.Web.UI;
 
+using CheckInLabel = Rock.CheckIn.CheckInLabel;
+
 namespace RockWeb.Blocks.CheckIn
 {
     /// <summary>
@@ -198,7 +200,7 @@ namespace RockWeb.Blocks.CheckIn
                 }
             }
 
-            var mergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, null, new Rock.Lava.CommonMergeFieldsOptions { GetLegacyGlobalMergeFields = false } );
+            var mergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, null, new Rock.Lava.CommonMergeFieldsOptions() );
             mergeFields.Add( MergeFieldKey.CheckinResultList, checkinResultList );
             mergeFields.Add( MergeFieldKey.Kiosk, CurrentCheckInState.Kiosk );
             mergeFields.Add( MergeFieldKey.RegistrationModeEnabled, CurrentCheckInState.Kiosk.RegistrationModeEnabled );

@@ -204,7 +204,11 @@ namespace RockWeb.Blocks.WorkFlow.FormBuilder
                     if ( eventParam.Equals( "category-selected" ) )
                     {
                         hfSelectedCategory.Value = nameValue[1];
-                        SetBlockUserPreference( UserPreferenceKeys.CategoryId, nameValue[1] );
+
+                        var preferences = GetBlockPersonPreferences();
+                        preferences.SetValue( UserPreferenceKeys.CategoryId, nameValue[1] );
+                        preferences.Save();
+
                         ListCategoryForms();
                     }
                 }
@@ -475,7 +479,7 @@ namespace RockWeb.Blocks.WorkFlow.FormBuilder
             workflowActivityType.ActionTypes.Add( workflowActionType );
             workflowActionType.WorkflowForm = new WorkflowActionForm();
             workflowActionType.WorkflowForm.PersonEntryPersonAttributeGuid = personAttribute.Guid;
-            workflowActionType.WorkflowForm.PersonEntrySpouseAttributeGuid = spouseQualifier.Guid;
+            workflowActionType.WorkflowForm.PersonEntrySpouseAttributeGuid = spouseAttribute.Guid;
             workflowActionType.WorkflowForm.PersonEntryFamilyAttributeGuid = familyAttribute.Guid;
             workflowActionType.WorkflowForm.AllowPersonEntry = true;
             workflowActionType.WorkflowForm.PersonEntryRecordStatusValueId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.PERSON_RECORD_STATUS_ACTIVE.AsGuid() );
@@ -1135,7 +1139,8 @@ namespace RockWeb.Blocks.WorkFlow.FormBuilder
             var categoryId = PageParameter( PageParameterKey.CategoryId ).AsIntegerOrNull();
             if ( !categoryId.HasValue )
             {
-                categoryId = GetBlockUserPreference( UserPreferenceKeys.CategoryId ).AsIntegerOrNull();
+                var preferences = GetBlockPersonPreferences();
+                categoryId = preferences.GetValue( UserPreferenceKeys.CategoryId ).AsIntegerOrNull();
             }
 
             return categoryId;

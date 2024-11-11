@@ -23,11 +23,7 @@
 using System;
 using System.Linq;
 
-using Rock.Attribute;
 using Rock.Data;
-using Rock.ViewModels;
-using Rock.ViewModels.Entities;
-using Rock.Web.Cache;
 
 namespace Rock.Model
 {
@@ -142,6 +138,8 @@ namespace Rock.Model
                 return false;
             }
 
+            // ignoring LearningClass,Id
+
             if ( new Service<Person>( Context ).Queryable().Any( a => a.GivingGroupId == item.Id ) )
             {
                 errorMessage = string.Format( "This {0} is assigned to a {1}.", Group.FriendlyTypeName, Person.FriendlyTypeName );
@@ -176,78 +174,6 @@ namespace Rock.Model
             return true;
         }
     }
-
-    /// <summary>
-    /// Group View Model Helper
-    /// </summary>
-    [DefaultViewModelHelper( typeof( Group ) )]
-    public partial class GroupViewModelHelper : ViewModelHelper<Group, GroupBag>
-    {
-        /// <summary>
-        /// Converts the model to a view model.
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson">The current person.</param>
-        /// <param name="loadAttributes">if set to <c>true</c> [load attributes].</param>
-        /// <returns></returns>
-        public override GroupBag CreateViewModel( Group model, Person currentPerson = null, bool loadAttributes = true )
-        {
-            if ( model == null )
-            {
-                return default;
-            }
-
-            var viewModel = new GroupBag
-            {
-                IdKey = model.IdKey,
-                AllowGuests = model.AllowGuests,
-                ArchivedByPersonAliasId = model.ArchivedByPersonAliasId,
-                ArchivedDateTime = model.ArchivedDateTime,
-                AttendanceRecordRequiredForCheckIn = ( int ) model.AttendanceRecordRequiredForCheckIn,
-                CampusId = model.CampusId,
-                ConfirmationAdditionalDetails = model.ConfirmationAdditionalDetails,
-                Description = model.Description,
-                DisableScheduleToolboxAccess = model.DisableScheduleToolboxAccess,
-                DisableScheduling = model.DisableScheduling,
-                ElevatedSecurityLevel = ( int ) model.ElevatedSecurityLevel,
-                GroupCapacity = model.GroupCapacity,
-                GroupSalutation = model.GroupSalutation,
-                GroupSalutationFull = model.GroupSalutationFull,
-                GroupTypeId = model.GroupTypeId,
-                InactiveDateTime = model.InactiveDateTime,
-                InactiveReasonNote = model.InactiveReasonNote,
-                InactiveReasonValueId = model.InactiveReasonValueId,
-                IsActive = model.IsActive,
-                IsArchived = model.IsArchived,
-                IsPublic = model.IsPublic,
-                IsSecurityRole = model.IsSecurityRole,
-                IsSystem = model.IsSystem,
-                Name = model.Name,
-                Order = model.Order,
-                ParentGroupId = model.ParentGroupId,
-                ReminderAdditionalDetails = model.ReminderAdditionalDetails,
-                ReminderOffsetDays = model.ReminderOffsetDays,
-                ReminderSystemCommunicationId = model.ReminderSystemCommunicationId,
-                RequiredSignatureDocumentTemplateId = model.RequiredSignatureDocumentTemplateId,
-                RSVPReminderOffsetDays = model.RSVPReminderOffsetDays,
-                RSVPReminderSystemCommunicationId = model.RSVPReminderSystemCommunicationId,
-                ScheduleCancellationPersonAliasId = model.ScheduleCancellationPersonAliasId,
-                ScheduleConfirmationLogic = ( int? ) model.ScheduleConfirmationLogic,
-                ScheduleId = model.ScheduleId,
-                SchedulingMustMeetRequirements = model.SchedulingMustMeetRequirements,
-                StatusValueId = model.StatusValueId,
-                CreatedDateTime = model.CreatedDateTime,
-                ModifiedDateTime = model.ModifiedDateTime,
-                CreatedByPersonAliasId = model.CreatedByPersonAliasId,
-                ModifiedByPersonAliasId = model.ModifiedByPersonAliasId,
-            };
-
-            AddAttributesToViewModel( model, viewModel, currentPerson, loadAttributes );
-            ApplyAdditionalPropertiesAndSecurityToViewModel( model, viewModel, currentPerson, loadAttributes );
-            return viewModel;
-        }
-    }
-
 
     /// <summary>
     /// Generated Extension Methods
@@ -329,9 +255,15 @@ namespace Rock.Model
             target.IsPublic = source.IsPublic;
             target.IsSecurityRole = source.IsSecurityRole;
             target.IsSystem = source.IsSystem;
+            target.LeaderToLeaderRelationshipMultiplierOverride = source.LeaderToLeaderRelationshipMultiplierOverride;
+            target.LeaderToNonLeaderRelationshipMultiplierOverride = source.LeaderToNonLeaderRelationshipMultiplierOverride;
             target.Name = source.Name;
+            target.NonLeaderToLeaderRelationshipMultiplierOverride = source.NonLeaderToLeaderRelationshipMultiplierOverride;
+            target.NonLeaderToNonLeaderRelationshipMultiplierOverride = source.NonLeaderToNonLeaderRelationshipMultiplierOverride;
             target.Order = source.Order;
             target.ParentGroupId = source.ParentGroupId;
+            target.RelationshipGrowthEnabledOverride = source.RelationshipGrowthEnabledOverride;
+            target.RelationshipStrengthOverride = source.RelationshipStrengthOverride;
             target.ReminderAdditionalDetails = source.ReminderAdditionalDetails;
             target.ReminderOffsetDays = source.ReminderOffsetDays;
             target.ReminderSystemCommunicationId = source.ReminderSystemCommunicationId;
@@ -351,20 +283,5 @@ namespace Rock.Model
             target.ForeignId = source.ForeignId;
 
         }
-
-        /// <summary>
-        /// Creates a view model from this entity
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson" >The currentPerson.</param>
-        /// <param name="loadAttributes" >Load attributes?</param>
-        public static GroupBag ToViewModel( this Group model, Person currentPerson = null, bool loadAttributes = false )
-        {
-            var helper = new GroupViewModelHelper();
-            var viewModel = helper.CreateViewModel( model, currentPerson, loadAttributes );
-            return viewModel;
-        }
-
     }
-
 }

@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -205,6 +205,15 @@ namespace Rock.Model
         [DataMember]
         public int? AlternateImageBinaryFileId { get; set; }
 
+        /// <summary>
+        /// Gets or sets the target count of things that must be done for this
+        /// achievement to be considered accomplished.
+        /// </summary>
+        /// <value>
+        /// The number of things that must be accomplished to complete this achievement or <c>null</c> if not known.
+        /// </value>
+        public int? TargetCount { get; set; }
+
         #endregion Entity Properties
 
         #region IHasActiveFlag
@@ -329,6 +338,21 @@ namespace Rock.Model
         public virtual BinaryFile AlternateImageBinaryFile { get; set; }
 
         #endregion Navigation Properties
+
+        #region Methods
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> containing the Person's FullName that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> containing the Person's FullName that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return this.Name;
+        }
+
+        #endregion
 
         #region Entity Configuration
 

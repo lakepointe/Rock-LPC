@@ -31,12 +31,13 @@ namespace Rock.Blocks.Types.Mobile.Prayer
     /// <summary>
     /// Provides an additional experience to pray using a card based view.
     /// </summary>
-    /// <seealso cref="Rock.Blocks.RockMobileBlockType" />
+    /// <seealso cref="Rock.Blocks.RockBlockType" />
 
     [DisplayName( "Prayer Card View" )]
     [Category( "Mobile > Prayer" )]
     [Description( "Provides an additional experience to pray using a card based view." )]
     [IconCssClass( "fa fa-th" )]
+    [SupportedSiteTypes( Model.SiteType.Mobile )]
 
     #region Block Attributes
 
@@ -90,6 +91,15 @@ namespace Rock.Blocks.Types.Mobile.Prayer
         Key = AttributeKey.PublicOnly,
         Order = 5 )]
 
+    [BooleanField(
+        "Include Unapproved",
+        Description = "If selected, all unapproved prayer requests will be included.",
+        IsRequired = false,
+        DefaultBooleanValue = false,
+        ControlType = Field.Types.BooleanFieldType.BooleanControlType.Toggle,
+        Key = AttributeKey.IncludeUnapproved,
+        Order = 6 )]
+
     [EnumField(
         "Order",
         Description = "The order that requests should be displayed.",
@@ -97,7 +107,7 @@ namespace Rock.Blocks.Types.Mobile.Prayer
         EnumSourceType = typeof( PrayerRequestOrder ),
         DefaultEnumValue = ( int ) PrayerRequestOrder.LeastPrayedFor,
         Key = AttributeKey.PrayerOrder,
-        Order = 6 )]
+        Order = 7 )]
 
     [DefinedValueField(
         "Campus Types",
@@ -106,7 +116,7 @@ namespace Rock.Blocks.Types.Mobile.Prayer
         IsRequired = false,
         DefinedTypeGuid = Rock.SystemGuid.DefinedType.CAMPUS_TYPE,
         AllowMultiple = true,
-        Order = 7 )]
+        Order = 8 )]
 
     [DefinedValueField(
         "Campus Statuses",
@@ -115,14 +125,14 @@ namespace Rock.Blocks.Types.Mobile.Prayer
         IsRequired = false,
         DefinedTypeGuid = Rock.SystemGuid.DefinedType.CAMPUS_STATUS,
         AllowMultiple = true,
-        Order = 8 )]
+        Order = 9 )]
 
     [IntegerField(
         "Max Requests",
         Description = "The maximum number of requests to display. Leave blank for all.",
         IsRequired = false,
         Key = AttributeKey.MaxRequests,
-        Order = 9 )]
+        Order = 10 )]
 
     [BooleanField(
         "Load Last Prayed Collection",
@@ -131,7 +141,7 @@ namespace Rock.Blocks.Types.Mobile.Prayer
         DefaultBooleanValue = false,
         ControlType = Field.Types.BooleanFieldType.BooleanControlType.Toggle,
         Key = AttributeKey.LoadLastPrayedCollection,
-        Order = 10 )]
+        Order = 11 )]
 
     [WorkflowTypeField(
         "Prayed Workflow",
@@ -139,7 +149,7 @@ namespace Rock.Blocks.Types.Mobile.Prayer
         Key = AttributeKey.PrayedWorkflow,
         Description = "The workflow type to launch when someone presses the Pray button. Prayer Request will be passed to the workflow as a generic \"Entity\" field type. Additionally if the workflow type has any of the following attribute keys defined, those attribute values will also be set: PrayerOfferedByPersonId.",
         IsRequired = false,
-        Order = 11 )]
+        Order = 12 )]
 
     [BooleanField( "Include Group Requests",
         Description = "Includes prayer requests that are attached to a group.",
@@ -147,7 +157,7 @@ namespace Rock.Blocks.Types.Mobile.Prayer
         DefaultBooleanValue = false,
         ControlType = Field.Types.BooleanFieldType.BooleanControlType.Toggle,
         Key = AttributeKey.IncludeGroupRequests,
-        Order = 12 )]
+        Order = 13 )]
 
     [IntegerField(
         "Prayed For in Last x Minutes Filter",
@@ -155,13 +165,13 @@ namespace Rock.Blocks.Types.Mobile.Prayer
         IsRequired = true,
         DefaultIntegerValue = 0,
         Key = AttributeKey.MinutesToFilter,
-        Order = 13 )]
+        Order = 14 )]
 
     #endregion
 
     [Rock.SystemGuid.EntityTypeGuid( Rock.SystemGuid.EntityType.MOBILE_PRAYER_PRAYER_CARD_VIEW_BLOCK_TYPE )]
     [Rock.SystemGuid.BlockTypeGuid( Rock.SystemGuid.BlockType.MOBILE_PRAYER_PRAYER_CARD_VIEW )]
-    public class PrayerCardView : RockMobileBlockType
+    public class PrayerCardView : RockBlockType
     {
         #region Page Parameters
 
@@ -208,6 +218,8 @@ namespace Rock.Blocks.Types.Mobile.Prayer
             public const string Category = "Category";
 
             public const string PublicOnly = "PublicOnly";
+
+            public const string IncludeUnapproved = "IncludeUnapproved";
 
             public const string PrayerOrder = "PrayerOrder";
 
@@ -282,6 +294,11 @@ namespace Rock.Blocks.Types.Mobile.Prayer
         protected bool PublicOnly => GetAttributeValue( AttributeKey.PublicOnly ).AsBoolean();
 
         /// <summary>
+        /// Whether or not unapproved requests should be included.
+        /// </summary>
+        protected bool IncludeUnapproved => RequestContext?.GetPageParameter( AttributeKey.IncludeUnapproved )?.AsBooleanOrNull() ?? GetAttributeValue( AttributeKey.IncludeUnapproved ).AsBoolean();
+
+        /// <summary>
         /// Gets the order of the prayer requests.
         /// </summary>
         /// <value>
@@ -343,21 +360,8 @@ namespace Rock.Blocks.Types.Mobile.Prayer
 
         #region IRockMobileBlockType Implementation
 
-        /// <summary>
-        /// Gets the required mobile application binary interface version required to render this block.
-        /// </summary>
-        /// <value>
-        /// The required mobile application binary interface version required to render this block.
-        /// </value>
-        public override int RequiredMobileAbiVersion => 3;
-
-        /// <summary>
-        /// Gets the class name of the mobile block to use during rendering on the device.
-        /// </summary>
-        /// <value>
-        /// The class name of the mobile block to use during rendering on the device
-        /// </value>
-        public override string MobileBlockType => "Rock.Mobile.Blocks.Prayer.PrayerCardView";
+        /// <inheritdoc/>
+        public override Version RequiredMobileVersion => new Version( 1, 3 );
 
         /// <summary>
         /// Gets the property values that will be sent to the device in the application bundle.
@@ -451,6 +455,7 @@ namespace Rock.Blocks.Types.Mobile.Prayer
             {
                 IncludeNonPublic = !PublicOnly,
                 IncludeEmptyCampus = true,
+                IncludeUnapproved = IncludeUnapproved,
                 IncludeGroupRequests = IncludeGroupRequests,
                 Categories = new List<Guid> { CategoryGuid ?? Guid.Empty },
                 MinutesToFilter = GetAttributeValue( AttributeKey.MinutesToFilter ).AsInteger(),

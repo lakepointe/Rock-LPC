@@ -1,39 +1,39 @@
-﻿using System;
+﻿// <copyright>
+// Copyright by the Spark Development Network
+//
+// Licensed under the Rock Community License (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.rockrms.com/license
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// </copyright>
+//
+using System;
 using System.Linq;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Rock.Data;
 using Rock.Model;
+using Rock.Tests.Shared.TestFramework;
 
-namespace Rock.Tests.Integration.Reporting
+namespace Rock.Tests.Integration.Modules.Core.Model
 {
     [TestClass]
-    public class InteractionTests
+    [TestCategory( "Interactions" )]
+    public class InteractionTests : DatabaseTestsBase
     {
-        private string interactionForeignKey;
-
-        [TestInitialize]
-        public void TestInitialize()
-        {
-            interactionForeignKey = $"Test {Guid.NewGuid()}";
-        }
+        private readonly string interactionForeignKey = $"Test {Guid.NewGuid()}";
 
         [TestCleanup]
         public void TestCleanup()
         {
             CleanUpData( interactionForeignKey );
-        }
-
-        [TestMethod]
-        public void InteractionDateKeyGetsSetCorrectly()
-        {
-            var testList = TestDataHelper.GetAnalyticsSourceDateTestData();
-
-            foreach ( var keyValue in testList )
-            {
-                Interaction interaction = new Interaction();
-                interaction.InteractionDateTime = keyValue.Value;
-                Assert.AreEqual( keyValue.Key, interaction.InteractionDateKey );
-            }
         }
 
         [TestMethod]
@@ -91,15 +91,17 @@ namespace Rock.Tests.Integration.Reporting
             }
         }
 
-        private Rock.Model.Interaction BuildInteraction( RockContext rockContext, DateTime interactionDate )
+        private Interaction BuildInteraction( RockContext rockContext, DateTime interactionDate )
         {
-            var interactionComponentId = ( new InteractionComponentService( rockContext ) ).Queryable().FirstOrDefault().Id;
-            var interaction = new Interaction();
-            interaction.InteractionComponentId = interactionComponentId;
-            interaction.Operation = "Test";
-            interaction.ForeignKey = interactionForeignKey;
-            interaction.InteractionDateTime = interactionDate;
+            var args = new TestDataHelper.Interactions.CreatePageViewInteractionActionArgs
+            {
+                PageIdentifier = SystemGuid.Page.EXCEPTION_LIST,
+                ForeignKey = interactionForeignKey,
+                ViewDateTime = interactionDate,
+                BrowserIpAddress = "127.0.0.1"
+            };
 
+            var interaction = TestDataHelper.Interactions.CreatePageViewInteraction( args, rockContext );
             return interaction;
         }
 

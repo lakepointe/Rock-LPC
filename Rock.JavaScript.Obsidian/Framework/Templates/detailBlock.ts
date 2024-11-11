@@ -15,8 +15,8 @@
 // </copyright>
 //
 import { computed, defineComponent, PropType, ref, watch } from "vue";
-import Panel from "@Obsidian/Controls/panel";
-import Modal from "@Obsidian/Controls/modal";
+import Panel from "@Obsidian/Controls/panel.obs";
+import Modal from "@Obsidian/Controls/modal.obs";
 import { Guid } from "@Obsidian/Types";
 import { PanelAction } from "@Obsidian/Types/Controls/panelAction";
 import { DetailPanelMode } from "@Obsidian/Enums/Controls/detailPanelMode";
@@ -24,22 +24,21 @@ import { isPromise, PromiseCompletionSource } from "@Obsidian/Utility/promiseUti
 import { FollowingGetFollowingOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/followingGetFollowingOptionsBag";
 import { FollowingGetFollowingResponseBag } from "@Obsidian/ViewModels/Rest/Controls/followingGetFollowingResponseBag";
 import { FollowingSetFollowingOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/followingSetFollowingOptionsBag";
-import AuditDetail from "@Obsidian/Controls/auditDetail";
-import BadgeList from "@Obsidian/Controls/badgeList";
-import EntityTagList from "@Obsidian/Controls/entityTagList";
-import RockButton from "@Obsidian/Controls/rockButton";
-import RockForm from "@Obsidian/Controls/rockForm";
-import RockSuspense from "@Obsidian/Controls/rockSuspense";
+import AuditDetail from "@Obsidian/Controls/auditDetail.obs";
+import BadgeList from "@Obsidian/Controls/badgeList.obs";
+import EntityTagList from "@Obsidian/Controls/tagList.obs";
+import RockButton from "@Obsidian/Controls/rockButton.obs";
+import RockForm from "@Obsidian/Controls/rockForm.obs";
+import RockSuspense from "@Obsidian/Controls/rockSuspense.obs";
 import { useVModelPassthrough } from "@Obsidian/Utility/component";
-import { alert, confirmDelete } from "@Obsidian/Utility/dialogs";
+import { alert, confirmDelete, showSecurity } from "@Obsidian/Utility/dialogs";
 import { useHttp } from "@Obsidian/Utility/http";
 import { makeUrlRedirectSafe } from "@Obsidian/Utility/url";
 import { asBooleanOrNull } from "@Obsidian/Utility/booleanUtils";
-
-// Define jQuery and Rock for showing security modal.
-declare function $(value: unknown): unknown;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/naming-convention
-declare const Rock: any;
+import { splitCase } from "@Obsidian/Utility/stringUtils";
+import { areEqual, emptyGuid } from "@Obsidian/Utility/guid";
+import { useBlockBrowserBus, useEntityTypeGuid, useEntityTypeName } from "@Obsidian/Utility/block";
+import { BlockMessages } from "@Obsidian/Utility/browserBus";
 
 /** Provides a pattern for entity detail blocks. */
 export default defineComponent({
@@ -75,13 +74,13 @@ export default defineComponent({
         /** The unique identifier of the entity type that this detail block represents. */
         entityTypeGuid: {
             type: String as PropType<Guid>,
-            required: true
+            required: false
         },
 
         /** The friendly name of the entity type that this block represents. */
         entityTypeName: {
             type: String as PropType<string>,
-            required: true
+            required: false
         },
 
         /** The identifier key of the entity being displayed by this block. */
@@ -133,6 +132,14 @@ export default defineComponent({
         isDeleteVisible: {
             type: Boolean as PropType<boolean>,
             default: false
+        },
+
+        /**
+         * If true then the individual will be able to switch to fullscreen mode.
+         */
+        isFullScreenVisible: {
+            type: Boolean as PropType<boolean>,
+            default: true
         },
 
         /** The current display mode for the detail panel. */
@@ -228,6 +235,15 @@ export default defineComponent({
         onDelete: {
             type: Function as PropType<() => false | string | PromiseLike<false | string>>,
             required: false
+        },
+
+        /**
+         * An optional string that may be displayed along with the confirmation
+         * question in the modal after the delete is clicked on the entity.
+         */
+        additionalDeleteMessage: {
+            type: String as PropType<string | null>,
+            required: false
         }
     },
 
@@ -245,6 +261,9 @@ export default defineComponent({
         const isEntityFollowed = ref<boolean | null>(null);
         const showAuditDetailsModal = ref(false);
         const isPanelVisible = ref(true);
+        const providedEntityTypeName = useEntityTypeName();
+        const providedEntityTypeGuid = useEntityTypeGuid();
+        const browserBus = useBlockBrowserBus();
 
         let formSubmissionSource: PromiseCompletionSource | null = null;
         let editModeReadyCompletionSource: PromiseCompletionSource | null = null;
@@ -262,6 +281,20 @@ export default defineComponent({
         // #region Computed Values
 
         /**
+         * The entity type name for this block.
+         */
+        const entityTypeName = computed((): string => {
+            return props.entityTypeName ?? providedEntityTypeName ?? "EntityTypeNotConfigured";
+        });
+
+        /**
+         * The entity type unique identifier for this block.
+         */
+        const entityTypeGuid = computed((): Guid => {
+            return props.entityTypeGuid ?? providedEntityTypeGuid ?? emptyGuid;
+        });
+
+        /**
          * Contains the title to be displayed in the panel depending on the
          * property values and the current state of the panel.
          */
@@ -271,17 +304,22 @@ export default defineComponent({
             }
 
             switch (internalMode.value) {
-                // If we are in view mode then display either the entity name or
-                // the entity type name.
+                // If we are in view mode then we should be display the entity name.
+                // If not, fall back on the entity type name.
                 case DetailPanelMode.View:
-                    return props.name ?? props.entityTypeName;
+                    return props.name ?? splitCase(entityTypeName.value);
 
-                // If we are in edit or add mode then display just the entity type
-                // name. An icon will be shown before the text.
-                case DetailPanelMode.Edit:
+                // If we are in Add mode then display "Add {Entity Type Name}"
                 case DetailPanelMode.Add:
+                    return `Add ${splitCase(entityTypeName.value)}`;
+
+                // If we are in edit mode then we should be displaying the entity name.
+                // If not, fall back on the entity type name.
+                case DetailPanelMode.Edit:
+                    return props.name ?? splitCase(entityTypeName.value);
+
                 default:
-                    return props.entityTypeName;
+                    return splitCase(entityTypeName.value);
             }
         });
 
@@ -453,13 +491,14 @@ export default defineComponent({
          */
         const getEntityFollowedState = async (): Promise<void> => {
             // If we don't have an entity then mark the state as "unknown".
-            if (!props.entityTypeGuid || !props.entityKey) {
+            if (areEqual(entityTypeGuid.value, emptyGuid)
+                || !props.entityKey) {
                 isEntityFollowed.value = null;
                 return;
             }
 
             const data: FollowingGetFollowingOptionsBag = {
-                entityTypeGuid: props.entityTypeGuid,
+                entityTypeGuid: entityTypeGuid.value,
                 entityKey: props.entityKey
             };
 
@@ -478,8 +517,10 @@ export default defineComponent({
          *
          * @param event The event that triggered this handler.
          */
-        const onSecurityClick = (event: Event): void => {
-            Rock.controls.modal.show($(event.target), `/Secure/${props.entityTypeGuid}/${props.entityKey}?t=Secure ${props.entityTypeName}&pb=&sb=Done`);
+        const onSecurityClick = (): void => {
+            if (props.entityKey) {
+                showSecurity(entityTypeGuid.value, props.entityKey, props.entityTypeName);
+            }
         };
 
         /**
@@ -519,6 +560,7 @@ export default defineComponent({
             }
 
             internalMode.value = DetailPanelMode.View;
+            browserBus.publish(BlockMessages.EndEdit);
         };
 
         /**
@@ -553,6 +595,7 @@ export default defineComponent({
             await editModeReadyCompletionSource.promise;
 
             // Perform the final switch into edit mode.
+            browserBus.publish(BlockMessages.BeginEdit);
             internalMode.value = props.entityKey ? DetailPanelMode.Edit : DetailPanelMode.Add;
             isEditModeLoading.value = false;
             editModeReadyCompletionSource = null;
@@ -579,6 +622,7 @@ export default defineComponent({
             formSubmissionSource = new PromiseCompletionSource();
             isFormSubmitting.value = true;
             await formSubmissionSource.promise;
+            isFormSubmitting.value = false;
         };
 
         /**
@@ -624,10 +668,12 @@ export default defineComponent({
                 }
 
                 internalMode.value = DetailPanelMode.View;
+                browserBus.publish(BlockMessages.EndEdit);
             }
             finally {
                 if (formSubmissionSource !== null) {
                     formSubmissionSource.resolve();
+                    formSubmissionSource = null;
                 }
             }
         };
@@ -638,7 +684,7 @@ export default defineComponent({
          */
         const onDeleteClick = async (): Promise<void> => {
             if (props.onDelete) {
-                if (!await confirmDelete(props.entityTypeName)) {
+                if (!await confirmDelete(entityTypeName.value, props.additionalDeleteMessage ?? "")) {
                     return;
                 }
 
@@ -677,12 +723,14 @@ export default defineComponent({
          */
         const onFollowClick = async (): Promise<void> => {
             // Shouldn't really happen, but just make sure we have everything.
-            if (isEntityFollowed.value === null || !props.entityTypeGuid || !props.entityKey) {
+            if (isEntityFollowed.value === null
+                || areEqual(entityTypeGuid.value, emptyGuid)
+                || !props.entityKey) {
                 return;
             }
 
             const data: FollowingSetFollowingOptionsBag = {
-                entityTypeGuid: props.entityTypeGuid,
+                entityTypeGuid: entityTypeGuid.value,
                 entityKey: props.entityKey,
                 isFollowing: !isEntityFollowed.value
             };
@@ -709,6 +757,7 @@ export default defineComponent({
         watch(isFormSubmitting, () => {
             if (isFormSubmitting.value === false && formSubmissionSource !== null) {
                 formSubmissionSource.resolve();
+                formSubmissionSource = null;
             }
         });
 
@@ -732,6 +781,8 @@ export default defineComponent({
         }
 
         return {
+            entityTypeName,
+            entityTypeGuid,
             hasLabels,
             internalFooterSecondaryActions,
             internalHeaderSecondaryActions,
@@ -764,7 +815,7 @@ export default defineComponent({
     type="block"
     :title="panelTitle"
     :titleIconCssClass="panelTitleIconCssClass"
-    :hasFullscreen="true"
+    :hasFullscreen="isFullScreenVisible"
     :headerSecondaryActions="internalHeaderSecondaryActions">
 
     <template #headerActions>
@@ -800,12 +851,12 @@ export default defineComponent({
 
     <template #footerActions>
         <template v-if="isEditMode">
-            <RockButton btnType="primary" autoDisable @click="onSaveClick">Save</RockButton>
-            <RockButton btnType="link" @click="onEditCancelClick">Cancel</RockButton>
+            <RockButton btnType="primary" autoDisable @click="onSaveClick" shortcutKey="s">Save</RockButton>
+            <RockButton btnType="link" @click="onEditCancelClick" shortcutKey="c">Cancel</RockButton>
         </template>
 
         <template v-else>
-            <RockButton v-if="isEditVisible" btnType="primary" @click="onEditClick" autoDisable>Edit</RockButton>
+            <RockButton v-if="isEditVisible" btnType="primary" @click="onEditClick" autoDisable shortcutKey="e">Edit</RockButton>
             <RockButton v-if="isDeleteVisible" btnType="link" @click="onDeleteClick" autoDisable>Delete</RockButton>
         </template>
 

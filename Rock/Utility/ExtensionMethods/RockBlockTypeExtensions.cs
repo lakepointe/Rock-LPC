@@ -25,7 +25,7 @@ namespace Rock
     /// <summary>
     /// Extension methods for <see cref="RockBlockType"/>
     /// </summary>
-    internal static class RockBlockTypeExtensions
+    public static class RockBlockTypeExtensions
     {
         /// <summary>
         /// Builds and returns the URL for a linked <see cref="Rock.Model.Page"/>
@@ -39,6 +39,33 @@ namespace Rock
         public static string GetLinkedPageUrl( this RockBlockType block, string attributeKey, IDictionary<string, string> queryParams = null )
         {
             var pageReference = new Rock.Web.PageReference( block.GetAttributeValue( attributeKey ), queryParams != null ? new Dictionary<string, string>( queryParams ) : null );
+
+            if ( pageReference.PageId > 0 )
+            {
+                return pageReference.BuildUrl();
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Builds and returns the URL for a linked <see cref="Rock.Model.Page"/>
+        /// from a <see cref="Rock.Attribute.LinkedPageAttribute"/> and any necessary
+        /// query parameters.
+        /// </summary>
+        /// <param name="block">The block to get instance data from.</param>
+        /// <param name="attributeKey">The attribute key that contains the linked page value.</param>
+        /// <param name="queryKey">The name key for the single query string parameter.</param>
+        /// <param name="queryValue">The value for the query key.</param>
+        /// <returns>A string representing the URL to the linked <see cref="Rock.Model.Page"/>.</returns>
+        public static string GetLinkedPageUrl( this RockBlockType block, string attributeKey, string queryKey, string queryValue )
+        {
+            var pageReference = new Rock.Web.PageReference( block.GetAttributeValue( attributeKey ), new Dictionary<string, string>
+            {
+                [queryKey] = queryValue
+            } );
 
             if ( pageReference.PageId > 0 )
             {
@@ -97,7 +124,7 @@ namespace Rock
                     continue;
                 }
 
-                parameters.AddOrIgnore( qp.Key, qp.Value );
+                parameters.TryAdd( qp.Key, qp.Value );
             }
 
             var pageReference = new Rock.Web.PageReference( block.PageCache.Guid.ToString(), parameters );

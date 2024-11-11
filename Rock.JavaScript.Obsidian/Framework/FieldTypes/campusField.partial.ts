@@ -28,7 +28,9 @@ export const enum ConfigurationValueKey {
     IncludeInactive = "includeInactive",
     FilterCampusTypes = "filterCampusTypes",
     FilterCampusStatus = "filterCampusStatus",
-    SelectableCampuses = "selectableCampuses"
+    ForceVisible = "forceVisible",
+    SelectableCampuses = "selectableCampuses",
+    ValuesInactive = "valuesInactive"
 }
 
 export const enum ConfigurationPropertyKey {
@@ -82,7 +84,7 @@ export class CampusFieldType extends FieldTypeBase {
     }
 
     public override getSupportedComparisonTypes(): ComparisonType {
-        return ComparisonType.None;
+        return 0;
     }
 
     public override getFilterValueText(value: ComparisonValue, configurationValues: Record<string, string>): string {

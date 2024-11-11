@@ -20,7 +20,9 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Rock.Data;
+using Rock.Mobile;
 using Rock.Model;
+using Rock.Utility;
 using Rock.ViewModels.Communication;
 using Rock.Web.Cache;
 
@@ -40,8 +42,6 @@ namespace Rock
         /// <returns>A <see cref="ConversationMessageBag"/> that represents the response.</returns>
         internal static ConversationMessageBag ToMessageBag( this CommunicationRecipientResponse response, bool loadAttachments )
         {
-            var publicUrl = GlobalAttributesCache.Get().GetValue( "PublicApplicationRoot" );
-
             var bag = new ConversationMessageBag
             {
                 ConversationKey = response.ConversationKey,
@@ -58,9 +58,27 @@ namespace Rock
                 Attachments = new List<ConversationAttachmentBag>()
             };
 
+            // Initially set the photo URL using the recipient photo ID.
             if ( response.RecipientPhotoId.HasValue )
             {
-                bag.PhotoUrl = $"{publicUrl}GetImage.ashx?Id={response.RecipientPhotoId}&maxwidth=256&maxheight=256";
+                bag.PhotoUrl = MobileHelper.BuildPublicApplicationRootUrl( FileUrlHelper.GetImageUrl( response.RecipientPhotoId.Value, new GetImageUrlOptions { MaxWidth = 256, MaxHeight = 256 } ) );
+            }
+
+            if ( response.RecipientPersonGuid.HasValue )
+            {
+                using( var rockContext = new RockContext() )
+                {
+                    // We want to use the recipient person guid to get the avatar view for the person.
+                    var photoUrl = new PersonService( rockContext )
+                        .Queryable()
+                        .FirstOrDefault( p => p.Guid == response.RecipientPersonGuid.Value )?.PhotoUrl;
+
+                    // Update the photo URL to use the avatar if there is one.
+                    if( photoUrl.IsNotNullOrWhiteSpace() )
+                    {
+                        bag.PhotoUrl = MobileHelper.BuildPublicApplicationRootUrl( photoUrl );
+                    }
+                }
             }
 
             if ( loadAttachments )
@@ -97,8 +115,8 @@ namespace Rock
                         bag.Attachments.Add( new ConversationAttachmentBag
                         {
                             FileName = attachment.FileName,
-                            Url = $"{publicUrl}GetImage.ashx?Guid={attachment.Guid}",
-                            ThumbnailUrl = isImage ? $"{publicUrl}GetImage.ashx?Guid={attachment.Guid}&maxwidth=512&maxheight=512" : null
+                            Url = MobileHelper.BuildPublicApplicationRootUrl( FileUrlHelper.GetImageUrl( attachment.Guid ) ),
+                            ThumbnailUrl = isImage ? MobileHelper.BuildPublicApplicationRootUrl( FileUrlHelper.GetImageUrl( attachment.Guid, new GetImageUrlOptions { Width = 512, Height = 512 } ) ) : null
                         } );
                     }
                 }
@@ -115,7 +133,6 @@ namespace Rock
         /// <returns>A collection of <see cref="ConversationMessageBag"/> objects that represent the responses.</returns>
         internal static IEnumerable<ConversationMessageBag> ToMessageBags( this IEnumerable<CommunicationRecipientResponse> responses )
         {
-            var publicUrl = GlobalAttributesCache.Get().GetValue( "PublicApplicationRoot" );
             var attachmentsLookup = new Dictionary<string, List<(Guid Guid, string FileName, string MimeType)>>();
 
             // Load the attachments for all responses in two queries rather
@@ -180,31 +197,31 @@ namespace Rock
             }
 
             return responses
-                .Select( response =>
-                {
-                    // Convert the response to a message bag without attachments.
-                    var bag = ToMessageBag( response, false );
-
-                    // Use our attachment lookup data to find any attachments.
-                    if ( attachmentsLookup.TryGetValue( bag.MessageKey, out var attachments ) )
+                    .Select( response =>
                     {
-                        foreach ( var attachment in attachments )
+                        // Convert the response to a message bag without attachments.
+                        var bag = ToMessageBag( response, false );
+
+                        // Use our attachment lookup data to find any attachments.
+                        if ( attachmentsLookup.TryGetValue( bag.MessageKey, out var attachments ) )
                         {
-                            var ext = System.IO.Path.GetExtension( attachment.FileName ).ToLower();
-                            var isImage = attachment.MimeType.StartsWith( "image/", StringComparison.OrdinalIgnoreCase ) == true;
-
-                            bag.Attachments.Add( new ConversationAttachmentBag
+                            foreach ( var attachment in attachments )
                             {
-                                FileName = attachment.FileName,
-                                Url = $"{publicUrl}GetImage.ashx?Guid={attachment.Guid}",
-                                ThumbnailUrl = isImage ? $"{publicUrl}GetImage.ashx?Guid={attachment.Guid}&maxwidth=512&maxheight=512" : null
-                            } );
-                        }
-                    }
+                                var ext = System.IO.Path.GetExtension( attachment.FileName ).ToLower();
+                                var isImage = attachment.MimeType.StartsWith( "image/", StringComparison.OrdinalIgnoreCase ) == true;
 
-                    return bag;
-                } )
-                .ToList();
+                                bag.Attachments.Add( new ConversationAttachmentBag
+                                {
+                                    FileName = attachment.FileName,
+                                    Url = MobileHelper.BuildPublicApplicationRootUrl( FileUrlHelper.GetImageUrl( attachment.Guid ) ),
+                                    ThumbnailUrl = isImage ? MobileHelper.BuildPublicApplicationRootUrl( FileUrlHelper.GetImageUrl( attachment.Guid, new GetImageUrlOptions { Width = 512, Height = 512 } ) ) : null
+                                } );
+                            }
+                        }
+
+                        return bag;
+                    } )
+                    .ToList();
         }
     }
 }

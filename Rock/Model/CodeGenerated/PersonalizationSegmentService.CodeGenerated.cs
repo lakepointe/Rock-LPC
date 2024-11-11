@@ -23,11 +23,7 @@
 using System;
 using System.Linq;
 
-using Rock.Attribute;
 using Rock.Data;
-using Rock.ViewModels;
-using Rock.ViewModels.Entities;
-using Rock.Web.Cache;
 
 namespace Rock.Model
 {
@@ -55,50 +51,15 @@ namespace Rock.Model
         public bool CanDelete( PersonalizationSegment item, out string errorMessage )
         {
             errorMessage = string.Empty;
+
+            if ( new Service<AdaptiveMessageAdaptationSegment>( Context ).Queryable().Any( a => a.PersonalizationSegmentId == item.Id ) )
+            {
+                errorMessage = string.Format( "This {0} is assigned to a {1}.", PersonalizationSegment.FriendlyTypeName, AdaptiveMessageAdaptationSegment.FriendlyTypeName );
+                return false;
+            }
             return true;
         }
     }
-
-    /// <summary>
-    /// PersonalizationSegment View Model Helper
-    /// </summary>
-    [DefaultViewModelHelper( typeof( PersonalizationSegment ) )]
-    public partial class PersonalizationSegmentViewModelHelper : ViewModelHelper<PersonalizationSegment, PersonalizationSegmentBag>
-    {
-        /// <summary>
-        /// Converts the model to a view model.
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson">The current person.</param>
-        /// <param name="loadAttributes">if set to <c>true</c> [load attributes].</param>
-        /// <returns></returns>
-        public override PersonalizationSegmentBag CreateViewModel( PersonalizationSegment model, Person currentPerson = null, bool loadAttributes = true )
-        {
-            if ( model == null )
-            {
-                return default;
-            }
-
-            var viewModel = new PersonalizationSegmentBag
-            {
-                IdKey = model.IdKey,
-                AdditionalFilterJson = model.AdditionalFilterJson,
-                FilterDataViewId = model.FilterDataViewId,
-                IsActive = model.IsActive,
-                Name = model.Name,
-                SegmentKey = model.SegmentKey,
-                CreatedDateTime = model.CreatedDateTime,
-                ModifiedDateTime = model.ModifiedDateTime,
-                CreatedByPersonAliasId = model.CreatedByPersonAliasId,
-                ModifiedByPersonAliasId = model.ModifiedByPersonAliasId,
-            };
-
-            AddAttributesToViewModel( model, viewModel, currentPerson, loadAttributes );
-            ApplyAdditionalPropertiesAndSecurityToViewModel( model, viewModel, currentPerson, loadAttributes );
-            return viewModel;
-        }
-    }
-
 
     /// <summary>
     /// Generated Extension Methods
@@ -157,12 +118,16 @@ namespace Rock.Model
         {
             target.Id = source.Id;
             target.AdditionalFilterJson = source.AdditionalFilterJson;
+            target.CategoryId = source.CategoryId;
+            target.Description = source.Description;
             target.FilterDataViewId = source.FilterDataViewId;
             target.ForeignGuid = source.ForeignGuid;
             target.ForeignKey = source.ForeignKey;
             target.IsActive = source.IsActive;
+            target.IsDirty = source.IsDirty;
             target.Name = source.Name;
             target.SegmentKey = source.SegmentKey;
+            target.TimeToUpdateDurationMilliseconds = source.TimeToUpdateDurationMilliseconds;
             target.CreatedDateTime = source.CreatedDateTime;
             target.ModifiedDateTime = source.ModifiedDateTime;
             target.CreatedByPersonAliasId = source.CreatedByPersonAliasId;
@@ -171,20 +136,5 @@ namespace Rock.Model
             target.ForeignId = source.ForeignId;
 
         }
-
-        /// <summary>
-        /// Creates a view model from this entity
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson" >The currentPerson.</param>
-        /// <param name="loadAttributes" >Load attributes?</param>
-        public static PersonalizationSegmentBag ToViewModel( this PersonalizationSegment model, Person currentPerson = null, bool loadAttributes = false )
-        {
-            var helper = new PersonalizationSegmentViewModelHelper();
-            var viewModel = helper.CreateViewModel( model, currentPerson, loadAttributes );
-            return viewModel;
-        }
-
     }
-
 }

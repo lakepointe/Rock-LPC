@@ -16,7 +16,6 @@
 //
 
 using System;
-using System.Collections.Specialized;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity.ModelConfiguration;
@@ -27,8 +26,29 @@ using Rock.Lava;
 namespace Rock.Model
 {
     /// <summary>
-    /// Represents a interaction <see cref="Rock.Model.Interaction"/>.
+    /// Represents an <see cref="Rock.Model.Interaction"/> which holds information
+    /// about an aspect of an operation with Rock such as 'page views',
+    ///  communication 'clicks/opens', etc.
+    /// <para>When querying this model, it's critical to always use the
+    /// InteractionComponentId to narrow down the number of records that need to
+    /// be searched. There is an index on that property/column and it will
+    /// dramatically improve the performance of these queries.
+    /// Additionally, when querying for Interactions from a particular date range,
+    /// it is advisable to use the InteractionDateKey property instead if the
+    /// InteractionDateTime property. Apart from having an Index on the InteractionDateKey
+    /// property the string comparison of the DateKey values provides a performance boost</para>
     /// </summary>
+    /// <example>
+    /// <code>
+    /// SELECT [PersonAliasId], COUNT(1)
+    /// FROM [Interaction] i
+    /// INNER JOIN [InteractionComponent] comp ON i.[InteractionComponentId] = comp.[Id]
+    /// WHERE
+    /// 	comp.[InteractionChannelId] = 3 -- External Website
+    /// 	AND [InteractionDateKey] >= 20230501 AND [InteractionDateKey] &lt;= 20230509
+    /// GROUP BY i.[PersonAliasId]
+    /// </code>
+    /// </example>
     [RockDomain( "Core" )]
     [NotAudited]
     [Table( "Interaction" )]
@@ -55,6 +75,14 @@ namespace Rock.Model
          *      Includes InteractionDateTime, InteractionComponentId
          *      This was added for RockWeb.Blocks.Reporting.InteractionSessionList
          *      
+         *  InteractionComponentId, InteractionDateKey
+         *      Includes PersonAliasId, InteractionSessionId, InteractionTimeToServe, EntityId, InteractionSummary
+         *      
+         *  SessionStartDateKey
+         *      Includes DeviceTypeId, DurationSeconds, InteractionSessionLocationId, InteractionCount, InteractionChannelId
+         *      
+         *  InteractionDateKey
+         *      Includes InteractionComponentId, PersonAliasId, InteractionSessionId, InteractionTimeToServe
          */
 
         #region Entity Properties
@@ -237,6 +265,36 @@ namespace Rock.Model
         [DataMember]
         public double? InteractionTimeToServe { get; set; }
 
+        /// <summary>
+        /// Gets or sets the UTM Source identifier.
+        /// These values are associated with the Defined Type "UTM Source".
+        /// </summary>
+        /// <value>
+        /// The UTM Source Defined Value Id.
+        /// </value>
+        [DataMember]
+        public int? SourceValueId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the UTM Medium identifier.
+        /// These values are associated with the Defined Type "UTM Medium".
+        /// </summary>
+        /// <value>
+        /// The UTM Medium Defined Value Id.
+        /// </value>
+        [DataMember]
+        public int? MediumValueId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the UTM Campaign identifier.
+        /// These values are associated with the Defined Type "UTM Campaign".
+        /// </summary>
+        /// <value>
+        /// The UTM Campaign Defined Value Id.
+        /// </value>
+        [DataMember]
+        public int? CampaignValueId { get; set; }
+
         #endregion
 
         #region Campaign Meta fields
@@ -353,57 +411,6 @@ namespace Rock.Model
         /// </value>
         [LavaVisible]
         public virtual PersonalDevice PersonalDevice { get; set; }
-
-        /// <summary>
-        /// Sets the utm fields from URL.
-        /// </summary>
-        /// <param name="url">The URL.</param>
-        public void SetUTMFieldsFromURL( string url )
-        {
-            if ( url.IsNotNullOrWhiteSpace() && url.IndexOf( "utm_", StringComparison.OrdinalIgnoreCase ) >= 0 )
-            {
-                try
-                {
-                    NameValueCollection urlParams;
-
-                    if ( Uri.TryCreate( url, UriKind.Absolute, out var uri ) )
-                    {
-                        urlParams = System.Web.HttpUtility.ParseQueryString( uri.Query );
-                    }
-                    else if ( url.IndexOf( "?" ) >= 0 )
-                    {
-                        // If it's not a full URI but has a "?" character then
-                        // assume it's a special format from an external application
-                        // and just take everything after the "?".
-                        urlParams = System.Web.HttpUtility.ParseQueryString( url.Substring( url.IndexOf( "?" ) + 1 ) );
-                    }
-                    else
-                    {
-                        // Assume it's just a plain query string already.
-                        urlParams = System.Web.HttpUtility.ParseQueryString( url );
-                    }
-
-                    this.Source = urlParams.Get( "utm_source" ).Truncate( 25 );
-                    this.Medium = urlParams.Get( "utm_medium" ).Truncate( 25 );
-                    this.Campaign = urlParams.Get( "utm_campaign" ).Truncate( 50 );
-                    this.Content = urlParams.Get( "utm_content" ).Truncate( 50 );
-                    this.Term = urlParams.Get( "utm_term" ).Truncate( 50 );
-                }
-                catch ( Exception ex )
-                {
-                    ExceptionLogService.LogException( new Exception( $"Error parsing '{url}' to UTM fields.", ex ), null );
-                }
-            }
-        }
-
-        /// <summary>
-        /// Sets the interaction data (for example, the URL of the request), and obfuscates sensitive data that might be in the interactionData
-        /// </summary>
-        /// <param name="interactionData">The interaction data.</param>
-        public void SetInteractionData( string interactionData )
-        {
-            this.InteractionData = interactionData.IsNotNullOrWhiteSpace() ? PersonToken.ObfuscateRockMagicToken( interactionData ) : string.Empty;
-        }
 
         /// <summary>
         /// Gets or sets the interaction source date.

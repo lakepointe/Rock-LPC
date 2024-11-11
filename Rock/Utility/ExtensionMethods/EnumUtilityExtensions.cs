@@ -16,9 +16,13 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Data;
 using System.Linq;
 using System.Reflection;
-using Rock.Utility;
+
+using Rock.Enums;
+using Rock.ViewModels.Utility;
 
 namespace Rock
 {
@@ -40,7 +44,11 @@ namespace Rock
             var enumFieldsOrder = new Dictionary<TEnum, int>();
             foreach ( var enumField in enumFields )
             {
-                var enumFieldOrder = enumField.GetCustomAttribute<EnumOrderAttribute>()?.Order ?? int.MaxValue;
+#pragma warning disable CS0618 // Type or member is obsolete
+                var enumFieldOrder = enumField.GetCustomAttribute<EnumOrderAttribute>()?.Order
+                    ?? enumField.GetCustomAttribute<Utility.EnumOrderAttribute>()?.Order
+                    ?? int.MaxValue;
+#pragma warning restore CS0618 // Type or member is obsolete
                 enumFieldsOrder.Add( ( TEnum ) enumField.GetValue( null ), enumFieldOrder );
             }
 
@@ -59,5 +67,47 @@ namespace Rock
         {
             return enumerable == null || enumerable.Any() == false || enumerable.Contains( value );
         }
+
+        /// <summary>
+        /// An extension function to get a ListItemBag array from an enum.
+        /// </summary>
+        /// <param name="enumType">The type of the enum to be converted to ListItemBag</param>
+        /// <returns>An array of ListItemBag</returns>
+        public static List<ListItemBag> ToEnumListItemBag( this Type enumType )
+        {
+            var listItemBag = new List<ListItemBag>();
+            foreach ( Enum enumValue in Enum.GetValues(enumType))
+            {
+                var text = enumValue.GetDescription() ?? enumValue.ToString().SplitCase();
+                var value = enumValue.ConvertToInt().ToString();
+                listItemBag.Add( new ListItemBag { Text = text, Value = value } );
+            }
+
+            return listItemBag.ToList();
+        }
+
+        /// <summary>
+        /// Converts the IEnumerable <see cref="int"/> to a dbo.EntityIdList <see cref="SqlParameter"/> populated with values.
+        /// </summary>
+        /// <param name="entityIds">An The enumerable of int to convert.</param>
+        /// <param name="parameterName">The name of the Sql Parameter to be set.</param>
+        /// <returns>A SqlParameter of Type dbo.EntityIdList whose values are those of this enumerable.</returns>
+        public static SqlParameter ConvertToEntityIdListParameter( this IEnumerable<int> entityIds, string parameterName )
+        {
+            var dataTable = new DataTable();
+            dataTable.Columns.Add( "EntityId", typeof( int ) );
+
+            foreach ( var value in entityIds )
+            {
+                dataTable.Rows.Add( value );
+            }
+
+            return new SqlParameter( parameterName, SqlDbType.Structured )
+            {
+                TypeName = "dbo.EntityIdList",
+                Value = dataTable
+            };
+        }
+
     }
 }

@@ -105,7 +105,7 @@ namespace Rock.Model
         [MaxLength( 75 )]
         [DataMember]
         [Previewable]
-        [RegularExpression( @"[\w\.\'_%-]+(\+[\w\.\'_%-]*)?@([\w-]+\.)+[\w-]+", ErrorMessage = "The Email address is invalid" )] // LPC Change to improve +email address handling
+        [EmailAddressValidation]
         [Index( "IX_Email" )]
         public string ContactEmail { get; set; }
 

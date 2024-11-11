@@ -62,34 +62,6 @@ namespace Rock.Model
         private int? _givingGroupId;
 
         /// <summary>
-        /// Gets the <see cref="Rock.Model.PersonAlias">primary alias</see> identifier.
-        /// </summary>
-        /// <value>
-        /// The primary alias identifier.
-        /// </value>
-        [DataMember]
-        [NotMapped]
-        [RockClientInclude( "The Primary PersonAliasId of the Person" )]
-        public virtual int? PrimaryAliasId
-        {
-            get
-            {
-                var primaryAlias = PrimaryAlias;
-                if ( primaryAlias != null )
-                {
-                    return primaryAlias.Id;
-                }
-
-                return null;
-            }
-
-            private set
-            {
-                // intentionally blank
-            }
-        }
-
-        /// <summary>
         /// Gets the Full Name of the Person using the NickName LastName Suffix format.
         /// </summary>
         /// <value>
@@ -314,32 +286,14 @@ namespace Rock.Model
         {
             get
             {
-                string birthdayDayOfWeek = string.Empty;
+                var thisYearsBirthdate = ThisYearsBirthdate;
 
-                if ( BirthMonth.HasValue && BirthDay.HasValue )
+                if ( !thisYearsBirthdate.HasValue )
                 {
-                    try
-                    {
-                        DateTime thisYearsBirthdate;
-                        if ( BirthMonth == 2 && BirthDay == 29 && !DateTime.IsLeapYear( RockDateTime.Now.Year ) )
-                        {
-                            // if their birthdate is 2/29 and the current year is NOT a leapyear, have their birthday be 2/28
-                            thisYearsBirthdate = new DateTime( RockDateTime.Now.Year, BirthMonth.Value, 28, 0, 0, 0 );
-                        }
-                        else
-                        {
-                            thisYearsBirthdate = new DateTime( RockDateTime.Now.Year, BirthMonth.Value, BirthDay.Value, 0, 0, 0 );
-                        }
-
-                        birthdayDayOfWeek = thisYearsBirthdate.ToString( "dddd" );
-                    }
-                    catch
-                    {
-                        // intentionally blank
-                    }
+                    return string.Empty;
                 }
 
-                return birthdayDayOfWeek;
+                return thisYearsBirthdate.Value.ToString( "dddd" );
             }
 
             private set
@@ -360,37 +314,50 @@ namespace Rock.Model
         {
             get
             {
-                string birthdayDayOfWeek = string.Empty;
+                var thisYearsBirthdate = ThisYearsBirthdate;
 
-                if ( BirthMonth.HasValue && BirthDay.HasValue )
+                if ( !thisYearsBirthdate.HasValue )
                 {
-                    try
-                    {
-                        DateTime thisYearsBirthdate;
-                        if ( BirthMonth == 2 && BirthDay == 29 && !DateTime.IsLeapYear( RockDateTime.Now.Year ) )
-                        {
-                            // if their birthdate is 2/29 and the current year is NOT a leapyear, have their birthday be 2/28
-                            thisYearsBirthdate = new DateTime( RockDateTime.Now.Year, BirthMonth.Value, 28, 0, 0, 0 );
-                        }
-                        else
-                        {
-                            thisYearsBirthdate = new DateTime( RockDateTime.Now.Year, BirthMonth.Value, BirthDay.Value, 0, 0, 0 );
-                        }
-
-                        birthdayDayOfWeek = thisYearsBirthdate.ToString( "ddd" );
-                    }
-                    catch
-                    {
-                        // intentionally blank
-                    }
+                    return string.Empty;
                 }
 
-                return birthdayDayOfWeek;
+                return thisYearsBirthdate.Value.ToString( "ddd" );
             }
 
             private set
             {
                 // intentionally blank
+            }
+        }
+
+        /// <summary>
+        /// Gets the date that represents this person's birthday in the current year.
+        /// </summary>
+        internal DateTime? ThisYearsBirthdate
+        {
+            get
+            {
+                if ( !BirthMonth.HasValue || !BirthDay.HasValue )
+                {
+                    return null;
+                }
+
+                try
+                {
+                    if ( BirthMonth == 2 && BirthDay == 29 && !DateTime.IsLeapYear( RockDateTime.Now.Year ) )
+                    {
+                        // if their birthdate is 2/29 and the current year is NOT a leapyear, have their birthday be 2/28
+                        return new DateTime( RockDateTime.Now.Year, BirthMonth.Value, 28, 0, 0, 0 );
+                    }
+                    else
+                    {
+                        return new DateTime( RockDateTime.Now.Year, BirthMonth.Value, BirthDay.Value, 0, 0, 0 );
+                    }
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
@@ -1163,11 +1130,11 @@ namespace Rock.Model
         public override Dictionary<string, object> ToDictionary()
         {
             var dictionary = base.ToDictionary();
-            dictionary.AddOrIgnore( "Age", AgePrecise );
-            dictionary.AddOrIgnore( "DaysToBirthday", DaysToBirthday );
-            dictionary.AddOrIgnore( "DaysToAnniversary", DaysToAnniversary );
-            dictionary.AddOrIgnore( "FullName", FullName );
-            dictionary.AddOrIgnore( "PrimaryAliasId", this.PrimaryAliasId );
+            dictionary.TryAdd( "Age", AgePrecise );
+            dictionary.TryAdd( "DaysToBirthday", DaysToBirthday );
+            dictionary.TryAdd( "DaysToAnniversary", DaysToAnniversary );
+            dictionary.TryAdd( "FullName", FullName );
+            dictionary.TryAdd( "PrimaryAliasId", this.PrimaryAliasId );
             return dictionary;
         }
 
@@ -1817,9 +1784,13 @@ namespace Rock.Model
                 return AgeBracket.Unknown;
             }
 
-            if ( age >= 0 && age <= 12 )
+            if ( age >= 0 && age <= 5 )
             {
-                return Enums.Crm.AgeBracket.ZeroToTwelve;
+                return Enums.Crm.AgeBracket.ZeroToFive;
+            }
+            else if ( age >= 6 && age <= 12 )
+            {
+                return Enums.Crm.AgeBracket.SixToTwelve;
             }
             else if ( age >= 13 && age <= 17 )
             {

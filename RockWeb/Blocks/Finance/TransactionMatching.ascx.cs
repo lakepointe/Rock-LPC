@@ -273,6 +273,7 @@ namespace RockWeb.Blocks.Finance
             base.OnInit( e );
 
             RockPage.AddCSSLink( "~/Styles/fluidbox.css" );
+            RockPage.AddCSSLink( "~/Styles/Blocks/Finance/TransactionMatching.css" );
             RockPage.AddScriptLink( "~/Scripts/imagesloaded.min.js" );
             RockPage.AddScriptLink( "~/Scripts/jquery.fluidbox.min.js" );
 
@@ -390,25 +391,23 @@ namespace RockWeb.Blocks.Finance
             var rockContext = new RockContext();
             var blockAccountGuidList = GetAttributeValue( AttributeKey.Accounts ).SplitDelimitedValues().Select( a => a.AsGuid() ).ToList();
 
-            string keyPrefix = GetUserPreferenceKeyPrefix();
-            var personalAccountGuidList = ( this.GetUserPreference( keyPrefix + "account-list" ) ?? string.Empty ).SplitDelimitedValues().Select( a => a.AsGuid() ).ToList();
-            var optionalAccountGuidList = ( this.GetUserPreference( keyPrefix + "optional-account-list" ) ?? string.Empty ).SplitDelimitedValues().Select( a => a.AsGuid() ).ToList();
+            var preferences = GetBlockPersonPreferences();
+            var personalAccountGuidList = preferences.GetValue( "account-list" ).SplitDelimitedValues().Select( a => a.AsGuid() ).ToList();
+            var optionalAccountGuidList = preferences.GetValue( "optional-account-list" ).SplitDelimitedValues().Select( a => a.AsGuid() ).ToList();
 
-            // SNS 20230404 The LPC changes below (localized to this LoadDropDowns() method) revert a 3/23/2022 Spark change
-            // (https://github.com/lakepointe/Rock/commit/981f4d41777d043760559df07ef17c221be599d2#diff-08863471e16a228be6a6f00152141adfbbce797b21d1182ff318e82dd0ec2400)
-            // that broke the ordering of the accounts on the right side of the tool. The primary intent of the change was to
-            // increase efficiency by pulling the accounts from cache, but the inability of cached accounts to leverage the
-            // GetTree() call broke the ordering.
-            // Reported as a bug to Spark but unable to reproduce on RockSolidChurchDemo because of lack of unmatched transactions.
-            var accountQry = new FinancialAccountService( rockContext )
-                .GetTree()
-                .Where( a => a.IsActive );
+            IEnumerable<FinancialAccountCache> financialAccountList;
 
             // no accounts specified means "all Active"
             if ( blockAccountGuidList.Any() )
             {
-                accountQry = accountQry.Where( a => blockAccountGuidList.Contains( a.Guid ) );
+                financialAccountList = FinancialAccountCache.GetByGuids( blockAccountGuidList );
             }
+            else
+            {
+                financialAccountList = FinancialAccountCache.All();
+            }
+
+            financialAccountList = financialAccountList.Where( a => a.IsActive );
 
             if ( !personalAccountGuidList.Any() )
             {
@@ -418,32 +417,33 @@ namespace RockWeb.Blocks.Finance
                 }
                 else
                 {
-                    // if no personal accounts are selected, but there are optional accounts, only show the optional accounts
-                    accountQry = accountQry.Where( a => false );
+                    // if no personal accounts are selected, but there are optional accounts, only show the optional accounts (added manually)
+                    financialAccountList = financialAccountList.Where( a => false );
                 }
             }
             else
             {
                 // if there are person accounts selected, limit accounts to personal accounts
-                var selectedAccountQry = accountQry.Where( a => personalAccountGuidList.Contains( a.Guid ) );
+                var selectedAccountList = financialAccountList.Where( a => personalAccountGuidList.Contains( a.Guid ) );
 
                 // If include child accounts is selected, then also select all child accounts of the selected accounts.
-                if ( ( this.GetUserPreference( keyPrefix + "include-child-accounts" ) ?? string.Empty ).AsBoolean() )
+                if ( preferences.GetValue( "include-child-accounts" ).AsBoolean() )
                 {
-                    var selectedParentIds = selectedAccountQry.Select( a => a.Id ).ToList();
+                    var selectedParentIds = selectedAccountList.Select( a => a.Id ).ToList();
+
                     // Now find only those accounts that are descendants of one of the selected (parent) Ids
                     // OR if it is one of the selected Ids.
-                    accountQry = accountQry.Where( a => a.ParentAccountIds.Any( x => selectedParentIds.Contains( x ) ) || selectedParentIds.Contains( a.Id ) );
+                    financialAccountList = financialAccountList.Where( a => a.GetAncestorFinancialAccountIds().Any( x => selectedParentIds.Contains( x ) ) || selectedParentIds.Contains( a.Id ) );
                 }
                 else
                 {
-                    accountQry = selectedAccountQry;
+                    financialAccountList = selectedAccountList;
                 }
             }
 
             // Show only the accounts that match the batch campus if the corresponding setting is true
             int? batchId = PageParameter( PageParameterKey.BatchId ).AsIntegerOrNull();
-            if ( ( this.GetUserPreference( keyPrefix + "filter-accounts-batch-campus" ) ?? string.Empty ).AsBoolean() && batchId.HasValue )
+            if ( preferences.GetValue( "filter-accounts-batch-campus" ).AsBoolean() && batchId.HasValue )
             {
                 // Put a highlight label on this panel that shows the Campus of the Batch being worked on:
                 var batchCampusId = new FinancialBatchService( rockContext ).GetSelect( batchId.Value, a => a.CampusId );
@@ -451,19 +451,19 @@ namespace RockWeb.Blocks.Finance
                 {
                     hlCampus.Text = "Batch Campus: " + CampusCache.Get( batchCampusId.Value ).Name;
                     hlCampus.Visible = true;
-                }
 
-                // Filter out anything that does not match the batch's campus.
-                accountQry = accountQry.Where( a => a.CampusId.HasValue && a.CampusId.Value == batchCampusId );
+                    // Filter out anything that does not match the batch's campus.
+                    financialAccountList = financialAccountList.Where( a => a.CampusId.HasValue && a.CampusId.Value == batchCampusId );
+                }
             }
 
-            int? campusId = ( this.GetUserPreference( keyPrefix + "account-campus" ) ?? string.Empty ).AsIntegerOrNull();
+            int? campusId = preferences.GetValue( "account-campus" ).AsIntegerOrNull();
             if ( campusId.HasValue )
             {
-                accountQry = accountQry.Where( a => !a.CampusId.HasValue || a.CampusId.Value == campusId.Value );
+                financialAccountList = financialAccountList.Where( a => !a.CampusId.HasValue || a.CampusId.Value == campusId.Value );
             }
 
-            _visibleDisplayedAccountIds = new List<int>( accountQry.Select( a => a.Id ).ToList() );
+            _visibleDisplayedAccountIds = new List<int>( financialAccountList.OrderBy( a => a.Order ).ThenBy( a => a.Name ).Select( a => a.Id ).ToList() ); // Later on these are assumed to be in order Issue: #5371
             _visibleOptionalAccountIds = new List<int>();
 
             // make the datasource all accounts, but only show the ones that are in _visibleAccountIds or have a non-zero amount
@@ -640,7 +640,14 @@ namespace RockWeb.Blocks.Finance
                 var financialPersonBankAccountService = new FinancialPersonBankAccountService( rockContext );
                 var financialTransactionService = new FinancialTransactionService( rockContext );
                 var qryTransactionsToMatch = financialTransactionService.Queryable()
-                    .Where( a => a.AuthorizedPersonAliasId == null && a.ProcessedByPersonAliasId == null );
+                    .Where( a =>
+                        a.AuthorizedPersonAliasId == null
+                        &&
+                        (
+                            a.ProcessedByPersonAliasId == null
+                            || a.ProcessedByPersonAliasId == CurrentPersonAliasId
+                        )
+                    );
 
                 if ( batchId != 0 )
                 {
@@ -872,7 +879,7 @@ namespace RockWeb.Blocks.Finance
                     if ( existingAmounts )
                     {
                         string keyPrefix = GetUserPreferenceKeyPrefix();
-                        bool onlyShowSelectedAccounts = this.GetUserPreference( keyPrefix + "only-show-selected-accounts" ).AsBoolean();
+                        bool onlyShowSelectedAccounts = GetBlockPersonPreferences().GetValue( "only-show-selected-accounts" ).AsBoolean();
                         UpdateVisibleAccountBoxes( onlyShowSelectedAccounts );
                     }
                     else
@@ -962,11 +969,8 @@ namespace RockWeb.Blocks.Finance
                 return string.Empty;
             }
 
-            return string.Format(
-                "<a href='{0}' target='_blank' rel='noopener noreferrer'><img src='{0}'/></a>",
-                ResolveRockUrl( string.Format(
-                    "~/GetImage.ashx?id={0}",
-                    financialTransactionImage.BinaryFileId ) ) );
+            var imageUrl = FileUrlHelper.GetImageUrl( financialTransactionImage.BinaryFileId );
+            return $"<a href='{imageUrl}' target='_blank' rel='noopener noreferrer'><img src='{imageUrl}'/></a>";
         }
 
         private void UpdateVisibleAccountBoxes( bool onlyShowSelectedAccounts = false )
@@ -1101,27 +1105,29 @@ namespace RockWeb.Blocks.Finance
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void mdAccountsPersonalFilter_SaveClick( object sender, EventArgs e )
         {
-            string keyPrefix = GetUserPreferenceKeyPrefix();
+            var preferences = GetBlockPersonPreferences();
 
             var selectedAccountIdList = apDisplayedPersonalAccounts.SelectedValuesAsInt().ToList();
             var selectedAccountGuidList = FinancialAccountCache.GetByIds( selectedAccountIdList ).Select( a => a.Guid ).ToList();
-            this.SetUserPreference( keyPrefix + "account-list", selectedAccountGuidList.AsDelimited( "," ) );
+            preferences.SetValue( "account-list", selectedAccountGuidList.AsDelimited( "," ) );
 
             var optionalAccountIdList = apOptionalPersonalAccounts.SelectedValuesAsInt().ToList();
             var optionalAccountGuidList = FinancialAccountCache.GetByIds( optionalAccountIdList ).Select( a => a.Guid ).ToList();
-            this.SetUserPreference( keyPrefix + "optional-account-list", optionalAccountGuidList.AsDelimited( "," ) );
+            preferences.SetValue( "optional-account-list", optionalAccountGuidList.AsDelimited( "," ) );
 
-            this.SetUserPreference( keyPrefix + "only-show-selected-accounts", cbOnlyShowSelectedAccounts.Checked.ToString() );
+            preferences.SetValue( "only-show-selected-accounts", cbOnlyShowSelectedAccounts.Checked.ToString() );
 
             int? campusId = cpAccounts.SelectedCampusId;
-            this.SetUserPreference( keyPrefix + "account-campus", campusId.HasValue ? campusId.Value.ToString() : "" );
+            preferences.SetValue( "account-campus", campusId.HasValue ? campusId.Value.ToString() : "" );
 
             bool includeChildAccounts = cbIncludeChildAccounts.Checked;
-            this.SetUserPreference( keyPrefix + "include-child-accounts", cbIncludeChildAccounts.Checked.ToString() );
+            preferences.SetValue( "include-child-accounts", cbIncludeChildAccounts.Checked.ToString() );
 
             bool filterAccountsByBatchCampus = cbFilterAccountsByBatchsCampus.Checked;
-            this.SetUserPreference( keyPrefix + "filter-accounts-batch-campus", cbFilterAccountsByBatchsCampus.Checked.ToString() );
+            preferences.SetValue( "filter-accounts-batch-campus", cbFilterAccountsByBatchsCampus.Checked.ToString() );
             hlCampus.Visible = false;
+
+            preferences.Save();
 
             mdAccountsPersonalFilter.Hide();
 
@@ -1161,28 +1167,28 @@ namespace RockWeb.Blocks.Finance
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void btnFilter_Click( object sender, EventArgs e )
         {
-            string keyPrefix = GetUserPreferenceKeyPrefix();
+            var preferences = GetBlockPersonPreferences();
 
-            var personalAccountGuidList = ( this.GetUserPreference( keyPrefix + "account-list" ) ?? string.Empty ).SplitDelimitedValues().Select( a => a.AsGuid() ).ToList();
+            var personalAccountGuidList = preferences.GetValue( "account-list" ).SplitDelimitedValues().Select( a => a.AsGuid() ).ToList();
             var personalAccountList = FinancialAccountCache
                 .GetByGuids( personalAccountGuidList )
                 .Where( a => a.IsActive )
                 .ToList();
             apDisplayedPersonalAccounts.SetValuesFromCache( personalAccountList );
 
-            var optionalAccountGuidList = ( this.GetUserPreference( keyPrefix + "optional-account-list" ) ?? string.Empty ).SplitDelimitedValues().Select( a => a.AsGuid() ).ToList();
+            var optionalAccountGuidList = preferences.GetValue( "optional-account-list" ).SplitDelimitedValues().Select( a => a.AsGuid() ).ToList();
             var optionalAccountList = FinancialAccountCache
                 .GetByGuids( optionalAccountGuidList )
                 .Where( a => a.IsActive )
                 .ToList();
             apOptionalPersonalAccounts.SetValuesFromCache( optionalAccountList );
 
-            cbOnlyShowSelectedAccounts.Checked = this.GetUserPreference( keyPrefix + "only-show-selected-accounts" ).AsBoolean();
-            cbIncludeChildAccounts.Checked = this.GetUserPreference( keyPrefix + "include-child-accounts" ).AsBoolean();
-            cbFilterAccountsByBatchsCampus.Checked = this.GetUserPreference( keyPrefix + "filter-accounts-batch-campus" ).AsBoolean();
+            cbOnlyShowSelectedAccounts.Checked = preferences.GetValue( "only-show-selected-accounts" ).AsBoolean();
+            cbIncludeChildAccounts.Checked = preferences.GetValue( "include-child-accounts" ).AsBoolean();
+            cbFilterAccountsByBatchsCampus.Checked = preferences.GetValue( "filter-accounts-batch-campus" ).AsBoolean();
 
             cpAccounts.Campuses = CampusCache.All();
-            cpAccounts.SelectedCampusId = ( this.GetUserPreference( keyPrefix + "account-campus" ) ?? string.Empty ).AsIntegerOrNull();
+            cpAccounts.SelectedCampusId = preferences.GetValue( "account-campus" ).AsIntegerOrNull();
 
             mdAccountsPersonalFilter.Show();
 
@@ -1617,17 +1623,21 @@ namespace RockWeb.Blocks.Finance
         }
 
         /// <summary>
-        /// Images the URL.
+        /// Gets the image URL with optional maximum width and height properties.
         /// </summary>
         /// <param name="binaryFileId">The binary file identifier.</param>
         /// <param name="maxWidth">The maximum width.</param>
         /// <param name="maxHeight">The maximum height.</param>
-        /// <returns></returns>
+        /// <returns>The URL of the image with specified dimensions.</returns>
         protected string ImageUrl( int binaryFileId, int? maxWidth = null, int? maxHeight = null )
         {
-            string width = maxWidth.HasValue ? string.Format( "&maxWidth={0}", maxWidth.Value ) : string.Empty;
-            string height = maxHeight.HasValue ? string.Format( "&maxHeight={0}", maxHeight.Value ) : string.Empty;
-            return ResolveRockUrl( string.Format( "~/GetImage.ashx?id={0}{1}{2}", binaryFileId, width, height ) );
+            var options = new GetImageUrlOptions
+            {
+                MaxWidth = maxWidth,
+                MaxHeight = maxHeight
+            };
+
+            return FileUrlHelper.GetImageUrl( binaryFileId, options );
         }
 
         /// <summary>
@@ -2148,8 +2158,8 @@ namespace RockWeb.Blocks.Finance
                 return;
             }
 
-            var keyPrefix = GetUserPreferenceKeyPrefix();
-            var campusIdSetting = GetUserPreference( keyPrefix + "account-campus" ).AsIntegerOrNull();
+            var preferences = GetBlockPersonPreferences();
+            var campusIdSetting = preferences.GetValue( "account-campus" ).AsIntegerOrNull();
 
             if ( campusIdSetting.HasValue )
             {

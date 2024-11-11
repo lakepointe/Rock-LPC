@@ -137,7 +137,7 @@ Update Family Status: {updateFamilyStatus}
                         rockContext.SourceOfChange = SOURCE_OF_CHANGE;
                         rockContext.Database.CommandTimeout = commandTimeout;
                         // attach the person object to this rockContext so that it will do changetracking on it
-                        rockContext.People.Attach( person );
+                        new PersonService( rockContext ).Attach( person );
 
                         // find the name
                         var metaFirstNameGenderLookup = firstNameGenderDictionary.GetValueOrNull( person.FirstName );
@@ -280,7 +280,7 @@ Update Family Status: {updateFamilyStatus}
 
                     // Start the person qry by getting any of the people who are currently inactive
                     var personQry = new PersonService( rockContext )
-                        .Queryable().AsNoTracking()
+                        .Queryable( new PersonService.PersonQueryOptions() { IncludeRestUsers = false } ).AsNoTracking()
                         .Where( p =>
                             personIdQry.Contains( p.Id ) &&
                             p.RecordStatusValueId == inactiveStatus.Id );
@@ -484,7 +484,7 @@ Update Family Status: {updateFamilyStatus}
                     var maxRecordCreationDate = RockDateTime.Now.AddDays( settings.RecordsOlderThan * -1 );
                     // Start the person qry by getting any of the people who are currently active and not in the list of people with activity
                     var personQry = new PersonService( rockContext )
-                        .Queryable().AsNoTracking()
+                        .Queryable(new PersonService.PersonQueryOptions() { IncludeRestUsers = false } ).AsNoTracking()
                         .Where( p =>
                             !personIdQry.Contains( p.Id ) &&
                             p.RecordStatusValueId == activeStatus.Id &&
@@ -1275,8 +1275,8 @@ Update Family Status: {updateFamilyStatus}
                             using ( var updateRockContext = new RockContext() )
                             {
                                 updateRockContext.SourceOfChange = SOURCE_OF_CHANGE;
-                                // Attach the person to the updateRockContext so that it'll be tracked/saved using updateRockContext 
-                                updateRockContext.People.Attach( person );
+                                // Attach the person to the updateRockContext so that it'll be tracked/saved using updateRockContext
+                                new PersonService( updateRockContext ).Attach( person );
 
                                 recordsUpdated++;
                                 person.ConnectionStatusValueId = connectionStatusValueId;
@@ -1359,8 +1359,8 @@ Update Family Status: {updateFamilyStatus}
                         using ( var updateRockContext = new RockContext() )
                         {
                             updateRockContext.SourceOfChange = SOURCE_OF_CHANGE;
-                            // Attach the group to the updateRockContext so that it'll be tracked/saved using updateRockContext 
-                            updateRockContext.Groups.Attach( group );
+                            // Attach the group to the updateRockContext so that it'll be tracked/saved using updateRockContext
+                            new GroupService( updateRockContext ).Attach( group );
 
                             recordsUpdated++;
                             group.StatusValueId = groupStatusValueId;

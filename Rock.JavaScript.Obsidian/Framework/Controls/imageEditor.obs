@@ -44,14 +44,14 @@
         </template>
     </RockFormField>
     <!-- LPC MODIFIED CODE -->
-    <Modal v-model="showModal" :title="getLang() == 'es' ? 'Crop Image - Español' : 'Crop Image'" @close="cancelCrop" :cancelText="getLang() == 'es' ? 'Cancelar' : 'Cancel'">
+    <Modal v-model="showModal" :title="getLang() == 'es' ? 'Recortar Imagen' : 'Crop Image'" @close="cancelCrop" :cancelText="getLang() == 'es' ? 'Cancelar' : 'Cancel'">
     <!-- END LPC MODIFIED CODE -->
         <div style="max-width:480px; max-height: 480px; margin:auto; aspect-ratio: 1;">
             <img :src="selectedImageUrl ?? ''" ref="imgRef" style="display:block; max-width:100%;" />
         </div>
         <template #customButtons>
             <!-- LPC MODIFIED CODE -->
-            <RockButton type="button" :btnType="BtnType.Primary" @click.prevent="cropAndUpload">{{ getLang() == 'es' ? 'Crop - Español' : 'Crop' }}</RockButton>
+            <RockButton type="button" :btnType="BtnType.Primary" @click.prevent="cropAndUpload">{{ getLang() == 'es' ? 'Recortar' : 'Crop' }}</RockButton>
             <!-- END LPC MODIFIED CODE -->
         </template>
     </Modal>
@@ -62,7 +62,7 @@
     import { computed, PropType, ref, watch } from "vue";
     import NotificationBox from "./notificationBox.obs";
     import Modal from "./modal.obs";
-    import RockButton from "./rockButton";
+    import RockButton from "./rockButton.obs";
     import RockFormField from "./rockFormField.obs";
     import { BinaryFiletype } from "@Obsidian/SystemGuids/binaryFiletype";
     import { uploadBinaryFile } from "@Obsidian/Utility/http";
@@ -70,6 +70,7 @@
     import { standardRockFormFieldProps, useStandardRockFormFieldProps } from "@Obsidian/Utility/component";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
     import Cropper from "@Obsidian/Libs/cropper";
+    import { toGuidOrNull } from "@Obsidian/Utility/guid";
     // LPC CODE
     import { useStore } from "@Obsidian/PageState";
     const store = useStore();
@@ -143,7 +144,7 @@
     }>();
 
     // Main Values
-    const fileGuid = ref<Guid>(props.modelValue?.value ?? "");
+    const fileGuid = ref<Guid | null>(toGuidOrNull(props.modelValue?.value));
     const fileName = ref(props.modelValue?.text ?? "");
 
     // Variables related to the progress of uploading a new file.
@@ -243,7 +244,7 @@
                 }
             });
 
-            fileGuid.value = result.value ?? "";
+            fileGuid.value = toGuidOrNull(result.value);
             fileName.value = result.text ?? "";
         }
         catch (e) {
@@ -272,7 +273,7 @@
     function onRemoveFileClick(): void {
         selectedImageUrl.value = "";
         errorMessage.value = "";
-        fileGuid.value = "";
+        fileGuid.value = null;
         fileName.value = "";
     }
 
@@ -301,7 +302,7 @@
             return;
         }
 
-        fileGuid.value = "";
+        fileGuid.value = null;
         fileName.value = "";
     }
 
@@ -382,7 +383,7 @@
 
     // Watch for changes to the model value and update our internal values.
     watch(() => props.modelValue, () => {
-        fileGuid.value = props.modelValue?.value ?? "";
+        fileGuid.value = toGuidOrNull(props.modelValue?.value);
         fileName.value = props.modelValue?.text ?? "";
     });
 

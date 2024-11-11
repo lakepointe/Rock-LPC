@@ -1,4 +1,4 @@
-﻿// <copyright>
+// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -168,8 +168,8 @@ namespace RockWeb.Blocks.Cms
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void gfList_ApplyFilterClick( object sender, EventArgs e )
         {
-            gFilter.SaveUserPreference( UserPreferenceKey.SegmentName, tbNameFilter.Text );
-            gFilter.SaveUserPreference( UserPreferenceKey.IncludeInactive, cbShowInactive.Checked ? cbShowInactive.Checked.ToString() : string.Empty );
+            gFilter.SetFilterPreference( UserPreferenceKey.SegmentName, tbNameFilter.Text );
+            gFilter.SetFilterPreference( UserPreferenceKey.IncludeInactive, cbShowInactive.Checked ? cbShowInactive.Checked.ToString() : string.Empty );
             BindGrid();
         }
 
@@ -199,7 +199,7 @@ namespace RockWeb.Blocks.Cms
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void gfList_ClearFilterClick( object sender, EventArgs e )
         {
-            gFilter.DeleteUserPreferences();
+            gFilter.DeleteFilterPreferences();
             BindFilter();
         }
 
@@ -232,8 +232,8 @@ namespace RockWeb.Blocks.Cms
         /// </summary>
         private void BindFilter()
         {
-            tbNameFilter.Text = gFilter.GetUserPreference( UserPreferenceKey.SegmentName );
-            cbShowInactive.Checked = gFilter.GetUserPreference( UserPreferenceKey.IncludeInactive ).AsBoolean();
+            tbNameFilter.Text = gFilter.GetFilterPreference( UserPreferenceKey.SegmentName );
+            cbShowInactive.Checked = gFilter.GetFilterPreference( UserPreferenceKey.IncludeInactive ).AsBoolean();
         }
 
         /// <summary>
@@ -273,7 +273,8 @@ namespace RockWeb.Blocks.Cms
                 KnownIndividualsCount =
                      personAliasPersonalizationsSegmentsQry
                          .Where( p => p.PersonalizationEntityId == a.Id && p.PersonAlias.PersonId != anonymousVisitorPersonId ).Count(),
-                Guid = a.Guid
+                Guid = a.Guid,
+                TimeToUpdateDurationMilliseconds = a.TimeToUpdateDurationMilliseconds
             } );
 
             // sort the query based on the column that was selected to be sorted
@@ -302,6 +303,7 @@ namespace RockWeb.Blocks.Cms
             public int AnonymousIndividualsCount { get; set; }
             public int KnownIndividualsCount { get; set; }
             public Guid Guid { get; set; }
+            public double? TimeToUpdateDurationMilliseconds { get; set; }
         }
     }
 }

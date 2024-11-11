@@ -14,7 +14,7 @@
 // limitations under the License.
 // </copyright>
 
-using Rock.ViewModels.Entities;
+using System.Linq;
 
 namespace Rock.Model
 {
@@ -23,23 +23,16 @@ namespace Rock.Model
     /// </summary>
     public partial class RegistrationTemplateService
     {
-    }
-
-    /// <summary>
-    /// RegistrationTemplateViewModelHelper
-    /// </summary>
-    public partial class RegistrationTemplateViewModelHelper
-    {
         /// <summary>
-        /// Applies the additional properties and security to view model.
+        /// Determines whether the Registration Template has any Registration Template Placements.
         /// </summary>
-        /// <param name="model">The model.</param>
-        /// <param name="viewModel">The view model.</param>
-        /// <param name="currentPerson">The current person.</param>
-        /// <param name="loadAttributes">if set to <c>true</c> [load attributes].</param>
-        public override void ApplyAdditionalPropertiesAndSecurityToViewModel( RegistrationTemplate model, RegistrationTemplateBag viewModel, Person currentPerson = null, bool loadAttributes = true )
+        /// <param name="registrationTemplateId">The registration template identifier.</param>
+        /// <returns>
+        ///   <c>true</c> if [has registration template placements] [the specified registration template identifier]; otherwise, <c>false</c>.
+        /// </returns>
+        public bool HasRegistrationTemplatePlacements( int registrationTemplateId )
         {
-            viewModel.PluralRegistrantTerm = model.RegistrantTerm.Pluralize();
+            return Queryable().Any( r => r.Id == registrationTemplateId && r.Placements.Any() );
         }
     }
 }

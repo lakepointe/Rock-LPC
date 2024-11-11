@@ -27,6 +27,7 @@ using Rock;
 using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
+using Rock.Security;
 using Rock.Web.Cache;
 using Rock.Web.UI;
 
@@ -38,6 +39,8 @@ namespace RockWeb.Blocks.Crm.PersonDetail
     [DisplayName( "Person Bio Summary" )]
     [Category( "CRM > Person Detail" )]
     [Description( "Person name, picture, and badges." )]
+
+    [SecurityAction( Authorization.VIEW_PROTECTION_PROFILE, "The roles and/or users that can view the protection profile alert for the selected person." )]
 
     #region Block Attributes
 
@@ -187,7 +190,7 @@ namespace RockWeb.Blocks.Crm.PersonDetail
 
         private void ShowPersonImage()
         {
-            lImage.Text = $@"<img src=""{Person.GetPersonPhotoUrl( Person, 400, 400 )}"" alt class=""img-profile"">";
+            lImage.Text = $@"<img src=""{Person.GetPersonPhotoUrl( Person, 400 )}&Style=icon&BackgroundColor=E4E4E7&ForegroundColor=A1A1AA"" alt class=""img-profile"">";
 
             // LPC CODE
             TaggedItemService taggedItemService = new TaggedItemService( new RockContext() );
@@ -321,7 +324,7 @@ namespace RockWeb.Blocks.Crm.PersonDetail
             var groupMemberListItem = $@"
                 <li>
                     <a href=""{personLink}"">
-                        <img src=""{Person.GetPersonPhotoUrl( groupMember.Person.Initials, groupMember.Person.PhotoId, groupMember.Person.Age, groupMember.Person.Gender, groupMember.Person.RecordTypeValueId, groupMember.Person.AgeClassification )}&Style=icon"" alt="""" class=""avatar"">
+                        <img src=""{Person.GetPersonPhotoUrl( groupMember.Person.Initials, groupMember.Person.PhotoId, groupMember.Person.Age, groupMember.Person.Gender, groupMember.Person.RecordTypeValueId, groupMember.Person.AgeClassification, 400 )}&Style=icon&BackgroundColor=E4E4E7&ForegroundColor=A1A1AA"" alt="""" class=""avatar"">
                         <span class=""name"">
                             {groupMember.Person.FullName}
                         </span>

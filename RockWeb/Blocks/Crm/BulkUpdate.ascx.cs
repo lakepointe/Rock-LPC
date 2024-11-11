@@ -315,6 +315,11 @@ namespace RockWeb.Blocks.Crm
                 $('#{2}').closest('.form-group').toggleClass('bulk-item-selected', enabled)
             }}
 
+            // Enhanced lists need special handling
+            var enhancedList = $(this).parent().find('.chosen-select');
+            if (enhancedList.length) {{
+                $(enhancedList).trigger('chosen:updated');
+            }}
         }});
 
         // Update the hidden field with the client id of each selected control, (if client id ends with '_hf' as in the case of multi-select attributes, strip the ending '_hf').
@@ -1133,7 +1138,29 @@ namespace RockWeb.Blocks.Crm
 
         private void SetGroupControls()
         {
+            nbGroupMessage.Visible = false;
+            var rockContext = new RockContext();
+            Group group = null;
+
+            int? groupId = gpGroup.SelectedValueAsId();
+            if ( groupId.HasValue )
+            {
+                group = new GroupService( rockContext ).Get( groupId.Value );
+            }
+
             string action = ddlGroupAction.SelectedValue;
+
+            // If the person is not authorized to update/edit the group members...
+            if ( group != null && !( group.IsAuthorized( Authorization.EDIT, CurrentPerson ) || group.IsAuthorized( Authorization.MANAGE_MEMBERS, CurrentPerson ) ) )
+            {
+                nbGroupMessage.Visible = true;
+                nbGroupMessage.Text = $"You are not authorized to {action.ToLowerInvariant()} members for {group.Name}";
+                gpGroup.SetValue( null );
+                ddlGroupMemberStatus.Visible = false;
+                ddlGroupRole.Visible = false;
+                return;
+            }
+
             if ( action == "Remove" )
             {
                 ddlGroupMemberStatus.Visible = false;
@@ -1141,10 +1168,6 @@ namespace RockWeb.Blocks.Crm
             }
             else
             {
-                var rockContext = new RockContext();
-                Group group = null;
-
-                int? groupId = gpGroup.SelectedValueAsId();
                 if ( groupId.HasValue )
                 {
                     group = new GroupService( rockContext ).Get( groupId.Value );
@@ -1234,7 +1257,7 @@ namespace RockWeb.Blocks.Crm
                     Control control = attributeCache.AddControl( phAttributes.Controls, attributeCache.DefaultValue, string.Empty, setValues, true, attributeCache.IsRequired, labelText );
 
                     // Q: Why don't we enable if the control is a RockCheckBox?
-                    if ( action == "Update" && !( control is RockCheckBox ) )
+                    if ( action == "Update" && !( control is RockCheckBox ) && !( control is PersonPicker ) && !( control is ItemPicker ) )
                     {
                         var webControl = control as WebControl;
                         if ( webControl != null )
@@ -2243,7 +2266,7 @@ namespace RockWeb.Blocks.Crm
                 if ( this.UpdateGroupAction != GroupChangeActionSpecifier.None )
                 {
                     var group = new GroupService( rockContext ).Get( UpdateGroupId.Value );
-                    if ( group != null )
+                    if ( group != null && ( group.IsAuthorized( Authorization.EDIT, CurrentPerson ) || group.IsAuthorized( Authorization.MANAGE_MEMBERS, CurrentPerson ) ) )
                     {
                         var groupMemberService = new GroupMemberService( rockContext );
 
@@ -2336,9 +2359,14 @@ namespace RockWeb.Blocks.Crm
                                 {
                                     var newGroupMembers = new List<GroupMember>();
 
-                                    var existingIds = existingMembersQuery.Select( m => m.PersonId ).Distinct().ToList();
+                                    var existingMembers = existingMembersQuery
+                                        .Select( m => new
+                                        {
+                                            m.PersonId,
+                                            m.GroupRoleId
+                                        } ).ToList();
 
-                                    var personKeys = ids.Where( id => !existingIds.Contains( id ) ).ToList();
+                                    var personKeys = ids.Where( id => !existingMembers.Any( m => m.PersonId == id && m.GroupRoleId == UpdateGroupRoleId.Value ) ).ToList();
 
                                     Action<RockContext, List<int>> addAction = ( context, items ) =>
                                     {

@@ -37,8 +37,9 @@ using Rock.Web.UI.Controls;
 namespace Rock.Blocks.Crm
 {
     [DisplayName( "Family Pre Registration" )]
-    [Category( "Obsidian > CRM" )]
+    [Category( "CRM" )]
     [Description( "Provides a way to allow people to pre-register their families for weekend check-in." )]
+    [SupportedSiteTypes( Model.SiteType.Web )]
 
     #region Block Attributes
 
@@ -315,6 +316,7 @@ namespace Rock.Blocks.Crm
         Category = CategoryKey.AdultFields,
         Order = 9 )]
 
+    // LPC CODE
     [BooleanField(
         "Profile Photo Mode",
         Key = AttributeKey.AdultPhotoMode,
@@ -325,6 +327,7 @@ namespace Rock.Blocks.Crm
         DefaultBooleanValue = false,
         Category = CategoryKey.AdultFields,
         Order = 10 )]
+    // END LPC CODE
 
     [CustomDropdownListField(
         "First Adult Create Account",
@@ -480,6 +483,7 @@ namespace Rock.Blocks.Crm
         Category = CategoryKey.ChildFields,
         Order = 9 )]
 
+    // LPC CODE
     [BooleanField(
         "Profile Photo Mode",
         Key = AttributeKey.ChildPhotoMode,
@@ -490,6 +494,7 @@ namespace Rock.Blocks.Crm
         DefaultBooleanValue = false,
         Category = CategoryKey.ChildFields,
         Order = 10 )]
+    // END LPC CODE
 
     [CustomDropdownListField(
         "Race",
@@ -560,7 +565,7 @@ namespace Rock.Blocks.Crm
 
     [Rock.SystemGuid.BlockTypeGuid( "1D6794F5-876B-47B9-9C9B-5C2C2CC81074" )]
     [Rock.SystemGuid.EntityTypeGuid( "C03CE9ED-8572-4BE5-AB2A-FF7498494905")]
-    public partial class FamilyPreRegistration : RockObsidianBlockType
+    public partial class FamilyPreRegistration : RockBlockType
     {
         #region Attribute Keys, Categories and Values
 
@@ -802,8 +807,6 @@ namespace Rock.Blocks.Crm
         private Guid RecordStatusDefinedValueGuid => this.GetAttributeValue( AttributeKey.RecordStatus ).AsGuid();
 
         #endregion
-
-        public override string BlockFileUrl => $"{base.BlockFileUrl}.obs";
 
         public override object GetObsidianBlockInitialization()
         {
@@ -1162,10 +1165,21 @@ namespace Rock.Blocks.Crm
                     var homeLocationType = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.GROUP_LOCATION_TYPE_HOME.AsGuid() );
                     if ( homeLocationType != null )
                     {
-                        // Find a location record for the address that was entered.
-                        Location location = null;
-                        if ( bag.Address.Street1.IsNotNullOrWhiteSpace() && bag.Address.City.IsNotNullOrWhiteSpace() )
+                        // Only save the location if it is valid according to the country's requirements.
+                        Location location = new Location()
                         {
+                            Street1 = bag.Address.Street1,
+                            Street2 = bag.Address.Street2,
+                            City = bag.Address.City,
+                            State = bag.Address.State,
+                            PostalCode = bag.Address.PostalCode,
+                            Country = bag.Address.Country,
+                        };
+                        var isValid = LocationService.ValidateLocationAddressRequirements( location, out string validationMessage );
+
+                        if ( isValid )
+                        {
+                            // Find a location record for the address that was entered.
                             location = new LocationService( rockContext ).Get(
                                 // TODO: The default country should be removed once Obsidian has full country support.
                                 bag.Address.Street1,
@@ -1443,7 +1457,7 @@ namespace Rock.Blocks.Crm
                             foreach ( var adultId in adultIds )
                             {
                                 groupMemberService.CreateKnownRelationship( adultId, person.Id, canCheckInRole.Id );
-                                newRelationships.AddOrIgnore( person.Id, new List<int>() );
+                                newRelationships.TryAdd( person.Id, new List<int>() );
                                 newRelationships[person.Id].Add( canCheckInRole.Id );
                             }
                         }
@@ -1454,7 +1468,7 @@ namespace Rock.Blocks.Crm
                             foreach ( var adultId in adultIds )
                             {
                                 groupMemberService.CreateKnownRelationship( adultId, person.Id, temporaryCanCheckInRole.Id );
-                                newRelationships.AddOrIgnore( person.Id, new List<int>() );
+                                newRelationships.TryAdd( person.Id, new List<int>() );
                                 newRelationships[person.Id].Add( temporaryCanCheckInRole.Id );
                             }
                         }
@@ -1473,7 +1487,7 @@ namespace Rock.Blocks.Crm
                         foreach ( var adultId in adultIds )
                         {
                             groupMemberService.CreateKnownRelationship( adultId, person.Id, newRelationshipId.Value );
-                            newRelationships.AddOrIgnore( person.Id, new List<int>() );
+                            newRelationships.TryAdd( person.Id, new List<int>() );
                             newRelationships[person.Id].Add( newRelationshipId.Value );
                         }
                     }
@@ -2114,7 +2128,7 @@ namespace Rock.Blocks.Crm
             {
                 var currentPerson = this.GetCurrentPerson();
 
-                box.CampusGuid = GetInitialCampusGuid( rockContext, currentPerson, box.CampusTypesFilter, box.CampusStatusesFilter );
+                box.CampusGuid = GetInitialCampusGuid();
 
                 var childRelationshipTypes = GetChildRelationshipTypes();
 
@@ -2169,7 +2183,6 @@ namespace Rock.Blocks.Crm
                             Street1 = location?.Street1,
                             Street2 = location?.Street2,
                         };
-                        location.ToViewModel( currentPerson );
                     }
                 }
             }
@@ -2177,69 +2190,33 @@ namespace Rock.Blocks.Crm
             return box;
         }
 
-        private Guid? GetInitialCampusGuid( RockContext rockContext, Person currentPerson, List<Guid> campusTypesFilter, List<Guid> campusStatusesFilter )
+        /// <summary>
+        /// Tries to get the initial campus Guid from a page parameter, falling back to
+        /// the default campus block setting if the page parameter is missing or invalid.
+        /// </summary>
+        /// <returns>The initial campus Guid.</returns>
+        private Guid? GetInitialCampusGuid()
         {
-            if ( this.IsCampusHidden )
-            {
-                // No initial campus if the block setting hides the field.
-                return null;
-            }
-
-            // LPC CODE
-            // If there is a CampusGuid or CampusId parameter, use that as the default campus
             var campusGuid = PageParameter( PageParameterKey.CampusGuid ).AsGuidOrNull();
             var campusId = PageParameter( PageParameterKey.CampusId ).AsIntegerOrNull();
-            CampusCache paramCampus = null;
 
-            // Make sure the campus exists
-            if ( campusGuid != null )
+            CampusCache initialCampus = null;
+
+            if ( campusGuid.HasValue )
             {
-                paramCampus = CampusCache.Get( ( Guid )campusGuid );
+                initialCampus = CampusCache.Get( campusGuid.Value );
             }
-            if ( campusId != null && paramCampus == null )
+            else if ( campusId.HasValue )
             {
-                paramCampus = CampusCache.Get( ( int )campusId );
+                initialCampus = CampusCache.Get( campusId.Value );
             }
 
-            // If a parameter contains a real campus return it
-            if ( paramCampus != null && paramCampus.Id > 0 )
+            if ( initialCampus == null && this.DefaultCampusGuid != Guid.Empty )
             {
-                return paramCampus.Guid;
+                initialCampus = CampusCache.Get( this.DefaultCampusGuid );
             }
-            // END LPC CODE
 
-            var client = new CampusClientService( rockContext, currentPerson );
-            var campuses = client.GetCampusesAsListItems( new CampusOptions
-            {
-                LimitCampusStatuses = campusStatusesFilter,
-                LimitCampusTypes = campusTypesFilter,
-                IncludeInactive = false                
-            } );
-
-            if ( campuses.Any() )
-            {
-                Guid? defaultCampusGuid = this.DefaultCampusGuid;
-
-                if ( defaultCampusGuid == Guid.Empty )
-                {
-                    defaultCampusGuid = null;
-                }
-
-                if ( campuses.Count == 1 )
-                {
-                    // If there is only one filtered campus, then return the default campus OR the single campus if default is missing.
-                    return defaultCampusGuid ?? campuses.First().Value.AsGuidOrNull();
-                }
-                else
-                {
-                    // If there is more than one filtered campus, then return the default campus.
-                    return defaultCampusGuid;
-                }
-            }
-            else
-            {
-                return null;
-            }
+            return initialCampus?.Guid;
         }
 
         /// <summary>
@@ -2525,6 +2502,7 @@ namespace Rock.Blocks.Crm
                 };
             }
 
+            var displayMobilePhoneChildren = this.GetAttributeValue( AttributeKey.ChildMobilePhone ) == "Hide" ? false : true;
             var displaySmsAttributeValue = this.GetAttributeValue( AttributeKey.DisplaySmsOptIn );
             var smsOptInDisplayText = Rock.Web.SystemSettings.GetValue( Rock.SystemKey.SystemSetting.SMS_OPT_IN_MESSAGE_LABEL );
 
@@ -2564,7 +2542,7 @@ namespace Rock.Blocks.Crm
                     IsHidden = false,
                     IsShowFirstAdult = true,
                     IsShowAllAdults = true,
-                    IsShowChildren = true
+                    IsShowChildren = displayMobilePhoneChildren
                 };
                 default:
                 return new FamilyPreRegistrationSmsOptInFieldBag
@@ -2965,7 +2943,7 @@ namespace Rock.Blocks.Crm
                 if ( bag.MaritalStatusDefinedValueGuid.HasValue )
                 {
                     adult.MaritalStatusValueId = DefinedValueCache.GetId( bag.MaritalStatusDefinedValueGuid.Value );
-                } 
+                }
             }
 
             if ( isEmailShown )

@@ -25,14 +25,15 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI.WebControls;
+
 using Rock.Attribute;
+using Rock.Configuration;
 using Rock.Data;
 using Rock.Model;
 using Rock.Reporting;
 using Rock.Reporting.DataFilter;
 using Rock.Security;
 using Rock.Utility;
-using Rock.Utility.Settings;
 using Rock.Web.Cache;
 
 namespace Rock.Lava.Blocks
@@ -142,7 +143,8 @@ namespace Rock.Lava.Blocks
                     Expression queryExpression = null; // the base expression we'll use to build our query from
 
                     // Parse markup
-                    var parms = ParseMarkup( _markup, context );
+                    var settings = GetAttributesFromMarkup( _markup, context, this.EntityName );
+                    var parms = settings.Attributes;
 
                     if ( parms.Any( p => p.Key == "id" ) )
                     {
@@ -378,7 +380,7 @@ namespace Rock.Lava.Blocks
                         if ( parms.GetValueOrNull( "count" ).AsBoolean() )
                         {
                             int countResult = queryResult.Count();
-                            context.SetMergeField( "count", countResult, LavaContextRelativeScopeSpecifier.Root );
+                            context.SetMergeField( "count", countResult );
                         }
                         else
                         {
@@ -529,7 +531,7 @@ namespace Rock.Lava.Blocks
                             }
 
                             // Add the result to the current context.
-                            context.SetMergeField( parms["iterator"], returnValues, LavaContextRelativeScopeSpecifier.Current );
+                            context.SetMergeField( parms["iterator"], returnValues );
 
                             if ( returnCount == 1 )
                             {
@@ -612,7 +614,7 @@ namespace Rock.Lava.Blocks
         {
             // If the database is not connected, we do not have access to entity definitions.
             // This can occur when the Lava engine is started without an attached database.
-            if ( !RockInstanceConfig.DatabaseIsAvailable )
+            if ( !RockApp.Current.IsDatabaseAvailable() )
             {
                 return;
             }
@@ -620,7 +622,7 @@ namespace Rock.Lava.Blocks
             var entityTypes = EntityTypeCache.All();
 
             // register a business entity
-           engine.RegisterBlock( "business", ( name ) => { return new RockEntityBlock(); } );
+           engine.RegisterBlock( "business", ( name ) => CreateEntityBlockInstance( name ) );
 
             // Register the core models, replacing existing blocks of the same name if necessary.
             foreach ( var entityType in entityTypes
@@ -660,13 +662,19 @@ namespace Rock.Lava.Blocks
                     entityName = entityType.Name.Replace( '.', '_' );
                 }
 
-                engine.RegisterBlock( entityName,
-                    ( name ) =>
-                    {
-                        // Return a block having a tag name corresponding to the entity name.
-                        return new RockEntityBlock() { SourceElementName = entityName, EntityName = entityName };
-                    } );
+                engine.RegisterBlock( entityName, ( name ) => CreateEntityBlockInstance( name ) );
             }
+        }
+
+        /// <summary>
+        /// Factory method to return a new block for the specified Entity.
+        /// </summary>
+        /// <param name="entityName"></param>
+        /// <returns></returns>
+        private static RockEntityBlock CreateEntityBlockInstance( string entityName )
+        {
+            // Return a block having a tag name corresponding to the entity name.
+            return new RockEntityBlock() { SourceElementName = entityName, EntityName = entityName };
         }
 
         /// <summary>
@@ -693,63 +701,21 @@ namespace Rock.Lava.Blocks
             return currentPerson;
         }
 
-        /// <summary>
-        /// Parses the markup.
-        /// </summary>
-        /// <param name="markup">The markup.</param>
-        /// <param name="context">The context.</param>
-        /// <returns></returns>
-        private Dictionary<string, string> ParseMarkup( string markup, ILavaRenderContext context )
+        internal static LavaElementAttributes GetAttributesFromMarkup( string markup, ILavaRenderContext context, string entityName )
         {
-            // first run lava across the inputted markup
-            var internalMergeFields = context.GetMergeFields();
+            // Create default settings
+            var settings = LavaElementAttributes.NewFromMarkup( markup, context );
 
-            /*
-            var internalMergeFields = new Dictionary<string, object>();
-
-            // get variables defined in the lava source
-            foreach ( var scope in context.GetScopes )
-            {
-                foreach ( var item in scope )
-                {
-                    internalMergeFields.AddOrReplace( item.Key, item.Value );
-                }
-            }
-
-            // get merge fields loaded by the block or container
-            if ( context.GetEnvironments.Count > 0 )
-            {
-                foreach ( var item in context.GetEnvironments[0] )
-                {
-                    internalMergeFields.AddOrReplace( item.Key, item.Value );
-                }
-            }
-            */
-
-            var resolvedMarkup = markup.ResolveMergeFields( internalMergeFields );
-
-            var parms = new Dictionary<string, string>();
-            parms.Add( "iterator", string.Format( "{0}Items", EntityName ) );
-            parms.Add( "securityenabled", "true" );
-
-            var markupItems = Regex.Matches( resolvedMarkup, @"(\S*?:'[^']+')" )
-                .Cast<Match>()
-                .Select( m => m.Value )
-                .ToList();
-
-            if ( markupItems.Count == 0 )
+            if ( settings.Attributes.Count == 0 )
             {
                 throw new Exception( "No parameters were found in your command. The syntax for a parameter is parmName:'' (note that you must use single quotes)." );
             }
 
-            foreach ( var item in markupItems )
-            {
-                var itemParts = item.ToString().Split( new char[] { ':' }, 2 );
-                if ( itemParts.Length > 1 )
-                {
-                    parms.AddOrReplace( itemParts[0].Trim().ToLower(), itemParts[1].Trim().Substring( 1, itemParts[1].Length - 2 ) );
-                }
-            }
+            settings.AddOrIgnore( "iterator", string.Format( "{0}Items", entityName ) );
+            settings.AddOrIgnore( "securityenabled", "true" );
+            settings.AddOrIgnore( "cacheduration", "0" );
+
+            var parms = settings.Attributes;
 
             // override any dynamic parameters
             List<string> dynamicFilters = new List<string>(); // will be used to process dynamic filters
@@ -802,8 +768,7 @@ namespace Rock.Lava.Blocks
                 parms.AddOrReplace( "dynamicparameters", string.Join( ",", dynamicFilters ) );
             }
 
-
-            return parms;
+            return settings;
         }
 
         /// <summary>
@@ -872,7 +837,7 @@ namespace Rock.Lava.Blocks
                 }
 
                 // parse the part to get the expression
-                var regexPattern = @"((?!_=|_!)[a-zA-Z_]+)|(==|<=|>=|<|!=|\^=|\*=|\*!|_=|_!|>|\$=|#=)|("".*""|\d+)";
+                var regexPattern = @"((?!_=|_!)[a-zA-Z0-9_]+)|(==|<=|>=|<|!=|\^=|\*=|\*!|_=|_!|>|\$=|#=)|("".*""|\d+)";
                 var expressionParts = Regex.Matches( component, regexPattern )
                .Cast<Match>()
                .Select( m => m.Value )
@@ -924,9 +889,20 @@ namespace Rock.Lava.Blocks
                         foreach ( var attribute in entityAttributeListForAttributeKey )
                         {
                             filterAttribute = attribute;
-                            var attributeEntityField = EntityHelper.GetEntityFieldForAttribute( filterAttribute );
 
-                            var filterExpression = ExpressionHelper.GetAttributeExpression( service, parmExpression, attributeEntityField, selectionParms );
+                            var attributeEntityField = EntityHelper.GetEntityFieldForAttribute( filterAttribute, limitToFilterableAttributes:false );
+
+                            Expression filterExpression;
+                            if ( attributeEntityField == null )
+                            {
+                                // There is no Entity field matching this Attribute, so ignore the filter.
+                                filterExpression = new NoAttributeFilterExpression();
+                            }
+                            else
+                            {
+                                filterExpression = ExpressionHelper.GetAttributeExpression( service, parmExpression, attributeEntityField, selectionParms );
+                            }
+                            
                             if ( filterExpression is NoAttributeFilterExpression )
                             {
                                 // Ignore this filter because it would cause the Where expression to match everything.
@@ -974,8 +950,19 @@ namespace Rock.Lava.Blocks
                 }
                 else
                 {
-                    // error in parsing expression
-                    throw new Exception( "Error in Where expression" );
+                    // The Where clause is incomplete.
+                    string errorDetail;
+                    if ( expressionParts.Count == 2 )
+                    {
+                        errorDetail = "Missing or invalid value in Where expression.";
+                    }
+                    else
+                    {
+                        errorDetail = "Where expression is incomplete.";
+                    }
+
+                    errorDetail = $"{errorDetail} [Expression=\"{whereClause}\"]";
+                    throw new Exception( "RockEntity block error. The Where expression is invalid.", new Exception( errorDetail ) );
                 }
             }
 

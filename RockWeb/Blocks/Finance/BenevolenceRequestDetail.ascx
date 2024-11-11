@@ -30,6 +30,11 @@
         color: #737475;
         letter-spacing: 0.32px;
     }
+
+    .related-documents {
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
 </style>
 
 <asp:UpdatePanel ID="upnlContent" runat="server">
@@ -159,8 +164,8 @@
                 </Rock:PanelWidget>
 
                 <div class="actions">
-                    <asp:LinkButton ID="lbEditSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="lbEditSave_Click" />
-                    <asp:LinkButton ID="lbEditCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="lbEditCancel_Click" />
+                    <asp:LinkButton ID="lbEditSave" runat="server" data-shortcut-key="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="lbEditSave_Click" />
+                    <asp:LinkButton ID="lbEditCancel" runat="server" data-shortcut-key="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="lbEditCancel_Click" />
                 </div>
             </div>
             <Rock:ConfirmPageUnload ID="confirmEditExit" runat="server" ConfirmationMessage="Changes have been made to this benevolence request that have not yet been saved." Enabled="false" />
@@ -281,7 +286,7 @@
                     <div class="row">
                         <asp:Repeater ID="rptViewBenevolenceDocuments" runat="server">
                             <ItemTemplate>
-                                <div class="col-md-2">
+                                <div class="col-md-3 related-documents">
                                     <asp:HyperLink ID="lnkViewUploadedFile" runat="server" Target="_blank" rel="noopener noreferrer" CssClass="btn-link"></asp:HyperLink>
                                 </div>
                             </ItemTemplate>

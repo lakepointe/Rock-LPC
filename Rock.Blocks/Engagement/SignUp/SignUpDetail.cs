@@ -32,9 +32,10 @@ using Rock.Web.UI.Controls;
 namespace Rock.Blocks.Engagement.SignUp
 {
     [DisplayName( "Sign-Up Detail" )]
-    [Category( "Obsidian > Engagement > Sign-Up" )]
+    [Category( "Engagement > Sign-Up" )]
     [Description( "Block used to show the details of a sign-up group/project." )]
     [IconCssClass( "fa fa-clipboard-check" )]
+    [SupportedSiteTypes( Model.SiteType.Web )]
 
     #region Block Attributes
 
@@ -64,7 +65,7 @@ namespace Rock.Blocks.Engagement.SignUp
 
     [Rock.SystemGuid.EntityTypeGuid( "3B92EA37-579A-4928-88C4-6A6808116D40" )]
     [Rock.SystemGuid.BlockTypeGuid( "432123B4-8FDD-4A2E-BAF7-927C2B049CAB" )]
-    public class SignUpDetail : RockObsidianBlockType
+    public class SignUpDetail : RockBlockType
     {
         #region Keys & Constants
 
@@ -129,12 +130,6 @@ namespace Rock.Blocks.Engagement.SignUp
 
         #endregion
 
-        #region Properties
-
-        public override string BlockFileUrl => $"{base.BlockFileUrl}.obs";
-
-        #endregion
-
         #region Methods
 
         public override object GetObsidianBlockInitialization()
@@ -164,6 +159,12 @@ namespace Rock.Blocks.Engagement.SignUp
             {
                 box.ErrorMessage = occurrenceData.ErrorMessage ?? "Unable to display project details.";
                 return;
+            }
+
+            if ( GetAttributeValue( AttributeKey.SetPageTitle ).AsBoolean() )
+            {
+                this.RequestContext.Response.SetPageTitle( occurrenceData.OpportunityName );
+                this.RequestContext.Response.SetBrowserTitle( occurrenceData.OpportunityName );
             }
 
             box.SignUpDetailHtml = GetSignUpDetailHtml( occurrenceData );
@@ -380,6 +381,20 @@ namespace Rock.Blocks.Engagement.SignUp
                 }
             }
 
+            public string OpportunityName
+            {
+                get
+                {
+                    var configName = this.Config?.ConfigurationName;
+                    if ( configName.IsNotNullOrWhiteSpace() )
+                    {
+                        return configName;
+                    }
+
+                    return this.ProjectName;
+                }
+            }
+
             public string Description
             {
                 get
@@ -508,6 +523,7 @@ namespace Rock.Blocks.Engagement.SignUp
                 return new Project
                 {
                     Name = this.ProjectName,
+                    OpportunityName = this.OpportunityName,
                     Description = this.Description,
                     ScheduleName = this.ScheduleName,
                     FriendlySchedule = this.FriendlySchedule,
@@ -530,6 +546,8 @@ namespace Rock.Blocks.Engagement.SignUp
         private class Project : RockDynamic
         {
             public string Name { get; set; }
+
+            public string OpportunityName { get; set; }
 
             public string Description { get; set; }
 

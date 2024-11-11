@@ -435,14 +435,14 @@ namespace RockWeb.Blocks.Communication
         {
             int personId = ppCreatedBy.PersonId ?? 0;
 
-            rFilter.SaveUserPreference( FilterSettingName.Subject, tbSubject.Text );
-            rFilter.SaveUserPreference( FilterSettingName.Medium, ddlMedium.SelectedValue );
-            rFilter.SaveUserPreference( FilterSettingName.SendDateRange, drpDates.DelimitedValues );
-            rFilter.SaveUserPreference( FilterSettingName.CreatedBy, personId.ToString() );
-            rFilter.SaveUserPreference( FilterSettingName.SystemCommunicationType, ddlSystemCommunicationType.SelectedValue );
-            rFilter.SaveUserPreference( FilterSettingName.CommunicationTemplate, ddlTemplate.SelectedValue );
-            rFilter.SaveUserPreference( FilterSettingName.Status, ddlStatus.SelectedValue );
-            rFilter.SaveUserPreference( FilterSettingName.BulkStatus, ddlBulk.SelectedValue );
+            rFilter.SetFilterPreference( FilterSettingName.Subject, tbSubject.Text );
+            rFilter.SetFilterPreference( FilterSettingName.Medium, ddlMedium.SelectedValue );
+            rFilter.SetFilterPreference( FilterSettingName.SendDateRange, drpDates.DelimitedValues );
+            rFilter.SetFilterPreference( FilterSettingName.CreatedBy, personId.ToString() );
+            rFilter.SetFilterPreference( FilterSettingName.SystemCommunicationType, ddlSystemCommunicationType.SelectedValue );
+            rFilter.SetFilterPreference( FilterSettingName.CommunicationTemplate, ddlTemplate.SelectedValue );
+            rFilter.SetFilterPreference( FilterSettingName.Status, ddlStatus.SelectedValue );
+            rFilter.SetFilterPreference( FilterSettingName.BulkStatus, ddlBulk.SelectedValue );
 
             BindGrid();
         }
@@ -454,7 +454,7 @@ namespace RockWeb.Blocks.Communication
         /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>
         protected void rFilter_ClearFilterClick( object sender, EventArgs e )
         {
-            rFilter.DeleteUserPreferences();
+            rFilter.DeleteFilterPreferences();
 
             SetFilter();
             BindGrid();
@@ -624,7 +624,7 @@ namespace RockWeb.Blocks.Communication
             InitializeDataBindingServices();
 
             // Subject
-            tbSubject.Text = rFilter.GetUserPreference( FilterSettingName.Subject );
+            tbSubject.Text = rFilter.GetFilterPreference( FilterSettingName.Subject );
 
             // Communication Medium
             ddlMedium.Items.Clear();
@@ -649,7 +649,7 @@ namespace RockWeb.Blocks.Communication
                 ddlMedium.Items.Add( new ListItem( "Push Notification", CommunicationType.PushNotification.ConvertToInt().ToString() ) );
             }
 
-            ddlMedium.SetValue( rFilter.GetUserPreference( FilterSettingName.Medium ) );
+            ddlMedium.SetValue( rFilter.GetFilterPreference( FilterSettingName.Medium ) );
 
             // Status.
             // "Opened" status is displayed as "Interacted".
@@ -662,10 +662,10 @@ namespace RockWeb.Blocks.Communication
             ddlStatus.Items.Add( new ListItem( CommunicationRecipientStatus.Pending.ToString(), CommunicationRecipientStatus.Pending.ConvertToInt().ToString() ) );
             ddlStatus.Items.Add( new ListItem( CommunicationRecipientStatus.Sending.ToString(), CommunicationRecipientStatus.Sending.ConvertToInt().ToString() ) );
 
-            ddlStatus.SelectedValue = rFilter.GetUserPreference( FilterSettingName.Status );
+            ddlStatus.SelectedValue = rFilter.GetFilterPreference( FilterSettingName.Status );
 
             // Created By
-            ppCreatedBy.PersonId = rFilter.GetUserPreference( FilterSettingName.CreatedBy ).AsIntegerOrNull();
+            ppCreatedBy.PersonId = rFilter.GetFilterPreference( FilterSettingName.CreatedBy ).AsIntegerOrNull();
 
             if ( !ppCreatedBy.PersonId.HasValue )
             {
@@ -673,12 +673,12 @@ namespace RockWeb.Blocks.Communication
             }
 
             // Send Date
-            drpDates.DelimitedValues = rFilter.GetUserPreference( FilterSettingName.SendDateRange );
+            drpDates.DelimitedValues = rFilter.GetFilterPreference( FilterSettingName.SendDateRange );
 
             // System Communication Template
             LoadSystemCommunicationTemplatesSelectionList( rockContext );
 
-            ddlSystemCommunicationType.SetValue( rFilter.GetUserPreference( FilterSettingName.SystemCommunicationType ) );
+            ddlSystemCommunicationType.SetValue( rFilter.GetFilterPreference( FilterSettingName.SystemCommunicationType ) );
 
             // Is Bulk?
             ddlBulk.Items.Clear();
@@ -686,12 +686,12 @@ namespace RockWeb.Blocks.Communication
             ddlBulk.Items.Add( new ListItem( "Bulk Messages Only", "Bulk" ) );
             ddlBulk.Items.Add( new ListItem( "Non-bulk Messages Only", "NotBulk" ) );
 
-            ddlBulk.SetValue( rFilter.GetUserPreference( FilterSettingName.BulkStatus ) );
+            ddlBulk.SetValue( rFilter.GetFilterPreference( FilterSettingName.BulkStatus ) );
 
             // Communication Template
             LoadCommunicationTemplatesSelectionList( rockContext );
 
-            ddlTemplate.SetValue( rFilter.GetUserPreference( FilterSettingName.CommunicationTemplate ) );
+            ddlTemplate.SetValue( rFilter.GetFilterPreference( FilterSettingName.CommunicationTemplate ) );
         }
 
         /// <summary>
@@ -1078,13 +1078,13 @@ namespace RockWeb.Blocks.Communication
             mergeValues.Add( "Communication", item );
 
             // Add Page Links.
-            AddMergeFieldForPageLink( mergeValues, "DetailUrl", LinkedPageUrl( AttributeKey.CommunicationDetailPage ), $"CommunicationId={ item.Id }" );
+            AddMergeFieldForPageLink( mergeValues, "DetailUrl", LinkedPageUrl( AttributeKey.CommunicationDetailPage ), $"CommunicationId={item.Id}" );
             AddMergeFieldForPageLink( mergeValues, "ListSegmentDetailUrlTemplate", LinkedPageUrl( AttributeKey.CommunicationSegmentDetailPage ), "DataViewId=@segmentId" );
 
             if ( includeDetailInfo )
             {
-                AddMergeFieldForPageLink( mergeValues, "TemplateDetailUrl", LinkedPageUrl( AttributeKey.CommunicationTemplateDetailPage ), $"TemplateId={ item.Detail.CommunicationTemplateId }" );
-                AddMergeFieldForPageLink( mergeValues, "ListDetailUrl", LinkedPageUrl( AttributeKey.CommunicationListDetailPage ), $"GroupId={ item.Detail.CommunicationListId }" );
+                AddMergeFieldForPageLink( mergeValues, "TemplateDetailUrl", LinkedPageUrl( AttributeKey.CommunicationTemplateDetailPage ), $"TemplateId={item.Detail.CommunicationTemplateId}" );
+                AddMergeFieldForPageLink( mergeValues, "ListDetailUrl", LinkedPageUrl( AttributeKey.CommunicationListDetailPage ), $"GroupId={item.Detail.CommunicationListId}" );
             }
 
             // Create the "More" PostBack link and arguments.
@@ -1122,7 +1122,7 @@ namespace RockWeb.Blocks.Communication
 
                 if ( !string.IsNullOrWhiteSpace( pageLinkQueryParameters ) )
                 {
-                    url += $"?{ pageLinkQueryParameters }";
+                    url += $"?{pageLinkQueryParameters}";
                 }
 
                 mergeValues.Add( pageLinkKey, url );
@@ -1210,7 +1210,7 @@ namespace RockWeb.Blocks.Communication
                     var file = _gridBinaryFileService.Get( info.Detail.InternalPushImageFileId.ToIntSafe( 0 ) );
                     if ( file != null )
                     {
-                        info.Detail.Attachments = new List<string>() { $"{System.Web.VirtualPathUtility.ToAbsolute( "~" )}GetImage.ashx?id={ file.Id }" };
+                        info.Detail.Attachments = new List<string>() { FileUrlHelper.GetImageUrl( file.Id ) };
                     }
                 }
             }
@@ -1226,7 +1226,7 @@ namespace RockWeb.Blocks.Communication
                         var file = _gridBinaryFileService.Get( attachment.BinaryFileId );
                         if ( file != null )
                         {
-                            info.Detail.Attachments.Add( $"{System.Web.VirtualPathUtility.ToAbsolute( "~" )}GetFile.ashx?id={ file.Id }" );
+                            info.Detail.Attachments.Add( FileUrlHelper.GetFileUrl( file.Id ) );
                         }
                     }
                 }
@@ -1584,7 +1584,7 @@ namespace RockWeb.Blocks.Communication
 
             #region Internal Fields used to store data for further processing.
 
-            internal Interaction InternalInteraction {get;set;}
+            internal Interaction InternalInteraction { get; set; }
 
             #endregion
         }

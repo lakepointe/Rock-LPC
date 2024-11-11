@@ -104,16 +104,23 @@ namespace Rock.Attribute
 
             rockContext = rockContext ?? new RockContext();
 
+            var customizedGrid = type.GetCustomAttribute<Blocks.CustomizedGridAttribute>();
+
             bool customGridColumnsBlock = typeof( Rock.Web.UI.ICustomGridColumns ).IsAssignableFrom( type );
-            if ( customGridColumnsBlock )
+            if ( customGridColumnsBlock || customizedGrid?.IsCustomColumnsSupported == true )
             {
                 entityProperties.Add( new TextFieldAttribute( CustomGridColumnsConfig.AttributeKey, category: "CustomSetting" ) );
             }
 
             bool customGridOptionsBlock = typeof( Rock.Web.UI.ICustomGridOptions ).IsAssignableFrom( type );
-            if ( customGridOptionsBlock )
+
+            if ( customGridOptionsBlock || customizedGrid?.IsStickyHeaderSupported == true )
             {
                 entityProperties.Add( new BooleanFieldAttribute( CustomGridOptionsConfig.EnableStickyHeadersAttributeKey, category: "CustomSetting" ) );
+            }
+
+            if ( customGridOptionsBlock || customizedGrid?.IsCustomActionsSupported == true )
+            {
                 entityProperties.Add( new TextFieldAttribute( CustomGridOptionsConfig.CustomActionsConfigsAttributeKey, category: "CustomSetting" ) );
                 entityProperties.Add( new BooleanFieldAttribute( CustomGridOptionsConfig.EnableDefaultWorkflowLauncherAttributeKey, category: "CustomSetting", defaultValue: true ) );
             }
@@ -542,7 +549,7 @@ This can be due to multiple threads updating the same attribute at the same time
                         PropertyInfo propertyInfo = entityType.GetProperty( propertyName ) ?? entityType.GetProperties().Where( a => a.Name.Equals( propertyName, StringComparison.OrdinalIgnoreCase ) ).FirstOrDefault();
                         if ( propertyInfo != null )
                         {
-                            propertyValues.AddOrIgnore( propertyName, propertyInfo.GetValue( entity, null ) );
+                            propertyValues.TryAdd( propertyName, propertyInfo.GetValue( entity, null ) );
                         }
                     }
 
@@ -588,7 +595,7 @@ This can be due to multiple threads updating the same attribute at the same time
                 foreach ( var attribute in allAttributes )
                 {
                     // Add a placeholder for this item's value for each attribute
-                    attributeValues.AddOrIgnore( attribute.Key, null );
+                    attributeValues.TryAdd( attribute.Key, null );
                 }
 
                 // If loading attributes for a saved item, read the item's value(s) for each attribute 
@@ -611,9 +618,42 @@ This can be due to multiple threads updating the same attribute at the same time
                         var predicate = LinqPredicateBuilder.False<AttributeValue>();
                         foreach ( var inheritedAttribute in inheritedAttributes )
                         {
-                            predicate = predicate.Or( v => v.Attribute.EntityTypeId == inheritedAttribute.Key
-                                     && v.EntityId.HasValue
-                                     && inheritedAttribute.Value.Contains( v.EntityId.Value ) );
+                            // a Linq query that uses 'Contains' can't be cached
+                            // in the EF Plan Cache, so instead of doing a
+                            // Contains, build a List of OR conditions. This can
+                            // save 15-20ms per call (and still ends up with the
+                            // exact same SQL).
+                            // https://learn.microsoft.com/en-us/ef/ef6/fundamentals/performance/perf-whitepaper?redirectedfrom=MSDN#41-using-ienumerabletcontainstt-value
+                            var attributeValueParameterExpression = Expression.Parameter( typeof( AttributeValue ), "v" );
+                            var entityIdPropertyExpression = Expression.Property( attributeValueParameterExpression, "EntityId" );
+                            entityIdPropertyExpression = Expression.Property( entityIdPropertyExpression, "Value" );
+                            Expression<Func<AttributeValue, bool>> inheritedEntityIdExpression = null;
+
+                            foreach ( var alternateEntityId in inheritedAttribute.Value )
+                            {
+                                var alternateEntityIdConstant = Expression.Constant( alternateEntityId );
+                                var equalityExpression = Expression.Equal( entityIdPropertyExpression, alternateEntityIdConstant );
+                                var expr = Expression.Lambda<Func<AttributeValue, bool>>( equalityExpression, attributeValueParameterExpression );
+
+                                if ( inheritedEntityIdExpression != null )
+                                {
+                                    inheritedEntityIdExpression = inheritedEntityIdExpression.Or( expr );
+                                }
+                                else
+                                {
+                                    inheritedEntityIdExpression = expr;
+                                }
+                            }
+
+                            // Build the expression for this attribute. This is effectively:
+                            // .Where( v => v.Attribute.EntityTypeId == inheritedAttribute.Key
+                            //    && v.EntityId.HasValue
+                            //    && inheritedAttribute.Value.Contains( v.EntityId.Value ) );
+                            var expression = LinqPredicateBuilder.Create<AttributeValue>( v => v.Attribute.EntityTypeId == inheritedAttribute.Key
+                                     && v.EntityId.HasValue );
+                            expression = expression.And( inheritedEntityIdExpression );
+
+                            predicate = predicate.Or( expression );
                         }
 
                         attributeValueQuery = attributeValueService.Queryable().AsNoTracking().Where( predicate );
@@ -699,7 +739,7 @@ This can be due to multiple threads updating the same attribute at the same time
             }
 
             entity.Attributes = new Dictionary<string, Rock.Web.Cache.AttributeCache>();
-            allAttributes.ForEach( a => entity.Attributes.AddOrIgnore( a.Key, a ) );
+            allAttributes.ForEach( a => entity.Attributes.TryAdd( a.Key, a ) );
 
             entity.AttributeValues = attributeValues;
         }
@@ -893,7 +933,7 @@ This can be due to multiple threads updating the same attribute at the same time
                         var propertyInfo = entityType.GetProperty( propertyName ) ?? entityType.GetProperties().Where( a => a.Name.Equals( propertyName, StringComparison.OrdinalIgnoreCase ) ).FirstOrDefault();
                         if ( propertyInfo != null )
                         {
-                            propertyValues.AddOrIgnore( propertyName.ToLower(), propertyInfo.GetValue( entity, null ).ToStringSafe() );
+                            propertyValues.TryAdd( propertyName.ToLower(), propertyInfo.GetValue( entity, null ).ToStringSafe() );
                         }
                     }
 
@@ -985,7 +1025,7 @@ This can be due to multiple threads updating the same attribute at the same time
                 }
 
                 entity.Attributes = new Dictionary<string, Rock.Web.Cache.AttributeCache>();
-                entityAttributes.ForEach( a => entity.Attributes.AddOrIgnore( a.Key, a ) );
+                entityAttributes.ForEach( a => entity.Attributes.TryAdd( a.Key, a ) );
 
                 entity.AttributeValues = attributeValues;
             }
@@ -1059,7 +1099,7 @@ This can be due to multiple threads updating the same attribute at the same time
                     // If the qualifier value is blank, that means the qualification
                     // is simply "does this property exist".
                     var needle = string.IsNullOrEmpty( a.EntityTypeQualifierValue )
-                        ? a.EntityTypeQualifierValue.ToLower()
+                        ? a.EntityTypeQualifierColumn.ToLower()
                         : string.Format( "{0}|{1}", a.EntityTypeQualifierColumn.ToLower(), a.EntityTypeQualifierValue );
 
                     return entityQualifications.Contains( needle );
@@ -1081,7 +1121,7 @@ This can be due to multiple threads updating the same attribute at the same time
             var entityIdsTable = new DataTable();
             entityIdsTable.Columns.Add( "EntityTypeId", typeof( int ) );
             entityIdsTable.Columns.Add( "EntityId", typeof( int ) );
-            entityIdsTable.Columns.Add( "RealTypeId", typeof( int ) );
+            entityIdsTable.Columns.Add( "RealEntityId", typeof( int ) );
 
             for ( int i = 0; i < entityKeys.Count; i++ )
             {
@@ -1333,7 +1373,7 @@ INNER JOIN @AttributeId attributeId ON attributeId.[Id] = AV.[AttributeId]",
                 newAttribute.Order = attributeService.Queryable().Max( a => a.Order ) + 1;
             }
 
-            var fieldTypeCache = FieldTypeCache.Get( attribute.FieldTypeGuid ?? Guid.Empty );
+            var fieldTypeCache = FieldTypeCache.Get( attribute.RealFieldTypeGuid ?? attribute.FieldTypeGuid ?? Guid.Empty );
 
             // For now, if they try to make changes to an attribute that is using
             // an unknown field type we just can't do it. Even if they only change
@@ -3088,7 +3128,7 @@ INSERT INTO [AttributeValueReferencedEntity] ([AttributeValueId], [EntityTypeId]
                     Control control = parentControl?.FindControl( string.Format( "attribute_field_{0}", attributeKeyValue.Value.Id ) );
                     if ( control != null )
                     {
-                        result.AddOrIgnore( attributeKeyValue.Value, control );
+                        result.TryAdd( attributeKeyValue.Value, control );
                     }
                 }
             }

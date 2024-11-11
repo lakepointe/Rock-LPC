@@ -105,27 +105,40 @@ namespace Rock.Tasks
                                     var qualifierParts = ( trigger.TypeQualifier ?? string.Empty ).Split( new char[] { '|' } );
 
                                     // Check to see if trigger is only specific to first time visitors
-                                    if ( qualifierParts.Length > 4 && qualifierParts[4].AsBoolean() )
+                                    var isLaunchOnce = qualifierParts.Length > 4 && qualifierParts[4].AsBoolean();
+                                    if ( isLaunchOnce )
                                     {
-                                        // Get the person from person alias
+                                        // Get the person from person alias, must match person because alias used in attendance record might be different
                                         int personId = new PersonAliasService( rockContext )
-                                            .Queryable().AsNoTracking()
+                                            .Queryable()
+                                            .AsNoTracking()
                                             .Where( a => a.Id == message.PersonAliasId.Value )
                                             .Select( a => a.PersonId )
                                             .FirstOrDefault();
 
-                                        // Check if there are any other attendances for this group/person and if so, do not launch workflow
-                                        if ( new AttendanceService( rockContext )
-                                            .Queryable().AsNoTracking()
-                                            .Count( a => a.Occurrence.GroupId.HasValue &&
-                                                 a.Occurrence.GroupId.Value == message.GroupId.Value &&
-                                                 a.PersonAlias != null &&
-                                                 a.PersonAlias.PersonId == personId &&
-                                                 a.DidAttend.HasValue &&
-                                                 a.DidAttend.Value ) > 1 )
+                                        // Get the attendance record, skip the trigger if one is not found (shouldn't happen)
+                                        var attendanceService = new AttendanceService( rockContext );
+                                        var attendance = attendanceService.Get( message.AttendanceId.Value );
+                                        if ( attendance == null )
                                         {
-                                            launchIt = false;
+                                            continue;
                                         }
+
+                                        // Look for any prior attendances of this group by this person.
+                                        var hasPriorGroupAttendance = attendanceService
+                                            .Queryable()
+                                            .AsNoTracking()
+                                            .Any( a => a.Id < attendance.Id
+                                                && a.Occurrence.GroupId.HasValue
+                                                && a.Occurrence.GroupId.Value == message.GroupId.Value
+                                                && a.PersonAlias != null
+                                                && a.PersonAlias.PersonId == personId
+                                                && a.DidAttend.HasValue
+                                                && a.DidAttend.Value);
+
+                                        // Because the launchOnce config is true
+                                        // Launch the workflow only if this is the first attendance for the person & group.
+                                        launchIt = !hasPriorGroupAttendance;
                                     }
 
                                     // If first time flag was not specified, or this is a first time visit, launch the workflow
@@ -203,6 +216,14 @@ namespace Rock.Tasks
             /// Gets or sets the attendance date time.
             /// </summary>
             public DateTime? AttendanceDateTime { get; set; }
+
+            /// <summary>
+            /// Gets or sets the attendance identifier.
+            /// </summary>
+            /// <value>
+            /// The attendance identifier.
+            /// </value>
+            public int? AttendanceId { get; set; }
         }
     }
 }

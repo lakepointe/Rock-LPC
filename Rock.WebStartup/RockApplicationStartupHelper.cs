@@ -29,9 +29,12 @@ using System.Web;
 
 using DotLiquid;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Rock.Bus;
 using Rock.Configuration;
 using Rock.Data;
+using Rock.Enums.Configuration;
 using Rock.Lava;
 using Rock.Lava.DotLiquid;
 using Rock.Lava.Fluid;
@@ -39,6 +42,7 @@ using Rock.Lava.RockLiquid;
 using Rock.Model;
 using Rock.Utility.Settings;
 using Rock.Web.Cache;
+using Rock.Web.UI;
 using Rock.WebFarm;
 
 namespace Rock.WebStartup
@@ -60,7 +64,15 @@ namespace Rock.WebStartup
         /// <value>
         /// The start date time.
         /// </value>
-        public static DateTime StartDateTime { get; private set; }
+        [RockObsolete( "16.6" )]
+        [Obsolete( "Use RockApp.Current.HostingSettings.ApplicationStartDateTime instead." )]
+        public static DateTime StartDateTime
+        {
+            get
+            {
+                return RockApp.Current.HostingSettings.ApplicationStartDateTime;
+            }
+        }
 
         private static Stopwatch _debugTimingStopwatch = Stopwatch.StartNew();
 
@@ -85,6 +97,8 @@ namespace Rock.WebStartup
         {
             LogStartupMessage( "Application Starting" );
 
+            InitializeRockApp();
+
             AppDomain.CurrentDomain.AssemblyResolve += AppDomain_AssemblyResolve;
 
             // Indicate to always log to file during initialization.
@@ -92,8 +106,12 @@ namespace Rock.WebStartup
 
             InitializeRockOrgTimeZone();
 
-            StartDateTime = RockDateTime.Now;
-            RockInstanceConfig.SetApplicationStartedDateTime( StartDateTime );
+            // Force the hosting settings to initialize so we get a valid
+            // application start date time.
+            _ = RockApp.Current.HostingSettings.ApplicationStartDateTime;
+#pragma warning disable CS0618 // Type or member is obsolete
+            RockInstanceConfig.SetApplicationStartedDateTime( RockDateTime.Now );
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // If there are Task.Runs that don't handle their exceptions, this will catch those
             // so that we can log it. Note that this event won't fire until the Task is disposed.
@@ -129,7 +147,10 @@ namespace Rock.WebStartup
                 ShowDebugTimingMessage( "Initialize RockContext" );
             }
 
+            ( RockApp.Current.GetDatabaseConfiguration() as DatabaseConfiguration ).IsDatabaseAvailable = true;
+#pragma warning disable CS0618 // Type or member is obsolete
             RockInstanceConfig.SetDatabaseIsAvailable( true );
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // Configure the values for RockDateTime.
             // To avoid the overhead of initializing the GlobalAttributesCache prior to LoadCacheObjects(), load these from the database instead.
@@ -231,6 +252,34 @@ namespace Rock.WebStartup
             LogStartupMessage( "Starting the Rock Fast Queue" );
             Rock.Transactions.RockQueue.StartFastQueue();
             ShowDebugTimingMessage( "Rock Fast Queue" );
+
+            bool anyThemesUpdated = UpdateThemes();
+            if ( anyThemesUpdated )
+            {
+                LogStartupMessage( "Themes are updated" );
+            }
+        }
+
+        /// <summary>
+        /// Initializes the rock application instance so that it is available
+        /// during the lifetime of the application. This provides all
+        /// configuration data to the running application.
+        /// </summary>
+        private static void InitializeRockApp()
+        {
+            var sc = new ServiceCollection();
+
+            sc.AddSingleton<IConnectionStringProvider, WebFormsConnectionStringProvider>();
+            sc.AddSingleton<IInitializationSettings, WebFormsInitializationSettings>();
+            sc.AddSingleton<IDatabaseConfiguration, DatabaseConfiguration>();
+            sc.AddSingleton<IHostingSettings, HostingSettings>();
+
+            // Register the class to initialize for InitializationSettings. This
+            // is transient so that we always get the current values from the
+            // source.
+            sc.AddTransient<InitializationSettings, WebFormsInitializationSettings>();
+
+            RockApp.Current = new RockApp( sc.BuildServiceProvider() );
         }
 
         /// <summary>
@@ -409,7 +458,7 @@ namespace Rock.WebStartup
             var _migrationHistoryTableExists = false;
             try
             {
-                _migrationHistoryTableExists = DbService.ExecuteScaler(
+                _migrationHistoryTableExists = DbService.ExecuteScalar(
                     @"SELECT convert(bit, 1) [Exists] 
                     FROM INFORMATION_SCHEMA.TABLES
                     WHERE TABLE_SCHEMA = 'dbo'
@@ -443,7 +492,7 @@ namespace Rock.WebStartup
             // Now look in __MigrationHistory table to see what the last migration that ran was.
             // Note that if you accidentally run an older branch (v11.1) against a database that was created from a newer branch (v12), it'll think you need to run migrations.
             // But it will end up figuring that out when we ask it to run migrations
-            var lastDbMigrationId = DbService.ExecuteScaler( "select max(MigrationId) from __MigrationHistory" ) as string;
+            var lastDbMigrationId = DbService.ExecuteScalar( "select max(MigrationId) from __MigrationHistory" ) as string;
 
             // if they aren't the same, run EF Migrations
             return lastDbMigrationId != lastRockMigrationId;
@@ -474,6 +523,7 @@ namespace Rock.WebStartup
 
                 var migratorLoggingDecorator = new MigratorLoggingDecorator( migrator, migrationLogger );
 
+                LogMigrationSystemInfo( migrationLogger );
                 // NOTE: we need to specify the last migration vs null so it won't detect/complain about pending changes
                 migratorLoggingDecorator.Update( lastMigration );
                 migrationLogger.LogCompletedMigration();
@@ -484,10 +534,40 @@ namespace Rock.WebStartup
         }
 
         /// <summary>
+        /// Logs all the system related info to Migration Log
+        /// </summary>
+        private static void LogMigrationSystemInfo( Migrations.RockMigrationsLogger migrationLogger )
+        {
+            try
+            {
+                var databaseConfig = RockApp.Current.GetDatabaseConfiguration();
+                migrationLogger.LogSystemInfo( "Rock Version", $"{VersionInfo.VersionInfo.GetRockProductVersionFullName()} ({VersionInfo.VersionInfo.GetRockProductVersionNumber()})" );
+                if ( databaseConfig.Version.IsNotNullOrWhiteSpace() )
+                {
+                    migrationLogger.LogSystemInfo( "Database Version", databaseConfig.Version );
+                    migrationLogger.LogSystemInfo( "Database Compatibility Version", databaseConfig.GetVersionFriendlyName() );
+                    if ( databaseConfig.Platform == DatabasePlatform.AzureSql )
+                    {
+                        migrationLogger.LogSystemInfo( "Azure Service Tier Objective", databaseConfig.ServiceObjective );
+                    }
+
+                    migrationLogger.LogSystemInfo( "Allow Snapshot Isolation", databaseConfig.IsSnapshotIsolationAllowed.ToYesNo() );
+                    migrationLogger.LogSystemInfo( "Is Read Committed Snapshot On", databaseConfig.IsReadCommittedSnapshotEnabled.ToYesNo() );
+                    migrationLogger.LogSystemInfo( "Processor Count", Environment.ProcessorCount.ToStringSafe() );
+                    migrationLogger.LogSystemInfo( "Working Memory", Environment.WorkingSet.FormatAsMemorySize() ); // 1024*1024*1024
+                }
+            }
+            catch ( Exception ex )
+            {
+                ExceptionLogService.LogException( ex, null );
+            }
+        }
+
+        /// <summary>
         /// Searches all assemblies for <see cref="IEntitySaveHook"/> subclasses
         /// that need to be registered in the default save hook provider.
         /// </summary>
-        private static void ConfigureEntitySaveHooks()
+        internal static void ConfigureEntitySaveHooks()
         {
             var hookProvider = Rock.Data.DbContext.SharedSaveHookProvider;
             var entityHookType = typeof( EntitySaveHook<> );
@@ -537,6 +617,37 @@ namespace Rock.WebStartup
             }
 
             return migrationsWereRun;
+        }
+
+
+        /// <summary>
+        /// Update the themes.
+        /// </summary>
+        /// <returns></returns>
+        private static bool UpdateThemes()
+        {
+            bool anyThemesUpdated = false;
+            var rockContext = new RockContext();
+            var themeService = new ThemeService( rockContext );
+            var themes = RockTheme.GetThemes();
+            if ( themes != null && themes.Any() )
+            {
+                var dbThemes = themeService.Queryable().ToList();
+                var websiteLegacyValueId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.THEME_PURPOSE_WEBSITE_LEGACY.AsGuid() );
+                foreach ( var theme in themes.Where( a => !dbThemes.Any( b => b.Name == a.Name ) ) )
+                {
+                    var dbTheme = new Theme();
+                    dbTheme.Name = theme.Name;
+                    dbTheme.IsSystem = theme.IsSystem;
+                    dbTheme.RootPath = theme.RelativePath;
+                    dbTheme.PurposeValueId = websiteLegacyValueId;
+                    themeService.Add( dbTheme );
+                    rockContext.SaveChanges();
+                    anyThemesUpdated = true;
+                }
+            }
+
+            return anyThemesUpdated;
         }
 
         /// <summary>
@@ -615,7 +726,7 @@ namespace Rock.WebStartup
                 return result;
             }
 
-            var configConnectionString = System.Configuration.ConfigurationManager.ConnectionStrings["RockContext"]?.ConnectionString;
+            var configConnectionString = RockApp.Current.InitializationSettings.ConnectionString;
 
             try
             {
@@ -919,11 +1030,10 @@ namespace Rock.WebStartup
                         name = elementType.Name;
                     }
 
-                    engine.RegisterTag( name, ( shortcodeName ) =>
+                    engine.RegisterTag( name, ( tagName ) =>
                     {
-                        var shortcode = Activator.CreateInstance( elementType ) as ILavaTag;
-
-                        return shortcode;
+                        var tag = Activator.CreateInstance( elementType ) as ILavaTag;
+                        return tag;
                     } );
 
                     try

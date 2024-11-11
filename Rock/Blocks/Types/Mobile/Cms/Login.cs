@@ -34,12 +34,13 @@ namespace Rock.Blocks.Types.Mobile.Cms
     /// <summary>
     /// Allows the user to log in on a mobile application.
     /// </summary>
-    /// <seealso cref="Rock.Blocks.RockMobileBlockType" />
+    /// <seealso cref="Rock.Blocks.RockBlockType" />
 
     [DisplayName( "Log In" )]
     [Category( "Mobile > Cms" )]
     [Description( "Allows the user to log in on a mobile application." )]
     [IconCssClass( "fa fa-user-lock" )]
+    [SupportedSiteTypes( Model.SiteType.Mobile )]
 
     #region Block Attributes
 
@@ -80,34 +81,62 @@ namespace Rock.Blocks.Types.Mobile.Cms
         Key = AttributeKeys.CancelPage,
         Order = 5 )]
 
+    [CodeEditorField( "Header Content",
+        Key = AttributeKeys.HeaderContent,
+        Description = "The content to display for the header. This only works if the block isn't in a ScrollView.",
+        IsRequired = false,
+        DefaultValue = "",
+        Order = 6 )]
+
+    [CodeEditorField( "Footer Content",
+        Key = AttributeKeys.FooterContent,
+        Description = "The content to display for the footer. This only works if the block isn't in a ScrollView. Disappears when the keyboard is shown.",
+        IsRequired = false,
+        DefaultValue = "",
+        Order = 7 )]
+
     [BooleanField(
         "Enable Auth0 Login",
         Key = AttributeKeys.EnableAuth0Login,
-        Description = "Whether or not to enable Auth0 as an authentication provider. This must be configured in `Security > Authentication Services` beforehand.",
+        Description = "Whether or not to enable Auth0 as an authentication provider. This must be configured in the application settings beforehand.",
         IsRequired = false,
         DefaultBooleanValue = false,
-        Order = 6 )]
+        Order = 8 )]
+
+    [BooleanField( "Enable Microsoft Entra Login",
+        Key = AttributeKeys.EnableEntraLogin,
+        Description = "Whether or not to enable Entra as an authentication provider. This must be configured in the application settings beforehand.",
+        IsRequired = false,
+        DefaultBooleanValue = false,
+        Order = 9 )]
 
     [BooleanField( "Enable Database Login",
         Key = AttributeKeys.EnableDatabaseLogin,
         Description = "Whether or not to enable `Database` as an authentication provider.",
         IsRequired = false,
         DefaultBooleanValue = true,
-        Order = 7 )]
+        Order = 10 )]
 
     [TextField( "Auth0 Login Button Text",
         Key = AttributeKeys.Auth0LoginButtonText,
         Description = "The text of the Auth0 login button.",
         IsRequired = false,
         DefaultValue = "Login With Auth0",
-        Order = 8 )]
+        Order = 11 )]
+
+    [TextField( "Entra Login Button Text",
+        Key = AttributeKeys.EntraLoginButtonText,
+        Description = "The text of the Entra login button.",
+        IsRequired = false,
+        DefaultValue = "Login With Entra",
+        Order = 12 )]
 
     #endregion
 
     [Rock.SystemGuid.EntityTypeGuid( Rock.SystemGuid.EntityType.MOBILE_LOGIN_BLOCK_TYPE )]
     [Rock.SystemGuid.BlockTypeGuid( "6006FE32-DC01-4B1C-A9B8-EE172451F4C5" )]
 
-    public class Login : RockMobileBlockType
+    public class Login : RockBlockType
     {
         /// <summary>
         /// The block setting attribute keys for the MobileLogin block.
@@ -150,6 +179,11 @@ namespace Rock.Blocks.Types.Mobile.Cms
             public const string EnableAuth0Login = "EnableAuth0Login";
 
             /// <summary>
+            /// The enable entra key.
+            /// </summary>
+            public const string EnableEntraLogin = "EnableEntraLogin";
+
+            /// <summary>
             /// The enable database login key.
             /// </summary>
             public const string EnableDatabaseLogin = "EnableDatabaseLogin";
@@ -158,25 +192,27 @@ namespace Rock.Blocks.Types.Mobile.Cms
             /// The auth0 login button text.
             /// </summary>
             public const string Auth0LoginButtonText = "Auth0LoginButtonText";
+
+            /// <summary>
+            /// The entra login button text.
+            /// </summary>
+            public const string EntraLoginButtonText = "EntraLoginButtonText";
+
+            /// <summary>
+            /// The header content key.
+            /// </summary>
+            public const string HeaderContent = "HeaderContent";
+
+            /// <summary>
+            /// The footer content key.
+            /// </summary>
+            public const string FooterContent = "FooterContent";
         }
 
         #region IRockMobileBlockType Implementation
 
-        /// <summary>
-        /// Gets the required mobile application binary interface version required to render this block.
-        /// </summary>
-        /// <value>
-        /// The required mobile application binary interface version required to render this block.
-        /// </value>
-        public override int RequiredMobileAbiVersion => 1;
-
-        /// <summary>
-        /// Gets the class name of the mobile block to use during rendering on the device.
-        /// </summary>
-        /// <value>
-        /// The class name of the mobile block to use during rendering on the device
-        /// </value>
-        public override string MobileBlockType => "Rock.Mobile.Blocks.Login";
+        /// <inheritdoc/>
+        public override Version RequiredMobileVersion => new Version( 1, 1 );
 
         /// <summary>
         /// Gets the property values that will be sent to the device in the application bundle.
@@ -195,7 +231,11 @@ namespace Rock.Blocks.Types.Mobile.Cms
                 CancelPageGuid = GetAttributeValue( AttributeKeys.CancelPage ).AsGuidOrNull(),
                 EnableAuth0Login = GetAttributeValue( AttributeKeys.EnableAuth0Login ).AsBoolean(),
                 EnableDatabaseLogin = GetAttributeValue( AttributeKeys.EnableDatabaseLogin ).AsBoolean(),
-                Auth0LoginButtonText = GetAttributeValue( AttributeKeys.Auth0LoginButtonText )
+                EnableEntraLogin = GetAttributeValue( AttributeKeys.EnableEntraLogin ).AsBoolean(),
+                EntraLoginButtonText = GetAttributeValue( AttributeKeys.EntraLoginButtonText ),
+                Auth0LoginButtonText = GetAttributeValue( AttributeKeys.Auth0LoginButtonText ),
+                HeaderContent = GetAttributeValue( AttributeKeys.HeaderContent ),
+                FooterContent = GetAttributeValue( AttributeKeys.FooterContent )
             };
         }
 
@@ -276,7 +316,7 @@ namespace Rock.Blocks.Types.Mobile.Cms
         {
             var systemEmailGuid = GetAttributeValue( AttributeKeys.ConfirmAccountTemplate ).AsGuidOrNull();
             var confirmationWebPage = GetAttributeValue( AttributeKeys.ConfirmationWebPage );
-            var confirmationPageGuid = confirmationWebPage.Split( ',' )[0].AsGuidOrNull();
+            var confirmationPageGuid = confirmationWebPage.Split( ',' )[ 0 ].AsGuidOrNull();
             var confirmationPage = confirmationPageGuid.HasValue ? PageCache.Get( confirmationPageGuid.Value ) : null;
 
             // Make sure we have the required information.
@@ -295,24 +335,22 @@ namespace Rock.Blocks.Types.Mobile.Cms
         /// <summary>
         /// Gets or creates a person from information returned by external authentication.
         /// </summary>
-        /// <param name="externallyAuthenticatedUser">The externally authenticated user to either create or get.</param>
-        /// <param name="username">The username of the person to look for or create. This is usually dependent on the
+        /// <param name="personInfo">The externally authenticated user to either create or get.</param>
+        /// <param name="userLoginInfo">The username of the person to look for or create. This is usually dependent on the
         /// authentication provider. For instance, an Auth0 related username is "AUTH0_{FOREIGN_KEY}. It is up to the person
         /// implementing this method into an external authentication provider to make sure the username is formatted correctly."</param>
-        /// <param name="authentitationEntityTypeId">The authentication entity type id.</param>
         /// <param name="rockContext"></param>
-        /// <param name="password">The external authentication password.</param>
         /// <returns></returns>
         [RockInternal( "1.15.1" )]
-        internal static UserLogin GetOrCreatePersonFromExternalAuthenticationUserInfo( ExternalAuthenticationUserInfoBag externallyAuthenticatedUser, int authentitationEntityTypeId, string username, string password, RockContext rockContext = null )
+        internal static UserLogin GetOrCreatePersonFromExternalAuthenticationUserInfo( ExternalAuthenticationUserInfoBag personInfo, ExternalAuthUserLoginBag userLoginInfo, RockContext rockContext = null )
         {
             rockContext = rockContext ?? new RockContext();
             UserLogin user = null;
             Person person = null;
 
-            // Query for an existing user from the Auth0 user name.
+            // Query for an existing user from the external authentication user name.
             var userLoginService = new UserLoginService( rockContext );
-            user = userLoginService.GetByUserName( username );
+            user = userLoginService.GetByUserName( userLoginInfo.Username );
 
             // If no user was found, see if we can find a match in the person table.
             if ( user == null )
@@ -323,10 +361,10 @@ namespace Rock.Blocks.Types.Mobile.Cms
                 //
                 // Build the person match query based off of the data the external authentication returned.
                 //
-                var firstName = externallyAuthenticatedUser.FirstName?.Trim()?.FixCase();
-                var lastName = externallyAuthenticatedUser.LastName?.Trim()?.FixCase();
-                var email = externallyAuthenticatedUser.Email;
-                var phoneNumber = externallyAuthenticatedUser.PhoneNumber;
+                var firstName = personInfo.FirstName?.Trim()?.FixCase();
+                var lastName = personInfo.LastName?.Trim()?.FixCase();
+                var email = personInfo.Email;
+                var phoneNumber = personInfo.PhoneNumber;
 
                 // In order to match or create a person, we need a valid
                 // email or phone, and first and last name,
@@ -359,14 +397,14 @@ namespace Rock.Blocks.Types.Mobile.Cms
                         person.IsEmailActive = true;
                         person.EmailPreference = EmailPreference.EmailAllowed;
 
-                        person.NickName = externallyAuthenticatedUser.NickName?.Trim()?.FixCase();
-                        person.Gender = externallyAuthenticatedUser.Gender.ToNative();
+                        person.NickName = personInfo.NickName?.Trim()?.FixCase();
+                        person.Gender = personInfo.Gender.ToNative();
 
-                        if( externallyAuthenticatedUser.BirthDate.HasValue )
+                        if ( personInfo.BirthDate.HasValue )
                         {
-                            person.SetBirthDate( externallyAuthenticatedUser.BirthDate.Value.DateTime );
+                            person.SetBirthDate( personInfo.BirthDate.Value.DateTime );
                         }
-                        
+
                         if ( phoneNumber.IsNotNullOrWhiteSpace() )
                         {
                             var mobilePhoneDefinedValueCache = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE );
@@ -377,16 +415,14 @@ namespace Rock.Blocks.Types.Mobile.Cms
                         rockContext.SaveChanges();
                     }
 
-                    user = UserLoginService.Create( rockContext, person, AuthenticationServiceType.External, authentitationEntityTypeId, username, password, true );
-                    user.ForeignKey = externallyAuthenticatedUser.ForeignKey;
+                    user = UserLoginService.Create( rockContext, person, AuthenticationServiceType.External, userLoginInfo.ProviderEntityTypeId, userLoginInfo.Username, userLoginInfo.ExternalPass, true );
+                    user.ForeignKey = personInfo.ForeignKey;
                 } );
             }
 
             // If a UserLogin entry already exists for this username.
             if ( user != null )
             {
-                username = user.UserName;
-
                 // If there is an associated Person with this user.
                 if ( user.PersonId.HasValue )
                 {
@@ -395,18 +431,18 @@ namespace Rock.Blocks.Types.Mobile.Cms
                     var userPerson = personService.Get( user.PersonId.Value );
                     if ( userPerson != null )
                     {
-                        if ( externallyAuthenticatedUser.PhoneNumber.IsNotNullOrWhiteSpace() )
+                        if ( personInfo.PhoneNumber.IsNotNullOrWhiteSpace() )
                         {
                             var mobilePhoneDefinedValueCache = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE );
-                            userPerson.UpdatePhoneNumber( mobilePhoneDefinedValueCache.Id, null, Rock.Model.PhoneNumber.CleanNumber( externallyAuthenticatedUser.PhoneNumber ), null, null, rockContext );
+                            userPerson.UpdatePhoneNumber( mobilePhoneDefinedValueCache.Id, null, Rock.Model.PhoneNumber.CleanNumber( personInfo.PhoneNumber ), null, null, rockContext );
                             rockContext.SaveChanges();
                         }
 
                         // If person does not have a photo, try to get the photo return with auth0.
-                        if ( !userPerson.PhotoId.HasValue && !string.IsNullOrWhiteSpace( externallyAuthenticatedUser.Picture ) )
+                        if ( !userPerson.PhotoId.HasValue && !string.IsNullOrWhiteSpace( personInfo.Picture ) )
                         {
                             // Download the photo from the url provided.
-                            var restClient = new RestClient( externallyAuthenticatedUser.Picture );
+                            var restClient = new RestClient( personInfo.Picture );
                             var restRequest = new RestRequest( Method.GET );
                             var restResponse = restClient.Execute( restRequest );
                             if ( restResponse.StatusCode == HttpStatusCode.OK )
@@ -438,6 +474,109 @@ namespace Rock.Blocks.Types.Mobile.Cms
             }
 
             return user;
+        }
+
+        /// <summary>
+        /// Gets the necessary user login information for the supported authentication provider.
+        /// </summary>
+        /// <param name="supportedMobileProvider"></param>
+        /// <param name="usernameValue"></param>
+        /// <returns></returns>
+        private ExternalAuthUserLoginBag GetExternalAuthUserLoginInfo( Common.Mobile.Enums.SupportedAuthenticationProvider supportedMobileProvider, string usernameValue )
+        {
+            string usernamePrefix;
+            int? providerEntityTypeId;
+            string externalPass;
+
+            //
+            // For the authentication providers that are supported,
+            // we need to structure the UserLogin accordingly.
+            //
+            switch ( supportedMobileProvider )
+            {
+                //
+                // AUTH0_<value>
+                //
+                case Common.Mobile.Enums.SupportedAuthenticationProvider.Auth0:
+                    usernamePrefix = "AUTH0_";
+                    externalPass = "auth0";
+                    providerEntityTypeId = EntityTypeCache.Get( "9D2EDAC7-1051-40A1-BE28-32C0ABD1B28F" )?.Id;
+                    break;
+
+                //
+                // ENTRA_<value> or AzureAD_<value> or Office365_<value>
+                //
+                case Common.Mobile.Enums.SupportedAuthenticationProvider.Entra:
+                    var entraLoginInfo = GetEntraComponentInfo();
+                    usernamePrefix = entraLoginInfo.UsernamePrefix;
+                    providerEntityTypeId = entraLoginInfo.ProviderEntityTypeId;
+                    externalPass = "entra";
+                    break;
+
+                //
+                // Unsupported
+                //
+                default:
+                    return null;
+            }
+
+            if ( !providerEntityTypeId.HasValue )
+            {
+                return null;
+            }
+
+            return new ExternalAuthUserLoginBag
+            {
+                Username = usernamePrefix + usernameValue,
+                ExternalPass = externalPass,
+                ProviderEntityTypeId = providerEntityTypeId.Value
+            };
+        }
+
+        /// <summary>
+        /// Gets the corresponding information for the configured Entra component.
+        /// </summary>
+        /// <returns></returns>
+        private (string UsernamePrefix, int? ProviderEntityTypeId) GetEntraComponentInfo()
+        {
+            var additionalSettings = this.PageCache.Layout.Site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>();
+
+            if ( additionalSettings == null || additionalSettings.EntraAuthenticationComponent == null )
+            {
+                return (null, null);
+            }
+
+            var provider = EntityTypeCache.Get( additionalSettings.EntraAuthenticationComponent.Value );
+
+            if ( provider == null )
+            {
+                return (null, null);
+            }
+
+            string prefix = "ENTRA_";
+
+            //
+            // The majority of entra logins are provided by the Triumph or BEMA
+            // plugin.
+            //
+            // These plugins handle the naming a little differently, and for the sake
+            // We're just going to do a quick check to see if
+            // we can make the UserLogin records match the plugin style.
+            //
+            // Otherwise, use the standard ENTRA_<email> format.
+
+            // Triumph 
+            if ( provider.AssemblyName.Contains( "tech.triumph" ) )
+            {
+                prefix = "AzureAD_";
+            }
+            // BEMA
+            else if ( provider.AssemblyName.Contains( "com.bemaservices" ) )
+            {
+                prefix = "Office365_";
+            }
+
+            return (prefix, provider.Id);
         }
 
         #endregion
@@ -502,35 +641,40 @@ namespace Rock.Blocks.Types.Mobile.Cms
         {
             using ( var rockContext = new RockContext() )
             {
-                string username;
-                string externalLoginAuthPassword;
-                int? providerEntityTypeId;
-
                 //
                 // For the authentication providers that are supported,
                 // we need to structure the UserLogin accordingly.
                 //
+
+                string usernameValue = string.Empty;
+
                 switch ( provider )
                 {
                     case Common.Mobile.Enums.SupportedAuthenticationProvider.Auth0:
-                        username = "AUTH0_" + userInfo.ForeignKey;
-                        externalLoginAuthPassword = "auth0";
-                        providerEntityTypeId = EntityTypeCache.Get( "9D2EDAC7-1051-40A1-BE28-32C0ABD1B28F" )?.Id;
+                        usernameValue = userInfo.ForeignKey;
                         break;
-                    default:
-                        return ActionBadRequest( "Unsupported authentication provider." );
+                    case Common.Mobile.Enums.SupportedAuthenticationProvider.Entra:
+                        usernameValue = userInfo.Email;
+                        break;
                 }
 
-                if ( !providerEntityTypeId.HasValue )
+                if ( usernameValue.IsNullOrWhiteSpace() )
+                {
+                    return ActionBadRequest( "There was no corresponding username provided for the authentication provider." );
+                }
+
+                var providerInfo = GetExternalAuthUserLoginInfo( provider, usernameValue );
+
+                if ( providerInfo == null )
                 {
                     return ActionBadRequest( "There was no entity found for that authentication provider." );
                 }
 
                 // Create or retrieve a Person using the information provided in the external authentication info bag.
-                var userLogin = GetOrCreatePersonFromExternalAuthenticationUserInfo( userInfo, providerEntityTypeId.Value, username, externalLoginAuthPassword, rockContext );
+                var userLogin = GetOrCreatePersonFromExternalAuthenticationUserInfo( userInfo, providerInfo, rockContext );
 
                 // Something went wrong or we didn't receive enough information to create a Person.
-                if( userLogin == null )
+                if ( userLogin == null )
                 {
                     return ActionBadRequest( "There was an error when authenticating your request. Please ensure your external authentication provider is configured correctly." );
                 }
@@ -563,5 +707,30 @@ namespace Rock.Blocks.Types.Mobile.Cms
 
         #endregion
 
+        #region Helper Classes
+
+        /// <summary>
+        /// A bag containing the information needed to create a new UserLogin
+        /// from external authentication.
+        /// </summary>
+        internal class ExternalAuthUserLoginBag
+        {
+            /// <summary>
+            /// Gets or sets the username.
+            /// </summary>
+            public string Username { get; set; }
+
+            /// <summary>
+            /// Gets or sets the external password.
+            /// </summary>
+            public string ExternalPass { get; set; }
+
+            /// <summary>
+            /// Gets or sets the entity type of the authentication provider.
+            /// </summary>
+            public int ProviderEntityTypeId { get; set; }
+        }
+
+        #endregion
     }
 }

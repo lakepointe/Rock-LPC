@@ -16,14 +16,18 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
+using System.Data.Entity.Spatial;
+using System.Data.SqlClient;
 using System.Linq;
-
+using EF6.TagWith;
+using Microsoft.SqlServer.Types;
 using Rock.Data;
 using Rock.Logging;
 using Rock.Reporting.DataFilter;
 using Rock.SystemKey;
-using Rock.Tasks;
+using Rock.Configuration;
 using Rock.Web.Cache;
 
 namespace Rock.Model
@@ -40,8 +44,8 @@ namespace Rock.Model
         {
             get
             {
-                var rockContext = System.Configuration.ConfigurationManager.ConnectionStrings[SystemSetting.ROCK_CONTEXT]?.ConnectionString;
-                var readOnlyContext = System.Configuration.ConfigurationManager.ConnectionStrings[SystemSetting.ROCK_CONTEXT_READ_ONLY]?.ConnectionString;
+                var rockContext = RockApp.Current.InitializationSettings.ConnectionString;
+                var readOnlyContext = RockApp.Current.InitializationSettings.ReadOnlyConnectionString;
 
                 if ( rockContext != null && readOnlyContext != null && !rockContext.Equals( readOnlyContext ) )
                 {
@@ -288,6 +292,167 @@ namespace Rock.Model
             {
                 this.ResetPermanentStoreIdentifiers( childFilter );
             }
+        }
+
+        /// <summary>
+        /// Gets a List of <see cref="Rock.Model.DataViewPersistedValue"/>
+        /// matching the specified list of <paramref name="entityIds"/> and
+        /// (optionally) <paramref name="dataViewIds"/>.
+        /// </summary>
+        /// <param name="entityIds">The list of EntityIds to filter to.</param>
+        /// <param name="dataViewIds">The (optional) list of DataViewIds to filter to.</param>
+        /// <returns>A List of <see cref="Rock.Model.DataViewPersistedValue"/></returns>
+        public List<DataViewPersistedValue> GetDataViewPersistedValuesForIds( IEnumerable<int> entityIds, IEnumerable<int> dataViewIds = null )
+        {
+            var entityIdsParamName = "@EntityIds";
+            var entityIdsParam = entityIds.ConvertToEntityIdListParameter( entityIdsParamName );
+            var sql = $@"
+                SELECT [DataViewId]
+                    , [EntityId]
+                FROM [DataViewPersistedValue] [dv]
+                JOIN {entityIdsParamName} [e] ON [dv].EntityId = [e].Id";
+
+            if ( dataViewIds != null && dataViewIds.Any() )
+            {
+                var dataViewIdsParamName = "@DataViewIds";
+                // If there's also a filter condition for dataViewIds add the condition and return the result.
+                var dataViewIdsParam = dataViewIds.ConvertToEntityIdListParameter( dataViewIdsParamName );
+                sql += $@"
+                JOIN {dataViewIdsParamName} [d] ON [dv].[DataViewId] = [d].Id";
+                return this.Context.Database.SqlQuery<DataViewPersistedValue>( sql, entityIdsParam, dataViewIdsParam ).ToList();
+            }
+
+            // Return the list based solely on EntityIds filtering.
+            return this.Context.Database.SqlQuery<DataViewPersistedValue>( sql, entityIdsParam ).ToList();
+        }
+
+        /// <summary>
+        /// Updates the data view's <see cref="DataViewPersistedValue"/>s in the database.
+        /// </summary>
+        /// <param name="dataViewId">The identifier of the data view whose values should be updated.</param>
+        /// <param name="databaseTimeoutSeconds">The database timeout in seconds.</param>
+        internal void UpdateDataViewPersistedValues( int dataViewId, int? databaseTimeoutSeconds = null )
+        {
+            UpdateDataViewPersistedValues( Get( dataViewId ), databaseTimeoutSeconds );
+        }
+
+        /// <summary>
+        /// Updates the data view's <see cref="DataViewPersistedValue"/>s in the database.
+        /// </summary>
+        /// <param name="dataView">The data view whose values should be updated.</param>
+        /// <param name="databaseTimeoutSeconds">The database timeout in seconds.</param>
+        internal void UpdateDataViewPersistedValues( DataView dataView, int? databaseTimeoutSeconds = null )
+        {
+            if ( dataView == null )
+            {
+                return;
+            }
+
+            // Get the dynamic query to be used to source the entity IDs for this data view. Set an override so that any existing
+            // persisted values aren't used when rebuilding the values from the data view query.
+            var overrides = new DataViewFilterOverrides { ShouldUpdateStatics = false };
+            overrides.IgnoreDataViewPersistedValues.Add( dataView.Id );
+
+            var dataViewObjectQuery = dataView
+                .GetQuery( new DataViewGetQueryArgs
+                {
+                    DbContext = this.Context,
+                    DataViewFilterOverrides = overrides,
+                    DatabaseTimeoutSeconds = databaseTimeoutSeconds
+                } )
+                .Select( entity => entity.Id )
+                .ToObjectQuery();
+
+            if ( dataViewObjectQuery == null )
+            {
+                RockLogger.Log.WriteToLog( RockLogLevel.Error, $"{nameof( UpdateDataViewPersistedValues )}: Unable to update persisted values for data view with ID {dataView.Id}." );
+                return;
+            }
+
+            var tagger = new SqlServerTagger();
+            var taggedSql = tagger.GetTaggedSqlQuery( dataViewObjectQuery.ToTraceString(), new TaggingOptions { TagMode = TagMode.Prefix } );
+
+            var tempTableName = $"DataView_{dataView.Id}";
+
+            var sql = $@"
+BEGIN TRY
+    DROP TABLE IF EXISTS #{tempTableName};
+
+    CREATE TABLE #{tempTableName}
+    (
+        [EntityId] [int] NOT NULL
+    );
+
+    -- Select the new entity IDs that should be added/remain in the persisted set.
+    INSERT INTO #{tempTableName}
+    {taggedSql};
+
+    -- Delete any old Entity IDs that should no longer be in the persisted set.
+    -- We'll delete these in batches to prevent locking the table.
+    DECLARE @RowsAffected [int];
+    WHILE @RowsAffected IS NULL OR @RowsAffected > 0
+    BEGIN
+        DELETE TOP (1500) [existing]
+        FROM [DataViewPersistedValue] [existing]
+        WHERE [existing].[DataViewId] = @DataViewId
+            AND ( NOT EXISTS (
+                    SELECT [EntityId]
+                    FROM #{tempTableName}
+                    WHERE [EntityId] = [existing].[EntityId]
+                )
+            );
+
+        SET @RowsAffected = @@ROWCOUNT;
+    END
+
+    -- Add any missing Entity IDs that weren't already in the persisted set.
+    INSERT INTO [DataViewPersistedValue]
+    (
+        [DataViewId]
+        , [EntityId]
+    )
+    SELECT @DataViewId
+        , [EntityId]
+    FROM #{tempTableName} [new]
+    WHERE NOT EXISTS (
+        SELECT [EntityId]
+        FROM [DataViewPersistedValue]
+        WHERE [DataViewId] = @DataViewId
+            AND [EntityId] = [new].[EntityId]
+    );
+
+    DROP TABLE #{tempTableName};
+END TRY
+BEGIN CATCH
+    DROP TABLE IF EXISTS #{tempTableName};
+END CATCH;";
+
+            var parameters = new List<object> {
+                new SqlParameter( "@DataViewId", dataView.Id )
+            }
+            .Concat(
+                dataViewObjectQuery.Parameters.Select( objectParameter =>
+                {
+                    if ( objectParameter.Value is DbGeography geography )
+                    {
+                        // We need to manually convert DbGeography to SqlGeography since we're sidestepping EF here.
+                        // https://stackoverflow.com/a/45099842 (Use SqlGeography instead of DbGeography)
+                        // https://stackoverflow.com/a/23187033 (Entity Framework: SqlGeography vs DbGeography)
+                        return new SqlParameter
+                        {
+                            ParameterName = objectParameter.Name,
+                            Value = SqlGeography.Parse( geography.AsText() ),
+                            SqlDbType = SqlDbType.Udt,
+                            UdtTypeName = "geography"
+                        };
+                    }
+
+                    return new SqlParameter( objectParameter.Name, objectParameter.Value ?? DBNull.Value );
+                } )
+            )
+            .ToArray();
+
+            this.Context.Database.ExecuteSqlCommand( TransactionalBehavior.DoNotEnsureTransaction, sql, parameters );
         }
     }
 }

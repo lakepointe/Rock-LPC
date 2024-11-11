@@ -110,9 +110,9 @@ namespace RockWeb.Blocks.Cms
         RockRequestContext IRockBlockType.RequestContext { get; set; }
 
         /// <inheritdoc/>
-        object IRockBlockType.GetBlockInitialization( RockClientType clientType )
+        System.Threading.Tasks.Task<object> IRockBlockType.GetBlockInitializationAsync( RockClientType clientType )
         {
-            return null;
+            return System.Threading.Tasks.Task.FromResult( ( object ) null );
         }
 
         #endregion IRockBlockType implementation
@@ -139,6 +139,7 @@ namespace RockWeb.Blocks.Cms
         {
             base.OnInit(e);
 
+            RockPage.AddCSSLink( "~/Styles/Blocks/Cms/MediaElementDetail.css", true );
             RockPage.AddScriptLink( "~/Scripts/Chartjs/Chart.min.js" );
             RockPage.AddScriptLink( "~/Scripts/moment.min.js" );
             RockPage.AddScriptLink( "~/Scripts/Rock/Controls/MediaElementDetail/mediaElementPlayAnalytics.js" );

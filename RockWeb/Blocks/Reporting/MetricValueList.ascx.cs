@@ -42,6 +42,18 @@ namespace RockWeb.Blocks.Reporting
     [Rock.SystemGuid.BlockTypeGuid( "E40A1526-04D0-42A0-B275-D1AE161E2E57" )]
     public partial class MetricValueList : RockBlock, ISecondaryBlock, ICustomGridColumns
     {
+        #region Keys
+
+        private static class PageParameterKey
+        {
+            public const string MetricValueId = "MetricValueId";
+            public const string MetricId = "MetricId";
+            public const string MetricCategoryId = "MetricCategoryId";
+            public const string ExpandedIds = "ExpandedIds";
+        }
+
+        #endregion
+
         #region fields
 
         private Dictionary<int, IQueryable<IEntity>> _entityTypeEntityLookupQry = null;
@@ -115,26 +127,26 @@ namespace RockWeb.Blocks.Reporting
         /// </summary>
         private void BindFilter()
         {
-            drpDates.DelimitedValues = gfMetricValues.GetUserPreference( "Date Range" );
+            drpDates.DelimitedValues = gfMetricValues.GetFilterPreference( "Date Range" );
 
             ddlGoalMeasure.Items.Clear();
             ddlGoalMeasure.Items.Add( new ListItem( string.Empty, string.Empty ) );
             ddlGoalMeasure.Items.Add( new ListItem( MetricValueType.Goal.ConvertToString(), MetricValueType.Goal.ConvertToInt().ToString() ) );
             ddlGoalMeasure.Items.Add( new ListItem( MetricValueType.Measure.ConvertToString(), MetricValueType.Measure.ConvertToInt().ToString() ) );
 
-            ddlGoalMeasure.SelectedValue = gfMetricValues.GetUserPreference( "Goal/Measure" );
+            ddlGoalMeasure.SelectedValue = gfMetricValues.GetFilterPreference( "Goal/Measure" );
 
             var metric = new MetricService( new RockContext() ).Get( hfMetricId.Value.AsInteger() );
 
-            var entityTypeEntityUserPreference = gfMetricValues.GetUserPreference( this.EntityTypeEntityPreferenceKey ) ?? string.Empty;
+            var entityTypeEntityUserPreference = gfMetricValues.GetFilterPreference( this.EntityTypeEntityPreferenceKey ) ?? string.Empty;
 
-            var entityTypeEntityList = entityTypeEntityUserPreference.Split( ',' ).Select( a => a.Split( '|' ) ).Where( a => a.Length == 2 ).Select( a =>
+            var entityTypeEntityList = entityTypeEntityUserPreference.Split( ',' ).Select( a => a.Split( '|' ) ).Where( a => a.Length == 3 ).Select( a =>
                 new
                 {
                     EntityTypeId = a[0].AsIntegerOrNull(),
-                    EntityId = a[1].AsIntegerOrNull()
+                    EntityId = a[1].AsIntegerOrNull(),
+                    PartitionId = a[2].AsIntegerOrNull()
                 } ).ToList();
-
 
             if ( metric != null )
             {
@@ -144,7 +156,7 @@ namespace RockWeb.Blocks.Reporting
                     var controlId = string.Format( "metricPartition{0}_entityTypeEditControl", metricPartition.Id );
                     Control entityTypeEditControl = phMetricValuePartitions.FindControl( controlId );
 
-                    int? entityId = entityTypeEntityList.Where( a => a.EntityTypeId == metricPartition.EntityTypeId ).Select( a => a.EntityId ).FirstOrDefault();
+                    int? entityId = entityTypeEntityList.Where( a => a.EntityTypeId == metricPartition.EntityTypeId && a.PartitionId == metricPartition.Id ).Select( a => a.EntityId ).FirstOrDefault();
 
                     if ( metricPartitionEntityType != null && metricPartitionEntityType.SingleValueFieldType != null && metricPartitionEntityType.SingleValueFieldType.Field is IEntityFieldType )
                     {
@@ -231,9 +243,9 @@ namespace RockWeb.Blocks.Reporting
             }
             else if ( e.Key == this.EntityTypeEntityPreferenceKey )
             {
-                var entityTypeEntityUserPreference = gfMetricValues.GetUserPreference( this.EntityTypeEntityPreferenceKey ) ?? string.Empty;
+                var entityTypeEntityUserPreference = gfMetricValues.GetFilterPreference( this.EntityTypeEntityPreferenceKey ) ?? string.Empty;
 
-                var entityTypeEntityList = ( e.Value ?? string.Empty ).Split( ',' ).Select( a => a.Split( '|' ) ).Where( a => a.Length == 2 ).Select( a =>
+                var entityTypeEntityList = ( e.Value ?? string.Empty ).Split( ',' ).Select( a => a.Split( '|' ) ).Where( a => a.Length == 3 ).Select( a =>
                     new MetricValuePartition
                     {
                         MetricPartition = new MetricPartition { EntityTypeId = a[0].AsIntegerOrNull() },
@@ -256,8 +268,8 @@ namespace RockWeb.Blocks.Reporting
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void gfMetricValues_ApplyFilterClick( object sender, EventArgs e )
         {
-            gfMetricValues.SaveUserPreference( "Date Range", drpDates.DelimitedValues );
-            gfMetricValues.SaveUserPreference( "Goal/Measure", ddlGoalMeasure.SelectedValue );
+            gfMetricValues.SetFilterPreference( "Date Range", drpDates.DelimitedValues );
+            gfMetricValues.SetFilterPreference( "Goal/Measure", ddlGoalMeasure.SelectedValue );
 
             var metric = new MetricService( new RockContext() ).Get( hfMetricId.Value.AsInteger() );
 
@@ -274,11 +286,11 @@ namespace RockWeb.Blocks.Reporting
                 {
                     entityId = ( metricPartitionEntityType.SingleValueFieldType.Field as IEntityFieldType ).GetEditValueAsEntityId( entityTypeEditControl, new Dictionary<string, ConfigurationValue>() );
 
-                    entityTypeEntityFilters.Add( $"{metricPartitionEntityType.Id}|{entityId}" );
+                    entityTypeEntityFilters.Add( $"{metricPartitionEntityType.Id}|{entityId}|{metricPartition.Id}" );
                 }
             }
 
-            gfMetricValues.SaveUserPreference( this.EntityTypeEntityPreferenceKey, entityTypeEntityFilters.AsDelimited( "," ) );
+            gfMetricValues.SetFilterPreference( this.EntityTypeEntityPreferenceKey, entityTypeEntityFilters.AsDelimited( "," ) );
 
             BindGrid();
         }
@@ -295,9 +307,25 @@ namespace RockWeb.Blocks.Reporting
         protected void gMetricValues_Add( object sender, EventArgs e )
         {
             var qryParams = new Dictionary<string, string>();
-            qryParams.Add( "MetricValueId", 0.ToString() );
-            qryParams.Add( "MetricCategoryId", hfMetricCategoryId.Value );
-            qryParams.Add( "ExpandedIds", PageParameter( "ExpandedIds" ) );
+
+            var metricId = PageParameter( PageParameterKey.MetricId );
+            if ( metricId.AsInteger() > 0 )
+            {
+                qryParams.Add( PageParameterKey.MetricId, metricId );
+            }
+
+            qryParams.Add( PageParameterKey.MetricValueId, 0.ToString() );
+
+            if ( hfMetricCategoryId.ValueAsInt() > 0 )
+            {
+                qryParams.Add( PageParameterKey.MetricCategoryId, hfMetricCategoryId.Value );
+            }
+
+            var expandedIds = PageParameter( PageParameterKey.ExpandedIds );
+            if ( expandedIds.IsNotNullOrWhiteSpace() )
+            {
+                qryParams.Add( PageParameterKey.ExpandedIds, expandedIds );
+            }
 
             NavigateToLinkedPage( "DetailPage", qryParams );
         }
@@ -309,10 +337,22 @@ namespace RockWeb.Blocks.Reporting
         /// <param name="e">The <see cref="RowEventArgs" /> instance containing the event data.</param>
         protected void gMetricValues_Edit( object sender, RowEventArgs e )
         {
-            var qryParams = new Dictionary<string, string>();
-            qryParams.Add( "MetricValueId", e.RowKeyId.ToString() );
-            qryParams.Add( "MetricCategoryId", hfMetricCategoryId.Value );
-            qryParams.Add( "ExpandedIds", PageParameter( "ExpandedIds" ) );
+            var qryParams = new Dictionary<string, string>
+            {
+                { PageParameterKey.MetricValueId, e.RowKeyId.ToString() }
+            };
+
+            if ( hfMetricCategoryId.ValueAsInt() > 0 )
+            {
+                qryParams.Add( PageParameterKey.MetricCategoryId, hfMetricCategoryId.Value );
+            }
+
+            var expandedIds = PageParameter( PageParameterKey.ExpandedIds );
+
+            if ( expandedIds.IsNotNullOrWhiteSpace() )
+            {
+                qryParams.Add( PageParameterKey.ExpandedIds, expandedIds );
+            }
 
             NavigateToLinkedPage( "DetailPage", qryParams );
         }
@@ -407,7 +447,7 @@ namespace RockWeb.Blocks.Reporting
                             value = entityItem.ToString();
                         }
 
-                        entityNameLookup.AddOrIgnore( metricValuePartition.EntityId.Value, value );
+                        entityNameLookup.TryAdd( metricValuePartition.EntityId.Value, value );
                     }
 
                     seriesNames.Add( entityNameLookup[metricValuePartition.EntityId.Value] );
@@ -447,7 +487,7 @@ namespace RockWeb.Blocks.Reporting
             metricValuePartitionsColumn.Visible = metric != null && metric.MetricPartitions.Any( a => a.EntityTypeId.HasValue );
 
             var drp = new DateRangePicker();
-            drp.DelimitedValues = gfMetricValues.GetUserPreference( "Date Range" );
+            drp.DelimitedValues = gfMetricValues.GetFilterPreference( "Date Range" );
             if ( drp.LowerValue.HasValue )
             {
                 qry = qry.Where( a => a.MetricValueDateTime >= drp.LowerValue.Value );
@@ -459,15 +499,15 @@ namespace RockWeb.Blocks.Reporting
                 qry = qry.Where( a => a.MetricValueDateTime < upperDate );
             }
 
-            var metricValueType = gfMetricValues.GetUserPreference( "Goal/Measure" ).ConvertToEnumOrNull<MetricValueType>();
+            var metricValueType = gfMetricValues.GetFilterPreference( "Goal/Measure" ).ConvertToEnumOrNull<MetricValueType>();
             if ( metricValueType.HasValue )
             {
                 qry = qry.Where( a => a.MetricValueType == metricValueType.Value );
             }
 
-            var entityTypeEntityUserPreference = gfMetricValues.GetUserPreference( this.EntityTypeEntityPreferenceKey ) ?? string.Empty;
+            var entityTypeEntityUserPreference = gfMetricValues.GetFilterPreference( this.EntityTypeEntityPreferenceKey ) ?? string.Empty;
 
-            var entityTypeEntityList = entityTypeEntityUserPreference.Split( ',' ).Select( a => a.Split( '|' ) ).Where( a => a.Length == 2 ).Select( a =>
+            var entityTypeEntityList = entityTypeEntityUserPreference.Split( ',' ).Select( a => a.Split( '|' ) ).Where( a => a.Length == 3 ).Select( a =>
                 new
                 {
                     EntityTypeId = a[0].AsIntegerOrNull(),
@@ -518,8 +558,8 @@ namespace RockWeb.Blocks.Reporting
                 {
                     var entityTypeCache = EntityTypeCache.Get( metricPartition.EntityTypeId ?? 0 );
 
-                    _entityTypeEntityNameLookup.AddOrIgnore( entityTypeCache.Id, new Dictionary<int, string>() );
-                    _entityTypeEntityLookupQry.AddOrIgnore( entityTypeCache.Id, null );
+                    _entityTypeEntityNameLookup.TryAdd( entityTypeCache.Id, new Dictionary<int, string>() );
+                    _entityTypeEntityLookupQry.TryAdd( entityTypeCache.Id, null );
                     if ( entityTypeCache != null )
                     {
                         if ( entityTypeCache.GetEntityType() == typeof( Rock.Model.Group ) )
@@ -548,10 +588,10 @@ namespace RockWeb.Blocks.Reporting
             var rockContext = new RockContext();
 
             // in case called normally
-            int? metricId = PageParameter( "MetricId" ).AsIntegerOrNull();
+            int? metricId = PageParameter( PageParameterKey.MetricId ).AsIntegerOrNull();
 
             // in case called from CategoryTreeView
-            int? metricCategoryId = PageParameter( "MetricCategoryId" ).AsIntegerOrNull();
+            int? metricCategoryId = PageParameter( PageParameterKey.MetricCategoryId ).AsIntegerOrNull();
             MetricCategory metricCategory = null;
             if ( metricCategoryId.HasValue )
             {
@@ -564,7 +604,7 @@ namespace RockWeb.Blocks.Reporting
                         metricId = metricCategory.MetricId;
                     }
                 }
-                else
+                else if ( !metricId.HasValue )
                 {
                     // adding a new metric. Block will (hopefully) not be shown
                     metricId = 0;

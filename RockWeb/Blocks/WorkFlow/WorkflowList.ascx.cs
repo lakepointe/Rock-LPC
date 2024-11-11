@@ -33,6 +33,7 @@ using Rock.Security;
 using Rock.Web.Cache;
 using Newtonsoft.Json;
 using Rock.Tasks;
+using Rock.Constants;
 
 namespace RockWeb.Blocks.WorkFlow
 {
@@ -90,6 +91,19 @@ namespace RockWeb.Blocks.WorkFlow
         {
             base.OnInit( e );
 
+            if ( !string.IsNullOrWhiteSpace( GetAttributeValue( "DefaultWorkflowType" ) ) )
+            {
+                Guid workflowTypeGuid = Guid.Empty;
+                Guid.TryParse( GetAttributeValue( "DefaultWorkflowType" ), out workflowTypeGuid );
+                _workflowType = new WorkflowTypeService( new RockContext() ).Get( workflowTypeGuid );
+            }
+            else
+            {
+                int workflowTypeId = 0;
+                workflowTypeId = PageParameter( "WorkflowTypeId" ).AsInteger();
+                _workflowType = new WorkflowTypeService( new RockContext() ).Get( workflowTypeId );
+            }
+
             if ( _workflowType != null )
             {
                 _canEdit = UserCanEdit || _workflowType.IsAuthorized( Authorization.EDIT, CurrentPerson );
@@ -142,10 +156,19 @@ namespace RockWeb.Blocks.WorkFlow
             base.OnLoad( e );
 
             nbResult.Visible = false;
-            if ( !Page.IsPostBack && _canView )
+            if ( !Page.IsPostBack )
             {
-                SetFilter();
-                BindGrid();
+                if ( _canView )
+                {
+                    SetFilter();
+                    BindGrid();
+                }
+                else
+                {
+                    pnlWorkflowList.Visible = false;
+                    nbMessage.Visible = true;
+                    nbMessage.Text = EditModeMessage.NotAuthorizedToView( WorkflowType.FriendlyTypeName );
+                }
             }
         }
 
@@ -161,23 +184,24 @@ namespace RockWeb.Blocks.WorkFlow
         public override List<BreadCrumb> GetBreadCrumbs( Rock.Web.PageReference pageReference )
         {
             var breadCrumbs = new List<BreadCrumb>();
+            WorkflowType workflowType;
 
             if ( !string.IsNullOrWhiteSpace( GetAttributeValue( "DefaultWorkflowType" ) ) )
             {
                 Guid workflowTypeGuid = Guid.Empty;
                 Guid.TryParse( GetAttributeValue( "DefaultWorkflowType" ), out workflowTypeGuid );
-                _workflowType = new WorkflowTypeService( new RockContext() ).Get( workflowTypeGuid );
+                workflowType = new WorkflowTypeService( new RockContext() ).Get( workflowTypeGuid );
             }
             else
             {
                 int workflowTypeId = 0;
                 workflowTypeId = PageParameter( "WorkflowTypeId" ).AsInteger();
-                _workflowType = new WorkflowTypeService( new RockContext() ).Get( workflowTypeId );
+                workflowType = new WorkflowTypeService( new RockContext() ).Get( workflowTypeId );
             }
 
-            if ( _workflowType != null )
+            if ( workflowType != null )
             {
-                breadCrumbs.Add( new BreadCrumb( _workflowType.Name, pageReference ) );
+                breadCrumbs.Add( new BreadCrumb( workflowType.Name, pageReference ) );
             }
 
             return breadCrumbs;
@@ -267,14 +291,14 @@ namespace RockWeb.Blocks.WorkFlow
 
         protected void gfWorkflows_ApplyFilterClick( object sender, EventArgs e )
         {
-            gfWorkflows.SaveUserPreference( MakeKeyUniqueToType( "Activated" ), "Activated", drpActivated.DelimitedValues );
-            gfWorkflows.SaveUserPreference( MakeKeyUniqueToType( "Completed" ), "Completed", drpCompleted.DelimitedValues );
-            gfWorkflows.SaveUserPreference( MakeKeyUniqueToType( "Name" ), "Name", tbName.Text );
-            gfWorkflows.SaveUserPreference( MakeKeyUniqueToType( "Status" ), "Status", tbStatus.Text );
-            gfWorkflows.SaveUserPreference( MakeKeyUniqueToType( "State" ), "State", GetState() );
+            gfWorkflows.SetFilterPreference( MakeKeyUniqueToType( "Activated" ), "Activated", drpActivated.DelimitedValues );
+            gfWorkflows.SetFilterPreference( MakeKeyUniqueToType( "Completed" ), "Completed", drpCompleted.DelimitedValues );
+            gfWorkflows.SetFilterPreference( MakeKeyUniqueToType( "Name" ), "Name", tbName.Text );
+            gfWorkflows.SetFilterPreference( MakeKeyUniqueToType( "Status" ), "Status", tbStatus.Text );
+            gfWorkflows.SetFilterPreference( MakeKeyUniqueToType( "State" ), "State", GetState() );
 
             int? personId = ppInitiator.SelectedValue;
-            gfWorkflows.SaveUserPreference( MakeKeyUniqueToType( "Initiator" ), "Initiator", personId.HasValue ? personId.Value.ToString() : "" );
+            gfWorkflows.SetFilterPreference( MakeKeyUniqueToType( "Initiator" ), "Initiator", personId.HasValue ? personId.Value.ToString() : "" );
 
             if ( AvailableAttributes != null )
             {
@@ -286,14 +310,14 @@ namespace RockWeb.Blocks.WorkFlow
                         try
                         {
                             var values = attribute.FieldType.Field.GetFilterValues( filterControl, attribute.QualifierValues, Rock.Reporting.FilterMode.SimpleFilter );
-                            gfWorkflows.SaveUserPreference( MakeKeyUniqueToType( attribute.Key ), attribute.Name, attribute.FieldType.Field.GetFilterValues( filterControl, attribute.QualifierValues, Rock.Reporting.FilterMode.SimpleFilter ).ToJson() );
+                            gfWorkflows.SetFilterPreference( MakeKeyUniqueToType( attribute.Key ), attribute.Name, attribute.FieldType.Field.GetFilterValues( filterControl, attribute.QualifierValues, Rock.Reporting.FilterMode.SimpleFilter ).ToJson() );
                         }
                         catch { }
                     }
                 }
             }
 
-            BindGrid();
+                BindGrid();
         }
 
         /// <summary>
@@ -466,12 +490,12 @@ namespace RockWeb.Blocks.WorkFlow
             BindAttributes();
             AddDynamicControls();
 
-            drpActivated.DelimitedValues = gfWorkflows.GetUserPreference( MakeKeyUniqueToType( "Activated" ) );
-            drpCompleted.DelimitedValues = gfWorkflows.GetUserPreference( MakeKeyUniqueToType( "Completed" ) );
-            tbName.Text = gfWorkflows.GetUserPreference( MakeKeyUniqueToType( "Name" ) );
-            tbStatus.Text = gfWorkflows.GetUserPreference( MakeKeyUniqueToType( "Status" ) );
+            drpActivated.DelimitedValues = gfWorkflows.GetFilterPreference( MakeKeyUniqueToType( "Activated" ) );
+            drpCompleted.DelimitedValues = gfWorkflows.GetFilterPreference( MakeKeyUniqueToType( "Completed" ) );
+            tbName.Text = gfWorkflows.GetFilterPreference( MakeKeyUniqueToType( "Name" ) );
+            tbStatus.Text = gfWorkflows.GetFilterPreference( MakeKeyUniqueToType( "Status" ) );
 
-            int? personId = gfWorkflows.GetUserPreference( MakeKeyUniqueToType( "Initiator" ) ).AsIntegerOrNull();
+            int? personId = gfWorkflows.GetFilterPreference( MakeKeyUniqueToType( "Initiator" ) ).AsIntegerOrNull();
             if ( personId.HasValue )
             {
                 ppInitiator.SetValue( new PersonService( new RockContext() ).Get( personId.Value ) );
@@ -481,7 +505,7 @@ namespace RockWeb.Blocks.WorkFlow
                 ppInitiator.SetValue( null );
             }
 
-            string state = gfWorkflows.GetUserPreference( MakeKeyUniqueToType( "State" ) );
+            string state = gfWorkflows.GetFilterPreference( MakeKeyUniqueToType( "State" ) );
             foreach ( ListItem li in cblState.Items )
             {
                 li.Selected = string.IsNullOrWhiteSpace( state ) || state.Contains( li.Value );
@@ -549,7 +573,7 @@ namespace RockWeb.Blocks.WorkFlow
                         }
                     }
 
-                    string savedValue = gfWorkflows.GetUserPreference( MakeKeyUniqueToType( attribute.Key ) );
+                    string savedValue = gfWorkflows.GetFilterPreference( MakeKeyUniqueToType( attribute.Key ) );
                     if ( !string.IsNullOrWhiteSpace( savedValue ) )
                     {
                         try
@@ -637,6 +661,11 @@ namespace RockWeb.Blocks.WorkFlow
         /// </summary>
         private void BindGrid()
         {
+            if ( !_canView )
+            {
+                return;
+            }
+
             if ( _workflowType != null )
             {
                 pnlWorkflowList.Visible = true;
@@ -790,7 +819,6 @@ namespace RockWeb.Blocks.WorkFlow
             {
                 pnlWorkflowList.Visible = false;
             }
-
         }
 
         private string MakeKeyUniqueToType( string key )

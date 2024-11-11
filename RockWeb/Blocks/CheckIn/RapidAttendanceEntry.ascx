@@ -73,7 +73,7 @@
                             <Rock:DatePicker ID="dpAttendanceDate" runat="server" Required="true" Label="Attendance Date" ValidationGroup="AttendanceSetting" />
                         </div>
                         <div class="col-md-6">
-                            <Rock:CampusPicker ID="cpCampus" runat="server" Label="Campus" OnSelectedIndexChanged="cpCampus_SelectedIndexChanged" AutoPostBack="True" />
+                            <Rock:CampusPicker ID="cpCampus" runat="server" Label="Campus" OnSelectedIndexChanged="cpCampus_SelectedIndexChanged" AutoPostBack="True" ForceVisible="true" />
                         </div>
                     </div>
                     <div class="actions">
@@ -201,7 +201,7 @@
                                     </div>
                                 </asp:Panel>
                                 <div class="actions margin-t-md">
-                                    <Rock:BootstrapButton ID="bbtnSave" CssClass="btn btn-primary btn-xs" runat="server" AccessKey="s" ToolTip="Alt+s" DataLoadingText="&lt;i class='fa fa-refresh fa-spin'&gt;&lt;/i&gt; Saving"
+                                    <Rock:BootstrapButton ID="bbtnSave" CssClass="btn btn-primary" runat="server" AccessKey="s" ToolTip="Alt+s" DataLoadingText="&lt;i class='fa fa-refresh fa-spin'&gt;&lt;/i&gt; Saving"
                                         CompletedText="Success" CompletedMessage="<div class='margin-t-md alert alert-success'>Changes have been saved.</div>" Text="Save" OnClick="bbtnSave_Click" />
                                 </div>
                             </asp:Panel>

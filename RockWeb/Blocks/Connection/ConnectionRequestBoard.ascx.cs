@@ -22,6 +22,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+
+using CSScriptLibrary;
+
 using Newtonsoft.Json;
 //using NuGet;
 using Rock;
@@ -392,7 +395,10 @@ namespace RockWeb.Blocks.Connection
                 if ( currentValue != value )
                 {
                     ViewState[ViewStateKey.ConnectionOpportunityId] = value;
-                    SetBlockUserPreference( UserPreferenceKey.ConnectionOpportunityId, value.ToStringSafe() );
+
+                    var preferences = GetBlockPersonPreferences();
+                    preferences.SetValue( UserPreferenceKey.ConnectionOpportunityId, value.ToStringSafe() );
+                    preferences.Save();
                 }
             }
         }
@@ -606,12 +612,17 @@ namespace RockWeb.Blocks.Connection
 
             // Hide default bulk update and replace with custom action.
             gRequests.Actions.ShowBulkUpdate = false;
-            // Add a custom button with an EventHandler for bulk updates
+
+            // Add a custom button with an EventHandler for bulk updates.
+            // Note that the EventHandler is used to handle the navigation event, but the Route is needed
+            // to determine the security level associated with this action.
+            var bulkUpdatePageReference = new PageReference( GetAttributeValue( AttributeKey.BulkUpdateRequestsPage ) );
             var customActionConfigEventButton = new CustomActionConfigEvent
             {
                 IconCssClass = "fa fa-truck fa-fw",
                 HelpText = "Update selected requests",
-                EventHandler = LbUpdateConnections_Click
+                EventHandler = LbUpdateConnections_Click,
+                Route = bulkUpdatePageReference.Route
             };
 
             gRequests.Actions.AddCustomActionBlockButton( customActionConfigEventButton );
@@ -632,6 +643,7 @@ namespace RockWeb.Blocks.Connection
             var badgeTypes = delimitedBadgeGuids.SplitDelimitedValues()
                 .AsGuidList()
                 .Select( BadgeCache.Get )
+                .Where( b => b != null ) // exclude the badge in case it has been deleted
                 .ToList();
 
             blRequestModalViewModeBadges.BadgeTypes.AddRange( badgeTypes );
@@ -640,12 +652,29 @@ namespace RockWeb.Blocks.Connection
 
         private void LbUpdateConnections_Click( object sender, EventArgs e )
         {
-            var selectedItems = new List<int>();
-            gRequests.SelectedKeys.ToList().ForEach( k => selectedItems.Add( k.ToString().AsInteger() ) );
+            var selectedItems = new List<int>();          
+
+            if ( gRequests.SelectedKeys.Count == 0 )
+            {
+                foreach ( var dataKeyObject in gRequests.DataKeys )
+                {
+                    var dataKey = dataKeyObject as DataKey;
+                    var selectedItem = dataKey?.Value?.ToString()?.AsIntegerOrNull();
+
+                    if ( selectedItem.HasValue )
+                    {
+                        selectedItems.Add( selectedItem.Value );
+                    }
+                }
+            }
+            else
+            {
+                gRequests.SelectedKeys.ToList().ForEach( k => selectedItems.Add( k.ToString().AsInteger() ) );
+            }
 
             if ( selectedItems.Count == 0 )
             {
-                gRequests.ShowModalAlertMessage( "No requests selected", ModalAlertType.Information );
+                gRequests.ShowModalAlertMessage( "Grid has no Connection Requests", ModalAlertType.Warning );
             }
             else
             {
@@ -709,7 +738,7 @@ namespace RockWeb.Blocks.Connection
 
                 if ( causingControlClientId == lbJavaScriptCommand.ClientID )
                 {
-                    // Handle card commands that are sent via JavaScript
+                    // Handle commands that are sent via JavaScript
                     ProcessJavaScriptCommand();
                 }
                 else if ( causingControl != null &&
@@ -754,10 +783,10 @@ namespace RockWeb.Blocks.Connection
 
         #endregion Base Control Methods
 
-        #region Card Drag
+        #region JavaScript Postbacks
 
         /// <summary>
-        /// Processes the drag event.
+        /// Processes the JavaScript event.
         /// </summary>
         private void ProcessJavaScriptCommand()
         {
@@ -767,6 +796,26 @@ namespace RockWeb.Blocks.Connection
             int? newStatusId;
             int? requestId;
             int? newIndex;
+
+            /*
+                4/30/2024 - JPH
+
+                This is an unconventional way of handling a grid row's delete action, but this
+                block has a pretty complex combination of child controls (to make up its "board"
+                and "list" view modes), which leads to a complicated control lifecycle. This fix
+                will properly support deletes from list view mode until we rewrite the block
+                using the new, Obsidian framework.
+
+                Reason: [Sometimes] Can't delete requests in list view.
+                https://github.com/SparkDevNetwork/Rock/issues/5720
+             */
+            ParseDeleteEventArgument( argument, out requestId );
+            if ( requestId.HasValue )
+            {
+                DeleteGridRequest( requestId.Value );
+                return;
+            }
+
             ParseDragEventArgument( argument, out action, out newStatusId, out requestId, out newIndex );
 
             if ( action == "on-following-change" )
@@ -807,6 +856,22 @@ namespace RockWeb.Blocks.Connection
                 }
 
                 return;
+            }
+        }
+
+        /// <summary>
+        /// Parses the delete event.
+        /// </summary>
+        /// <param name="argument">The argument.</param>
+        /// <param name="requestId">The request identifier.</param>
+        private void ParseDeleteEventArgument( string argument, out int? requestId )
+        {
+            requestId = null;
+
+            var segments = argument.SplitDelimitedValues();
+            if ( segments.Length == 2 && segments[0] == "on-request-delete" )
+            {
+                requestId = segments[1].AsIntegerOrNull();
             }
         }
 
@@ -909,7 +974,7 @@ namespace RockWeb.Blocks.Connection
             newIndex = segments.Length >= 4 ? segments[3].AsIntegerOrNull() : null;
         }
 
-        #endregion Card Drag
+        #endregion JavaScript Postbacks
 
         #region Helper Methods
 
@@ -967,7 +1032,7 @@ namespace RockWeb.Blocks.Connection
 
             var title = connectionRequest.ToString();
             string quickReturnLava = "{{ Title | AddQuickReturn:'ConnectionRequests', 60 }}";
-            var quickReturnMergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new Rock.Lava.CommonMergeFieldsOptions { GetLegacyGlobalMergeFields = false } );
+            var quickReturnMergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson, new Rock.Lava.CommonMergeFieldsOptions() );
             quickReturnMergeFields.Add( "Title", title );
             quickReturnLava.ResolveMergeFields( quickReturnMergeFields );
 
@@ -1179,7 +1244,7 @@ namespace RockWeb.Blocks.Connection
 
                 // Status control
                 ddlRequestModalViewModeTransferModeStatus.Items.Clear();
-                var statuses = GetConnectionType().ConnectionStatuses;
+                var statuses = GetConnectionType().ConnectionStatuses.OrderBy( a => a.Order ).ThenByDescending( cs => cs.IsDefault ).ThenBy( a => a.Name );
 
                 foreach ( var status in statuses )
                 {
@@ -1461,6 +1526,7 @@ namespace RockWeb.Blocks.Connection
             connectionRequest.SaveAttributeValues( rockContext );
 
             _connectionRequest = connectionRequest;
+            ConnectionRequestId = connectionRequest.Id;
 
             // Add an activity that the connector was assigned (or changed)
             if ( originalConnectorPersonAliasId != newConnectorPersonAliasId )
@@ -2236,7 +2302,7 @@ namespace RockWeb.Blocks.Connection
             get
             {
                 var connectionOpportunity = GetConnectionOpportunity();
-                return connectionOpportunity.ConnectionType.EnableRequestSecurity
+                return connectionOpportunity != null && connectionOpportunity.ConnectionType.EnableRequestSecurity
                         && connectionOpportunity.IsAuthorized( Authorization.ADMINISTRATE, CurrentPerson );
             }
         }
@@ -2254,7 +2320,7 @@ namespace RockWeb.Blocks.Connection
         /// <summary>
         /// Get the grid panel.
         /// </summary>
-        private void BindRequestsGrid( bool isExporting = false )
+        private void BindRequestsGrid( bool isExporting = false, bool isMergeDocumentExport = false )
         {
             _isExporting = isExporting;
             var connectionRequestEntityId = ConnectionRequestEntityTypeId;
@@ -2291,7 +2357,18 @@ namespace RockWeb.Blocks.Connection
 
                 gRequests.ObjectList = new Dictionary<string, object>();
                 _ConnectionRequestViewModelsWithFullModel.ForEach( i => gRequests.ObjectList.Add( i.Id.ToString(), i.ConnectionRequest ) );
-                gRequests.SetLinqDataSource( _ConnectionRequestViewModelsWithFullModel.Select( a => ( ConnectionRequestViewModel ) a ).AsQueryable() );
+
+                if ( isMergeDocumentExport )
+                {
+                    // If the export is as a result of the MergeTemplate button click then the ConnectionRequest itself is used as the data source for the grid.
+                    // This is done to avoid any issues that may arise from the Grid trying to build additionalMergeProperties using the viewModel. see issue #5405 
+                    gRequests.SetLinqDataSource( _ConnectionRequestViewModelsWithFullModel.Select( a => a.ConnectionRequest ).AsQueryable() );
+                }
+                else
+                {
+                    // If its an excel export the ConnectionRequestViewModel is used so the data exported is limited. 
+                    gRequests.SetLinqDataSource( _ConnectionRequestViewModelsWithFullModel.Select( a => ( ConnectionRequestViewModel ) a ).AsQueryable() );
+                }
             }
             else
             {
@@ -2324,7 +2401,7 @@ namespace RockWeb.Blocks.Connection
         /// <exception cref="System.NotImplementedException"></exception>
         protected void gRequests_GridRebind( object sender, GridRebindEventArgs e )
         {
-            BindRequestsGrid( e.IsExporting );
+            BindRequestsGrid( e.IsExporting, e.IsMergeDocumentExport );
         }
 
         /// <summary>
@@ -2350,11 +2427,10 @@ namespace RockWeb.Blocks.Connection
         /// <summary>
         /// Handles the Delete event of the gRequests control.
         /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">The <see cref="RowEventArgs"/> instance containing the event data.</param>
-        protected void gRequests_Delete( object sender, RowEventArgs e )
+        /// <param name="connectionRequestId">The connection request identifier.</param>
+        private void DeleteGridRequest( int connectionRequestId )
         {
-            ConnectionRequestId = e.RowKeyId;
+            ConnectionRequestId = connectionRequestId;
             ViewAllActivities = false;
             DeleteRequest();
             BindRequestsGrid();
@@ -2495,7 +2571,7 @@ namespace RockWeb.Blocks.Connection
                     CurrentActivity = c.Workflow.ActiveActivityNames,
                     Date = c.Workflow.ActivatedDateTime.Value.ToShortDateString(),
                     OrderByDate = c.Workflow.ActivatedDateTime.Value,
-                    Status = c.Workflow.Status == "Completed" ? "<span class='label label-success'>Complete</span>" : "<span class='label label-info'>Running</span>"
+                    Status = $"<span class='label label-{( c.Workflow.CompletedDateTime.HasValue ? "success" : "info" )}'>{( c.Workflow.Status == "Active" ? "Running" : c.Workflow.Status )}</span>"
                 } )
                 .OrderByDescending( c => c.OrderByDate )
                 .ToList();
@@ -2649,9 +2725,9 @@ namespace RockWeb.Blocks.Connection
         /// <param name="e">The <see cref="RowEventArgs"/> instance containing the event data.</param>
         protected void gRequestModalViewModeActivities_RowSelected( object sender, RowEventArgs e )
         {
-            var viewModel = e.Row.DataItem as ActivityViewModel;
+            var viewModel = GetActivityViewModelQuery().FirstOrDefault( a => a.Id == e.RowKeyId );
 
-            if ( viewModel == null || !viewModel.CanEdit )
+            if ( viewModel?.CanEdit != true )
             {
                 return;
             }
@@ -4011,7 +4087,7 @@ namespace RockWeb.Blocks.Connection
             foreach ( var campaignConnectionItem in campaignConnectionItems )
             {
                 int pendingCount = CampaignConnectionHelper.GetPendingConnectionCount( campaignConnectionItem, CurrentPerson );
-                campaignConnectionItemsPendingCount.AddOrIgnore( campaignConnectionItem, pendingCount );
+                campaignConnectionItemsPendingCount.TryAdd( campaignConnectionItem, pendingCount );
                 var listItem = new ListItem();
                 listItem.Text = string.Format( "{0} ({1} pending connections)", campaignConnectionItem.Name, pendingCount );
                 listItem.Value = campaignConnectionItem.Guid.ToString();
@@ -4285,7 +4361,7 @@ namespace RockWeb.Blocks.Connection
             if ( connectionOpportunity.ShowStatusOnTransfer )
             {
                 ddlRequestModalViewModeTransferModeStatus.Items.Clear();
-                foreach ( var status in connectionOpportunity.ConnectionType.ConnectionStatuses )
+                foreach ( var status in connectionOpportunity.ConnectionType.ConnectionStatuses.OrderBy( a => a.Order ).ThenByDescending( a => a.IsDefault ).ThenBy( a => a.Name ) )
                 {
                     ddlRequestModalViewModeTransferModeStatus.Items.Add( new ListItem( status.Name, status.Id.ToString() ) );
                 }
@@ -4336,13 +4412,13 @@ namespace RockWeb.Blocks.Connection
                         .AsNoTracking()
                         .ToList();
 
-                    connectionOpportunityConnectorPersonList.ForEach( p => connectors.AddOrIgnore( p.Id, p ) );
+                    connectionOpportunityConnectorPersonList.ForEach( p => connectors.TryAdd( p.Id, p ) );
                 }
 
                 // Add the current person as possible connector
                 if ( CurrentPerson != null )
                 {
-                    connectors.AddOrIgnore( CurrentPerson.Id, CurrentPerson );
+                    connectors.TryAdd( CurrentPerson.Id, CurrentPerson );
                 }
 
                 // Add connectors to dropdown list
@@ -4528,50 +4604,64 @@ namespace RockWeb.Blocks.Connection
                 return;
             }
 
-            var rockContext = new RockContext();
-            var connectionRequestService = new ConnectionRequestService( rockContext );
-            var groupMemberService = new GroupMemberService( rockContext );
-            var connectionActivityTypeService = new ConnectionActivityTypeService( rockContext );
-            var connectionRequestActivityService = new ConnectionRequestActivityService( rockContext );
-
-            var connectionRequest = connectionRequestService.Queryable()
-                .Include( cr => cr.PersonAlias )
-                .Include( cr => cr.ConnectionOpportunity )
-                .Include( cr => cr.AssignedGroup )
-                .FirstOrDefault( cr => cr.Id == ConnectionRequestId.Value );
-
-            if ( connectionRequest == null || connectionRequest.PersonAlias == null || connectionRequest.ConnectionOpportunity == null )
+            using ( var rockContext = new RockContext() )
             {
-                return;
-            }
+                var connectionRequestService = new ConnectionRequestService( rockContext );
+                var groupService = new GroupService( rockContext );
+                var groupMemberService = new GroupMemberService( rockContext );
+                var connectionActivityTypeService = new ConnectionActivityTypeService( rockContext );
+                var connectionRequestActivityService = new ConnectionRequestActivityService( rockContext );
 
-            var okToConnect = true;
-            GroupMember groupMember = null;
+                var connectionRequest = connectionRequestService.Queryable()
+                    .Include( cr => cr.PersonAlias )
+                    .Include( cr => cr.ConnectionOpportunity )
+                    .Include( cr => cr.AssignedGroup )
+                    .FirstOrDefault( cr => cr.Id == ConnectionRequestId.Value );
 
-            // Only do group member placement if the request has an assigned placement group, role, and status
-            if ( connectionRequest.AssignedGroupId.HasValue &&
-                connectionRequest.AssignedGroupMemberRoleId.HasValue &&
-                connectionRequest.AssignedGroupMemberStatus.HasValue )
-            {
-                var group = connectionRequest.AssignedGroup;
-
-                if ( group != null )
+                if ( connectionRequest == null || connectionRequest.PersonAlias == null || connectionRequest.ConnectionOpportunity == null )
                 {
-                    // Only attempt the add if person does not already exist in group with same role
-                    groupMember = groupMemberService.GetByGroupIdAndPersonIdAndGroupRoleId(
-                        connectionRequest.AssignedGroupId.Value,
-                        connectionRequest.PersonAlias.PersonId,
-                        connectionRequest.AssignedGroupMemberRoleId.Value );
+                    return;
+                }
 
-                    if ( groupMember == null )
+                GroupMember groupMember = null;
+
+                // Only attempt group member placement if the request has an assigned placement group, role, and status.
+                if ( connectionRequest.AssignedGroupId.HasValue &&
+                    connectionRequest.AssignedGroupMemberRoleId.HasValue &&
+                    connectionRequest.AssignedGroupMemberStatus.HasValue )
+                {
+                    var group = connectionRequest.AssignedGroup;
+
+                    if ( group != null )
                     {
-                        groupMember = new GroupMember();
-                        groupMember.PersonId = connectionRequest.PersonAlias.PersonId;
-                        groupMember.GroupId = connectionRequest.AssignedGroupId.Value;
-                        groupMember.GroupRoleId = connectionRequest.AssignedGroupMemberRoleId.Value;
-                        groupMember.GroupMemberStatus = connectionRequest.AssignedGroupMemberStatus.Value;
-                        var groupRequirementLookup = group.GetGroupRequirements( rockContext ).ToList().ToDictionary( k => k.Id );
+                        // Does this person already exist in this group with the same role?
+                        groupMember = groupMemberService.GetByGroupIdAndPersonIdAndGroupRoleId(
+                            connectionRequest.AssignedGroupId.Value,
+                            connectionRequest.PersonAlias.PersonId,
+                            connectionRequest.AssignedGroupMemberRoleId.Value );
 
+                        if ( groupMember == null )
+                        {
+                            // Double-check to make sure they weren't previously archived; if so, restore them.
+                            if ( groupService.ExistsAsArchived( group, connectionRequest.PersonAlias.PersonId, connectionRequest.AssignedGroupMemberRoleId.Value, out groupMember ) )
+                            {
+                                groupMemberService.Restore( groupMember );
+                            }
+                            else
+                            {
+                                // If we still don't have a group member, create a new one.
+                                groupMember = new GroupMember();
+                                groupMember.PersonId = connectionRequest.PersonAlias.PersonId;
+                                groupMember.GroupId = connectionRequest.AssignedGroupId.Value;
+                                groupMember.GroupRoleId = connectionRequest.AssignedGroupMemberRoleId.Value;
+                            }
+                        }
+
+                        // Always set the assigned status, for both new and preexisting members.
+                        groupMember.GroupMemberStatus = connectionRequest.AssignedGroupMemberStatus.Value;
+
+                        // Ensure this person meets any manual group requirements (driven by checkboxes within this connection request).
+                        var groupRequirementLookup = group.GetGroupRequirements( rockContext ).ToList().ToDictionary( k => k.Id );
                         foreach ( ListItem item in cblRequestModalViewModeManualRequirements.Items )
                         {
                             var groupRequirementId = item.Value.AsInteger();
@@ -4580,65 +4670,81 @@ namespace RockWeb.Blocks.Connection
                             if ( !item.Selected &&
                                 ( groupRequirement == null || groupRequirement.MustMeetRequirementToAddMember ) )
                             {
-                                okToConnect = false;
                                 ShowRequestModalNotification(
                                     "Group Requirements have not been met. Please verify all of the requirements.",
                                     NotificationBoxType.Validation );
-                                break;
+                                return;
                             }
-                            else
+
+                            if ( groupRequirement != null )
                             {
-                                groupMember.GroupMemberRequirements.Add( new GroupMemberRequirement
+                                var groupMemberRequirement = groupMember.GroupMemberRequirements.FirstOrDefault( r => r.GroupRequirementId == groupRequirementId )
+                                    ?? new GroupMemberRequirement
+                                    {
+                                        GroupRequirementId = groupRequirementId
+                                    };
+
+                                groupMemberRequirement.RequirementMetDateTime = groupMemberRequirement.RequirementMetDateTime ?? RockDateTime.Now;
+                                groupMemberRequirement.LastRequirementCheckDateTime = RockDateTime.Now;
+
+                                if ( groupMemberRequirement.Id == 0 )
                                 {
-                                    GroupRequirementId = item.Value.AsInteger(),
-                                    RequirementMetDateTime = RockDateTime.Now,
-                                    LastRequirementCheckDateTime = RockDateTime.Now
-                                } );
+                                    groupMember.GroupMemberRequirements.Add( groupMemberRequirement );
+                                }
                             }
                         }
 
-                        if ( okToConnect )
+                        if ( groupMember.Id == 0 )
                         {
                             groupMemberService.Add( groupMember );
-                            if ( !string.IsNullOrWhiteSpace( connectionRequest.AssignedGroupMemberAttributeValues ) )
+                        }
+
+                        if ( !string.IsNullOrWhiteSpace( connectionRequest.AssignedGroupMemberAttributeValues ) )
+                        {
+                            var savedValues = JsonConvert.DeserializeObject<Dictionary<string, string>>( connectionRequest.AssignedGroupMemberAttributeValues );
+                            if ( savedValues != null )
                             {
-                                var savedValues = JsonConvert.DeserializeObject<Dictionary<string, string>>( connectionRequest.AssignedGroupMemberAttributeValues );
-                                if ( savedValues != null )
+                                groupMember.LoadAttributes();
+                                foreach ( var kvp in savedValues )
                                 {
-                                    groupMember.LoadAttributes();
-                                    foreach ( var item in savedValues )
-                                    {
-                                        groupMember.SetAttributeValue( item.Key, item.Value );
-                                    }
+                                    groupMember.SetAttributeValue( kvp.Key, kvp.Value );
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            if ( okToConnect )
-            {
-                // ... but always record the connection activity and change the state to connected.
-                var guid = Rock.SystemGuid.ConnectionActivityType.CONNECTED.AsGuid();
-                var connectedActivityId = connectionActivityTypeService.Queryable().AsNoTracking()
-                    .Where( t => t.Guid == guid )
+                // Always record the connection activity and change the state to connected.
+                var connectedGuid = Rock.SystemGuid.ConnectionActivityType.CONNECTED.AsGuid();
+                var connectedActivityId = connectionActivityTypeService
+                    .Queryable()
+                    .AsNoTracking()
+                    .Where( t => t.Guid == connectedGuid )
                     .Select( t => t.Id )
                     .FirstOrDefault();
 
                 if ( connectedActivityId > 0 )
                 {
-                    var connectionRequestActivity = new ConnectionRequestActivity();
-                    connectionRequestActivity.ConnectionRequestId = connectionRequest.Id;
-                    connectionRequestActivity.ConnectionOpportunityId = connectionRequest.ConnectionOpportunityId;
-                    connectionRequestActivity.ConnectionActivityTypeId = connectedActivityId;
-                    connectionRequestActivity.ConnectorPersonAliasId = CurrentPersonAliasId;
-                    connectionRequestActivityService.Add( connectionRequestActivity );
+                    connectionRequestActivityService.Add( new ConnectionRequestActivity
+                    {
+                        ConnectionRequestId = connectionRequest.Id,
+                        ConnectionOpportunityId = connectionRequest.ConnectionOpportunityId,
+                        ConnectionActivityTypeId = connectedActivityId,
+                        ConnectorPersonAliasId = CurrentPersonAliasId
+                    } );
                 }
 
                 connectionRequest.ConnectionState = ConnectionState.Connected;
 
-                rockContext.SaveChanges();
+                try
+                {
+                    rockContext.SaveChanges();
+                }
+                catch ( GroupMemberValidationException ex )
+                {
+                    ShowRequestModalNotification( ex.Message, NotificationBoxType.Validation );
+                    return;
+                }
 
                 if ( groupMember != null && !string.IsNullOrWhiteSpace( connectionRequest.AssignedGroupMemberAttributeValues ) )
                 {
@@ -4767,7 +4873,8 @@ namespace RockWeb.Blocks.Connection
             // If the opportunity is not yet set by the request or opportunity id params, then set it from preference
             if ( !ConnectionOpportunityId.HasValue )
             {
-                var userPreferenceOpportunityId = GetBlockUserPreference( UserPreferenceKey.ConnectionOpportunityId ).AsIntegerOrNull();
+                var preferences = GetBlockPersonPreferences();
+                var userPreferenceOpportunityId = preferences.GetValue( UserPreferenceKey.ConnectionOpportunityId ).AsIntegerOrNull();
 
                 if ( userPreferenceOpportunityId.HasValue && availableOpportunityIds.Contains( userPreferenceOpportunityId.Value ) )
                 {
@@ -4809,14 +4916,14 @@ namespace RockWeb.Blocks.Connection
         private string LoadSettingByConnectionType( string subKey )
         {
             var key = GetKeyForSettingByConnectionType( subKey );
+            var preferences = GetBlockPersonPreferences();
 
             if ( key.IsNullOrWhiteSpace() )
             {
                 return string.Empty;
             }
 
-            var value = GetBlockUserPreference( key );
-            return value;
+            return preferences.GetValue( key );
         }
 
         /// <summary>
@@ -4827,13 +4934,15 @@ namespace RockWeb.Blocks.Connection
         private void SaveSettingByConnectionType( string subKey, string value )
         {
             var key = GetKeyForSettingByConnectionType( subKey );
+            var preferences = GetBlockPersonPreferences();
 
             if ( key.IsNullOrWhiteSpace() )
             {
                 return;
             }
 
-            SetBlockUserPreference( key, value );
+            preferences.SetValue( key, value );
+            preferences.Save();
         }
 
         /// <summary>
@@ -4916,11 +5025,13 @@ namespace RockWeb.Blocks.Connection
 
             var rockContext = new RockContext();
             var connectionRequestService = new ConnectionRequestService( rockContext );
+
             _connectionRequestViewModel = connectionRequestService.GetConnectionRequestViewModel(
                 CurrentPersonAliasId.Value,
                 ConnectionRequestId.Value,
                 new ConnectionRequestViewModelQueryArgs(),
                 GetConnectionRequestStatusIconsTemplate() );
+
             return _connectionRequestViewModel;
         }
 
@@ -5118,12 +5229,19 @@ namespace RockWeb.Blocks.Connection
                     }
                 }
 
-                _connectionTypeViewModels = _connectionTypeViewModels
-                    .Where( vm => vm.ConnectionOpportunities.Any() )
-                    .OrderBy( ct => ct.Order )
-                    .ThenBy( ct => ct.Name )
-                    .ThenBy( ct => ct.Id )
-                    .ToList();
+                if ( _connectionTypeViewModels != null )
+                {
+                    _connectionTypeViewModels = _connectionTypeViewModels
+                        .Where( vm => vm.ConnectionOpportunities.Any() )
+                        .OrderBy( ct => ct.Order )
+                        .ThenBy( ct => ct.Name )
+                        .ThenBy( ct => ct.Id )
+                        .ToList();
+                }
+                else
+                {
+                    _connectionTypeViewModels = new List<ConnectionTypeViewModel>();
+                }
             }
 
             return _connectionTypeViewModels;
@@ -5366,6 +5484,7 @@ namespace RockWeb.Blocks.Connection
                 .SelectMany( co => co.ConnectionType.ConnectionStatuses )
                 .Where( cs => cs.IsActive )
                 .OrderBy( cs => cs.Order )
+                .ThenByDescending( a => a.IsDefault )
                 .ThenBy( cs => cs.Name );
         }
 
@@ -5431,7 +5550,7 @@ namespace RockWeb.Blocks.Connection
             var connectionRequestActivityService = new ConnectionRequestActivityService( rockContext );
             var query = connectionRequestActivityService.Queryable()
                 .AsNoTracking()
-                .Where( a => a.ConnectionRequest.PersonAliasId == connectionRequestViewModel.PersonAliasId );
+                .Where( a => a.ConnectionRequest.PersonAlias.PersonId == connectionRequestViewModel.PersonId );
 
             if ( connectionType.EnableFullActivityList )
             {
@@ -6107,7 +6226,6 @@ namespace RockWeb.Blocks.Connection
 
             // Hold a reference to the delete column
             var deleteField = new DeleteField();
-            deleteField.Click += gRequests_Delete;
             gRequests.Columns.Add( deleteField );
         }
 

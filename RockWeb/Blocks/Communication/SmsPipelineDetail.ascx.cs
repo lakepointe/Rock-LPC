@@ -61,6 +61,9 @@ namespace RockWeb.Blocks.Communication
         {
             base.OnInit( e );
 
+            RockPage.AddCSSLink( "~/Styles/Blocks/Shared/DragPallet.css", true );
+            RockPage.AddCSSLink( "~/Styles/Blocks/Communication/SmsPipelineDetail.css", true );
+
             RockPage.AddScriptLink( "~/Scripts/dragula.min.js" );
             btnDelete.Attributes["onclick"] = string.Format( "javascript: return Rock.dialogs.confirmDelete(event, '{0}');", SmsPipeline.FriendlyTypeName );
         }
@@ -384,6 +387,7 @@ namespace RockWeb.Blocks.Communication
                 cbActive.Checked = action.IsActive;
                 cbContinue.Checked = action.ContinueAfterProcessing;
                 dpExpireDate.SelectedDate = action.ExpireDate;
+                cbLogInteraction.Checked = action.IsInteractionLoggedAfterProcessing;
 
                 avcFilters.AddEditControls( action );
                 avcAttributes.AddEditControls( action );
@@ -408,6 +412,7 @@ namespace RockWeb.Blocks.Communication
             action.IsActive = cbActive.Checked;
             action.ContinueAfterProcessing = cbContinue.Checked;
             action.ExpireDate = dpExpireDate.SelectedDate;
+            action.IsInteractionLoggedAfterProcessing = cbLogInteraction.Checked;
 
             avcFilters.GetEditValues( action );
             avcAttributes.GetEditValues( action );
@@ -618,6 +623,11 @@ namespace RockWeb.Blocks.Communication
                             if ( outcome.Response != null && !outcome.Response.Message.IsNullOrWhiteSpace() )
                             {
                                 stringBuilder.AppendLine( string.Format( "\tResponse = {0}", outcome.Response.Message ) );
+                            }
+
+                            if ( outcome.IsInteractionLogged )
+                            {
+                                stringBuilder.AppendLine( "\tInteraction Logged = True" );
                             }
 
                             if ( !outcome.ErrorMessage.IsNullOrWhiteSpace() )

@@ -36,6 +36,17 @@ export const enum FormFieldVisibility {
 }
 
 /**
+ * The state of the field being shown on the page. Use this if a "required" option does not make sense.
+ */
+export const enum FormFieldShowHide {
+    /** Don't show the control */
+    Hide = 0,
+
+    /** Control is visible */
+    Show = 1
+}
+
+/**
  * The possible sources that can be used when generating an e-mail in the
  * FormBuilder system.
  */
@@ -136,10 +147,15 @@ export type FormField = {
     guid: Guid;
 
     /**
-     * The unique identifier of the field type used to render the edit control
-     * of this field.
+     * The unique identifier of the field type used to identify this field.
      */
     fieldTypeGuid: Guid;
+
+    /**
+     * The unique identifier of the field type used to render the edit control
+     * of this field if it is a universal type.
+     */
+    universalFieldTypeGuid?: Guid | null;
 
     /** The display name of this field. */
     name: string;
@@ -173,6 +189,9 @@ export type FormField = {
 
     /** The configuration values that have been set for this field. */
     configurationValues?: Record<string, string> | null;
+
+    /** The configuration values that have been set for this field when in edit mode. */
+    editConfigurationValues?: Record<string, string> | null;
 
     /** The rule that controls when this field is visible. */
     visibilityRule?: FieldFilterGroupBag | null;
@@ -467,6 +486,11 @@ export type FormPersonEntry = {
      * when displaying the person entry form.
      */
     mobilePhone?: FormFieldVisibility;
+
+    /**
+     * Determines if the SmsOptIn control should be hidden, or shown when displaying on the person entry form.
+     */
+    smsOptIn?: FormFieldShowHide;
 
     /**
      * Determines if the birthdate control should be hidden, optional or required

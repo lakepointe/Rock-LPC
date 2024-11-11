@@ -21,7 +21,6 @@ using System.Data.Entity;
 using System.Linq;
 using System.Text;
 using System.Web;
-
 using Rock.Attribute;
 using Rock.Communication;
 using Rock.Data;
@@ -31,16 +30,38 @@ using Rock.Web.Cache;
 namespace Rock.Jobs
 {
     /// <summary>
-    /// Send note watch and note approval notifications.
+    /// Send note watch notifications.
     /// </summary>
     [DisplayName( "Send Note Notifications" )]
-    [Description( "Send note watch and note approval notifications." )]
+    [Description( "Send note watch notifications." )]
 
     [SystemCommunicationField( "Note Watch Notification Email", "", defaultSystemCommunicationGuid: Rock.SystemGuid.SystemCommunication.NOTE_WATCH_NOTIFICATION, required: false, order: 1 )]
-    [SystemCommunicationField( "Note Approval Notification Email", "", defaultSystemCommunicationGuid: Rock.SystemGuid.SystemCommunication.NOTE_APPROVAL_NOTIFICATION, required: false, order: 2 )]
     [IntegerField( "Cutoff Days", "Just in case the Note Notification service hasn't run for a while, this is the max number of days between the note edited date and the notification.", required: true, defaultValue: 7, order: 3 )]
     public class SendNoteNotifications : RockJob
     {
+        /// <summary>
+        /// Configuration settings for the SendNoteNotifications Job.
+        /// </summary>
+        public class SendNoteNotificationsJobSettings
+        {
+            /// <summary>
+            /// The identifier of the system communication template to use for the notification.
+            /// </summary>
+            public Guid? SystemCommunicationTemplateGuid;
+
+            /// <summary>
+            /// The number of days after which a notification should not be sent.
+            /// </summary>
+            public int? NotificationIgnoreAfterDays;
+            /// <summary>
+            /// The date on which the job is deemed to be executed.
+            /// If not specified, the current date is effective.
+            /// </summary>
+            public DateTime? EffectiveDate;
+        }
+
+        #region Constructors
+
         /// <summary>
         /// Empty constructor for job initialization
         /// <para>
@@ -52,6 +73,15 @@ namespace Rock.Jobs
         {
             //
         }
+
+        #endregion
+
+
+        /// <summary>
+        /// Gets or sets the Email Transport to use for sending notifications.
+        /// If not set, the default Email Transport will be used.
+        /// </summary>
+        public TransportComponent EmailTransport { get; set; }
 
         /// <summary>
         /// 
@@ -135,35 +165,37 @@ namespace Rock.Jobs
         private Guid? _noteWatchNotificationEmailGuid;
 
         /// <summary>
-        /// The note approval notification email unique identifier
-        /// </summary>
-        private Guid? _noteApprovalNotificationEmailGuid;
-
-        /// <summary>
         /// The note watch notifications sent
         /// </summary>
         private int _noteWatchNotificationsSent = 0;
 
-        /// <summary>
-        /// The note approval notifications sent
-        /// </summary>
-        private int _noteApprovalNotificationsSent = 0;
-
         /// <inheritdoc cref="RockJob.Execute()"/>
         public override void Execute()
         {
-            // get the job dataMap
-            int oldestDaysOld = GetAttributeValue( "CutoffDays" ).AsIntegerOrNull() ?? 7;
-            _cutoffNoteEditDateTime = RockDateTime.Now.AddDays( -oldestDaysOld );
-            _defaultMergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( null, null, new Lava.CommonMergeFieldsOptions { GetLegacyGlobalMergeFields = false } );
-            _noteWatchNotificationEmailGuid = GetAttributeValue( "NoteWatchNotificationEmail" ).AsGuidOrNull();
-            _noteApprovalNotificationEmailGuid = GetAttributeValue( "NoteApprovalNotificationEmail" ).AsGuidOrNull();
+            var config = new SendNoteNotificationsJobSettings
+            {
+                NotificationIgnoreAfterDays = GetAttributeValue( "CutoffDays" ).AsIntegerOrNull(),
+                SystemCommunicationTemplateGuid = GetAttributeValue( "NoteWatchNotificationEmail" ).AsGuidOrNull()
+            };
+
+            ExecuteInternal( config );
+        }
+
+        /// <summary>
+        /// Execute the job with the specified configuration settings.
+        /// </summary>
+        /// <param name="config"></param>
+        internal void ExecuteInternal( SendNoteNotificationsJobSettings config )
+        {
+            int oldestDaysOld = config.NotificationIgnoreAfterDays ?? 7;
+            var effectiveDate = config.EffectiveDate ?? RockDateTime.Now;
+            _cutoffNoteEditDateTime = effectiveDate.AddDays( -oldestDaysOld );
+            _defaultMergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( null, null, new Lava.CommonMergeFieldsOptions() );
+            _noteWatchNotificationEmailGuid = config.SystemCommunicationTemplateGuid;
             var errors = new List<string>();
 
             errors.AddRange( SendNoteWatchNotifications() );
             this.UpdateLastStatusMessage( $"{_noteWatchNotificationsSent} note watch notifications sent..." );
-            errors.AddRange( SendNoteApprovalNotifications() );
-            this.UpdateLastStatusMessage( $"{_noteWatchNotificationsSent} note watch notifications sent, and {_noteApprovalNotificationsSent} note approval notifications sent" );
 
             if ( errors.Any() )
             {
@@ -178,123 +210,6 @@ namespace Rock.Jobs
                 ExceptionLogService.LogException( exception, context2 );
                 throw exception;
             }
-        }
-
-        /// <summary>
-        /// Sends the note approval notifications.
-        /// </summary>
-        private List<string> SendNoteApprovalNotifications()
-        {
-            var errors = new List<string>();
-            List<int> noteIdsToProcessApprovalsList = new List<int>();
-
-            using ( var rockContext = new RockContext() )
-            {
-                var noteService = new Rock.Model.NoteService( rockContext );
-
-                // get all notes that are pending approval and haven't sent approval notifications yet
-                var notesThatNeedApprovalNotifyQuery = noteService.Queryable().Where( a =>
-                    a.NoteType.RequiresApprovals
-                    && a.NoteType.SendApprovalNotifications
-                    && a.ApprovalsSent == false
-                    && a.ApprovalStatus == NoteApprovalStatus.PendingApproval
-                    && a.EditedDateTime > _cutoffNoteEditDateTime );
-
-                if ( !notesThatNeedApprovalNotifyQuery.Any() )
-                {
-                    // there aren't any notes that haven't had approval notifications processed yet
-                    return errors;
-                }
-
-                noteIdsToProcessApprovalsList = notesThatNeedApprovalNotifyQuery.Select( a => a.Id ).ToList();
-            }
-
-            using ( var rockContext = new RockContext() )
-            {
-                // get the approvers for each notetypeId
-                Dictionary<int, List<Person>> noteTypeApprovers = new Dictionary<int, List<Person>>();
-
-                NoteTypeService noteTypeService = new NoteTypeService( rockContext );
-                var noteTypeIdsForNotes = new NoteService( rockContext ).Queryable()
-                    .Where( a => noteIdsToProcessApprovalsList.Contains( a.Id ) ).Select( a => a.NoteTypeId ).Distinct().ToList();
-
-                foreach ( var noteTypeId in noteTypeIdsForNotes )
-                {
-                    var approvers = noteTypeService.GetApprovers( noteTypeId ).ToList();
-                    noteTypeApprovers.Add( noteTypeId, approvers );
-                }
-
-                // make a list of notes for each approver so we can send a digest of notes to approve to each approver
-                Dictionary<Person, List<Note>> approverNotesToApproveList = new Dictionary<Person, List<Note>>();
-                foreach ( var noteId in noteIdsToProcessApprovalsList )
-                {
-                    var noteService = new Rock.Model.NoteService( rockContext );
-                    var note = noteService.Get( noteId );
-                    var approversForNote = noteTypeApprovers.GetValueOrNull( note.NoteTypeId );
-                    if ( approversForNote?.Any() == true )
-                    {
-                        List<Note> notesToApprove;
-                        foreach ( Person approverPerson in approversForNote )
-                        {
-                            if ( approverNotesToApproveList.ContainsKey( approverPerson ) )
-                            {
-                                notesToApprove = approverNotesToApproveList[approverPerson] ?? new List<Note>();
-                            }
-                            else
-                            {
-                                notesToApprove = new List<Note>();
-                                approverNotesToApproveList.Add( approverPerson, notesToApprove );
-                            }
-
-                            notesToApprove.Add( note );
-                        }
-                    }
-                    else
-                    {
-                        // if there are no approvers for this note type, leave it as pending approval
-                    }
-                }
-
-                if ( !approverNotesToApproveList.Any() )
-                {
-                    // nothing to do so exit
-                    return errors;
-                }
-
-                // send approval emails
-                var recipients = new List<RockEmailMessageRecipient>();
-                foreach ( var approverNotesToApprove in approverNotesToApproveList )
-                {
-                    Person approverPerson = approverNotesToApprove.Key;
-                    List<Note> noteList = approverNotesToApprove.Value;
-                    if ( !string.IsNullOrEmpty( approverPerson.Email ) && approverPerson.IsEmailActive && noteList.Any() )
-                    {
-                        var mergeFields = new Dictionary<string, object>( _defaultMergeFields );
-                        mergeFields.Add( "ApproverPerson", approverPerson );
-                        mergeFields.Add( "NoteList", noteList );
-                        recipients.Add( new RockEmailMessageRecipient( approverPerson, mergeFields ) );
-                    }
-
-                    if ( _noteApprovalNotificationEmailGuid.HasValue )
-                    {
-                        var emailMessage = new RockEmailMessage( _noteApprovalNotificationEmailGuid.Value );
-                        emailMessage.SetRecipients( recipients );
-                        emailMessage.Send( out errors );
-                        _noteApprovalNotificationsSent += recipients.Count();
-
-                        using ( var rockUpdateContext = new RockContext() )
-                        {
-                            var noteListIds = noteList.Select( a => a.Id ).ToList();
-                            var notesToMarkApprovalSent = new NoteService( rockUpdateContext ).Queryable().Where( a => noteListIds.Contains( a.Id ) );
-
-                            // use BulkUpdate to mark all the notes that we processed to ApprovalsSent = true
-                            rockUpdateContext.BulkUpdate( notesToMarkApprovalSent, n => new Note { ApprovalsSent = true } );
-                        }
-                    }
-                }
-            }
-
-            return errors;
         }
 
         /// <summary>
@@ -322,9 +237,6 @@ namespace Rock.Jobs
                     a.NotificationsSent == false
                     && a.NoteType.AllowsWatching == true
                     && a.EditedDateTime > _cutoffNoteEditDateTime );
-
-                // limit to notes that don't require approval or are approved
-                notesToNotifyQuery = notesToNotifyQuery.Where( a => a.NoteType.RequiresApprovals == false || a.ApprovalStatus == NoteApprovalStatus.Approved );
 
                 if ( !notesToNotifyQuery.Any() )
                 {
@@ -374,7 +286,24 @@ namespace Rock.Jobs
                         {
                             var emailMessage = new RockEmailMessage( _noteWatchNotificationEmailGuid.Value );
                             emailMessage.SetRecipients( recipients );
-                            emailMessage.Send( out errors );
+
+                            if ( this.EmailTransport == null )
+                            {
+                                // Send notifications using the default email transport.
+                                emailMessage.Send( out errors );
+                            }
+                            else
+                            {
+                                // Send the messages using the specified email transport.
+                                var mediumEntityTypeGuid = SystemGuid.EntityType.COMMUNICATION_MEDIUM_EMAIL.AsGuid();
+                                var mediumEntityType = EntityTypeCache.Get( mediumEntityTypeGuid );
+
+                                this.EmailTransport.Send( emailMessage,
+                                    mediumEntityType.Id,
+                                    new Dictionary<string, string>(),
+                                    out errors );
+                            }
+                            
                             _noteWatchNotificationsSent += recipients.Count();
                         }
                     }
@@ -420,11 +349,12 @@ namespace Rock.Jobs
 
             var noteWatchService = new Rock.Model.NoteWatchService( rockContext );
 
-            // narrow it down to NoteWatches for the same EntityType as the Note
+            // If the NoteWatch specifies an EntityType, make sure it matches the Note.
             var noteWatchesQuery = noteWatchService.Queryable()
                 .Where( a =>
                     ( a.EntityTypeId.HasValue && a.EntityTypeId.Value == noteEntityTypeId.Value )
-                    || ( a.NoteTypeId.HasValue && a.NoteType.EntityTypeId == noteEntityTypeId ) );
+                    || ( a.NoteTypeId.HasValue && a.NoteType.EntityTypeId == noteEntityTypeId )
+                    || ( !a.EntityTypeId.HasValue && !a.NoteTypeId.HasValue ) );
 
             // narrow it down to either note watches on..
             // 1) specific Entity
@@ -437,10 +367,10 @@ namespace Rock.Jobs
                 ( a.EntityId == null )
                 || ( note.EntityId.HasValue && a.EntityId.Value == note.EntityId.Value ) );
 
-            // or specifically for this Note's ParentNote (a reply to the Note)
+            // or specifically for this Note, or for its Parent (a reply to the Note)
             noteWatchesQuery = noteWatchesQuery.Where( a =>
                 ( a.NoteId == null )
-                || ( note.ParentNoteId.HasValue && a.NoteId.Value == note.ParentNoteId ) );
+                || ( a.NoteId.HasValue && ( a.NoteId.Value == note.Id || a.NoteId.Value == note.ParentNoteId ) ) );
 
             // or specifically for this note's note type
             noteWatchesQuery = noteWatchesQuery.Where( a =>

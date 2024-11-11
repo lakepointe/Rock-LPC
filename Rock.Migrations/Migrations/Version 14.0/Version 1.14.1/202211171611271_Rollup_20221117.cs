@@ -18,6 +18,9 @@ namespace Rock.Migrations
 {
     using System;
     using System.Data.Entity.Migrations;
+
+    using Rock.Configuration;
+    using Rock.Enums.Configuration;
     using Rock.Utility.Settings;
 
     /// <summary>
@@ -66,12 +69,14 @@ namespace Rock.Migrations
         /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
         private bool CheckSqlServerVersionGreaterThanSqlServer2016()
         {
-            var isOk = RockInstanceConfig.Database.Platform == RockInstanceDatabaseConfiguration.PlatformSpecifier.AzureSql;
+            var database = RockApp.Current.GetDatabaseConfiguration();
+
+            var isOk = database.Platform == DatabasePlatform.AzureSql;
             if ( !isOk )
             {
                 try
                 {
-                    var versionParts = RockInstanceConfig.Database.VersionNumber.Split( '.' );
+                    var versionParts = database.VersionNumber.Split( '.' );
                     int.TryParse( versionParts[0], out var majorVersion );
                     if ( majorVersion > 13 )
                     {
@@ -93,7 +98,22 @@ namespace Rock.Migrations
         /// </summary>
         private void UserLoginViewAccessToAllUsersUp()
         {
-            RockMigrationHelper.AddSecurityAuthForRestAction( "GET", "UserLogins^Boolean Available(String)", 0, "View", true, "", Model.SpecialRole.AllUsers, "49E34E32-EF7E-41D4-AD5C-C97E09295D68" );
+            // This is the wrong RestActionGuid. 
+            // We ran into an issue in which the RestAction is created
+            // in the CreateDatabase file with the wrong Guid.
+            var oldUserLoginsAvailableRestActionGuid = "f659ee78-4dae-44fc-b5b7-0ab2dbb741fa";
+
+            RockMigrationHelper.AddRestAction( oldUserLoginsAvailableRestActionGuid,
+                "UserLogins",
+                "Rock.Rest.Controllers.UserLoginsController" );
+
+            RockMigrationHelper.AddSecurityAuthForRestAction( oldUserLoginsAvailableRestActionGuid, 
+                0, 
+                "View", 
+                true, 
+                string.Empty, 
+                Model.SpecialRole.AllUsers, 
+                "49E34E32-EF7E-41D4-AD5C-C97E09295D68" );
         }
     
         /// <summary>
@@ -380,14 +400,14 @@ namespace Rock.Migrations
         /// </summary>
         private void GetCurrentPersonImpersonationSecurityUp()
         {
-            var restActionPath = "People^String GetCurrentPersonImpersonationToken(Nullable`1[DateTime], Nullable`1[Int32], Nullable`1[Int32])";
-            RockMigrationHelper.AddSecurityAuthForRestAction( "GET", restActionPath,
-            0,
-            Rock.Security.Authorization.VIEW,
-            true,
-            string.Empty,
-            Rock.Model.SpecialRole.AllAuthenticatedUsers,
-            "d011d9ed-7a18-4da8-8c2d-d091dea12f9d" );
+            RockMigrationHelper.AddRestAction( "8911b107-8e79-4e5d-949b-ae61be130bf9", "People", "Rock.Rest.Controllers.PeopleController" );
+            RockMigrationHelper.AddSecurityAuthForRestAction( "8911b107-8e79-4e5d-949b-ae61be130bf9",
+                0,
+                Rock.Security.Authorization.VIEW,
+                true,
+                string.Empty,
+                Rock.Model.SpecialRole.AllAuthenticatedUsers,
+                "d011d9ed-7a18-4da8-8c2d-d091dea12f9d" );
         }
 
         /// <summary>

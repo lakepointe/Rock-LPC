@@ -1,0 +1,48 @@
+<!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
+<template>
+    <div class="checkbox">
+        <label title="">
+            <input type="checkbox" class="select-all" :checked="isChecked" @change="onValueChange">
+            <span class="label-text">&nbsp;</span>
+        </label>
+    </div>
+</template>
+
+<script setup lang="ts">
+    import { standardHeaderCellProps } from "@Obsidian/Core/Controls/grid";
+    import {  onUnmounted, ref } from "vue";
+
+    const props = defineProps(standardHeaderCellProps);
+
+    const isChecked = ref(false);
+
+    /**
+     * Called when the checkbox value has been changed by the individual.
+     */
+    function onValueChange(): void {
+        if (isChecked.value) {
+            // Deselect all selected rows.
+            props.grid.selectedKeys = [];
+        }
+        else {
+            // Select all rows that have a key.
+            props.grid.selectedKeys = props.grid.filteredRows
+                .map(r => props.grid.getRowKey(r))
+                .filter(k => k !== undefined) as string[];
+        }
+    }
+
+    /**
+     * Called when the selected keys has changed. Update the checked state of
+     * the select all checkbox.
+     */
+    function onSelectedKeysChanged(): void {
+        isChecked.value = props.grid.selectedKeys.length === props.grid.filteredRows.length;
+    }
+
+    props.grid.on("selectedKeysChanged", onSelectedKeysChanged);
+
+    onUnmounted(() => {
+        props.grid.off("selectedKeysChanged", onSelectedKeysChanged);
+    });
+</script>

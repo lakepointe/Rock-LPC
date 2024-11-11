@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -16,6 +16,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Entity.ModelConfiguration;
 using System.Runtime.Serialization;
 using Rock.Data;
 
@@ -118,5 +119,34 @@ namespace Rock.Model
         [DataMember( IsRequired = true )]
         [Required]
         public string PostLogoutRedirectUri { get; set; }
+
+        /// <summary>
+        /// Gets or sets the scope approval expiration in days.
+        /// </summary>
+        /// <value>
+        /// The scope approval expiration in days.
+        /// </value>
+        [DataMember( IsRequired = true )]
+        [Required]
+        [Range( 0, int.MaxValue )]
+        public int ScopeApprovalExpiration { get; set; } = 365;
     }
+
+    #region Entity Configuration
+
+    /// <summary>
+    /// AuthClient Configuration Class
+    /// </summary>
+    public partial class AuthClientConfiguration : EntityTypeConfiguration<AuthClient>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AuthClientConfiguration"/> class.
+        /// </summary>
+        public AuthClientConfiguration()
+        {
+            // Empty constructor. This is required to tell EF that this model exists.
+        }
+    }
+
+    #endregion Entity Configuration
 }

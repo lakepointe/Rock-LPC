@@ -16,13 +16,15 @@
 //
 import { computed, defineComponent, ref, watch } from "vue";
 import { getFieldConfigurationProps, getFieldEditorProps } from "./utils";
-import CheckBox from "@Obsidian/Controls/checkBox";
-import DropDownList from "@Obsidian/Controls/dropDownList";
-import ImageUploader from "@Obsidian/Controls/imageUploader";
+import CheckBox from "@Obsidian/Controls/checkBox.obs";
+import DropDownList from "@Obsidian/Controls/dropDownList.obs";
+import ImageUploader from "@Obsidian/Controls/imageUploader.obs";
 import { ConfigurationValueKey, ConfigurationPropertyKey } from "./imageField.partial";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { updateRefValue } from "@Obsidian/Utility/component";
 import { asBooleanOrNull, asTrueFalseOrNull } from "@Obsidian/Utility/booleanUtils";
+import { toGuidOrNull } from "@Obsidian/Utility/guid";
+import { Guid } from "@Obsidian/Types";
 
 export const EditComponent = defineComponent({
     name: "ImageField.Edit",
@@ -38,8 +40,8 @@ export const EditComponent = defineComponent({
         const internalValue = ref<ListItemBag | null>(null);
 
         // Configuration attributes passed to the edit control.
-        const binaryFileType = computed((): string => {
-            return props.configurationValues[ConfigurationValueKey.BinaryFileType] ?? "";
+        const binaryFileType = computed<Guid | null>(() => {
+            return toGuidOrNull(props.configurationValues[ConfigurationValueKey.BinaryFileType]);
         });
 
         // Watch for changes from the parent component and update the text editor.
@@ -133,7 +135,7 @@ export const ConfigurationComponent = defineComponent({
 
         /**
          * Emits the updateConfigurationValue if the value has actually changed.
-         * 
+         *
          * @param key The key that was possibly modified.
          * @param value The new value.
          */

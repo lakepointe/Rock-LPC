@@ -65,6 +65,8 @@
                                     Help="The group member role that new registrants should be added to group with." />
                                 <Rock:RockDropDownList ID="ddlGroupMemberStatus" runat="server" Label="Group Member Status"
                                     Help="The group member status that new registrants should be added to group with." />
+                                <Rock:DefinedValuePicker ID="dvpConnectionStatus" runat="server" Label="Connection Status"
+                                    Help="The connection status to use for new individuals. Setting this here will override the setting on the Registration Entry block." />
                             </div>
                             <div class="col-md-8">
                                 <div class="row">
@@ -97,6 +99,7 @@
                                             <asp:ListItem Value="2" Text="Use First Registrant" />
                                             <asp:ListItem Value="3" Text="Use Logged In Person" />
                                         </Rock:RockDropDownList>
+                                        <Rock:RockCheckBox ID="cbShowSmsOptIn" runat="server" Label="Show SMS Opt-In" Text="Yes" Help="When enabled a checkbox will be shown next to each mobile phone number for registrants allowing the registrar to enable SMS messaging for this number." />
                                     </div>
                                 </div>
                             </div>
@@ -143,17 +146,27 @@
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <Rock:CurrencyBox ID="cbCost" runat="server" Label="Cost"
-                                        Help="The cost per registrant." />
-                                    <Rock:CurrencyBox ID="cbMinimumInitialPayment" runat="server" Label="Minimum Initial Payment"
-                                        Help="The minimum amount required per registrant. Leave value blank if full amount is required." />
-                                    <Rock:CurrencyBox ID="cbDefaultPaymentAmount" runat="server" Label="Default Payment Amount"
-                                        Help="The default payment amount per registrant. Leave value blank to default to the full amount. NOTE: This requires that a Minimum Initial Payment is greater than 0." />
-                                </div>
-                                <div class="col-md-6">
                                     <Rock:FinancialGatewayPicker ID="fgpFinancialGateway" runat="server" Label="Financial Gateway"
                                         Help="The financial gateway to use for processing registration payments." IncludeInactive="false" ShowAllGatewayComponents="true" AutoPostBack="true" OnSelectedIndexChanged="fgpFinancialGateway_SelectedIndexChanged" />
-                                    <Rock:RockTextBox ID="txtBatchNamePrefix" runat="server" Label="Batch Prefix" Help="Optional prefix to add the the financial batches. If left blank the prefix from the registration block will be used." />
+                                    <Rock:RockTextBox ID="txtBatchNamePrefix" runat="server" Label="Batch Prefix" Help="Optional prefix to add the financial batches. If left blank the prefix from the registration block will be used." />
+                                    <Rock:CurrencyBox ID="cbCost" runat="server" Label="Cost"
+                                        Help="The cost per registrant." />
+                                </div>
+                                <div class="col-md-6">
+                                    <Rock:RockCheckBox ID="cbEnablePaymentPlans" runat="server" Label="Enable Payment Plans" AutoPostBack="true" OnCheckedChanged="cbEnablePaymentPlans_CheckedChanged" Enabled="false" Visible="false"
+                                        Help="Determines if individuals should be able to pay their registration costs in multiple, scheduled installments. Not all payment gateways support this feature." />
+                                    <Rock:RockCheckBoxList ID="cblSelectablePaymentFrequencies" runat="server" Label="Selectable Payment Frequencies" Visible="false"
+                                        Help="The payment frequencies that the individual can select from." RepeatDirection="Horizontal" />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <Rock:CurrencyBox ID="cbMinimumInitialPayment" runat="server" Label="Minimum Initial Payment"
+                                        Help="The minimum amount required per registrant. Leave value blank if full amount is required." />
+                                </div>
+                                <div class="col-md-6">
+                                    <Rock:CurrencyBox ID="cbDefaultPaymentAmount" runat="server" Label="Default Payment Amount"
+                                        Help="The default payment amount per registrant. Leave value blank to default to the full amount. NOTE: This requires that a Minimum Initial Payment is greater than 0." />
                                 </div>
                             </div>
                         </div>
@@ -382,8 +395,8 @@
                     </div>
 
                     <div class="actions">
-                        <asp:LinkButton ID="btnSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click" />
-                        <asp:LinkButton ID="btnCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="btnCancel_Click" />
+                        <asp:LinkButton ID="btnSave" runat="server" data-shortcut-key="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click" />
+                        <asp:LinkButton ID="btnCancel" runat="server" data-shortcut-key="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="btnCancel_Click" />
                     </div>
                 </div>
 
@@ -430,7 +443,7 @@
                     </div>
 
                     <div class="actions">
-                        <asp:LinkButton ID="btnEdit" runat="server" AccessKey="m" ToolTip="Alt+m" Text="Edit" CssClass="btn btn-primary" OnClick="btnEdit_Click" />
+                        <asp:LinkButton ID="btnEdit" runat="server" data-shortcut-key="e" AccessKey="m" ToolTip="Alt+e" Text="Edit" CssClass="btn btn-primary" OnClick="btnEdit_Click" />
                         <Rock:ModalAlert ID="mdDeleteWarning" runat="server" />
                         <Rock:HiddenFieldWithClass ID="hfHasRegistrations" runat="server" CssClass="js-has-registrations" />
                         <asp:LinkButton ID="btnDelete" runat="server" Text="Delete" CssClass="btn btn-link js-delete-template" OnClick="btnDelete_Click" CausesValidation="false" />
@@ -465,6 +478,7 @@
             <Content>
                 <asp:HiddenField ID="hfFormGuid" runat="server" />
                 <asp:HiddenField ID="hfAttributeGuid" runat="server" />
+                <Rock:NotificationBox ID="nbFormField" runat="server" Visible="false" NotificationBoxType="Validation"></Rock:NotificationBox>
                 <asp:ValidationSummary ID="ValidationSummaryAttribute" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" ValidationGroup="Field" />
                 <div class="row">
                     <div class="col-md-3">
@@ -492,6 +506,8 @@
                             Help="Should the person's current value for this field be displayed when they register?" />
                         <Rock:RockCheckBox ID="cbShowOnWaitList" runat="server" Label="Show On Wait List" Text="Yes" Visible="true" ValidationGroup="Field"
                             Help="Should this field be shown for a person registering on the waitlist?" />
+                        <Rock:RockCheckBox ID="cbLockExistingValue" runat="server" Label="Lock Existing Value" Text="Yes" Visible="true" ValidationGroup="Field"
+                            Help="When enabled, this option restricts editing the field when a value is already on the person's record." />
                     </div>
                 </div>
                 <Rock:AttributeEditor ID="edtRegistrantAttribute" runat="server" ShowActions="false" ValidationGroup="Field" Visible="false" />

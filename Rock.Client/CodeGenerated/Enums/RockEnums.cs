@@ -25,6 +25,63 @@ using System.Collections.Generic;
 
 #pragma warning disable CS1591
 
+namespace Rock.Client.Enums.CheckIn
+{
+    /// <summary>
+    /// </summary>
+    public enum AbilityLevelDeterminationMode
+    {
+        Ask = 0x0,
+        DoNotAsk = 0x1,
+        DoNotAskIfThereIsNoAbilityLevel = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum AutoSelectMode
+    {
+        PeopleOnly = 0x0,
+        PeopleAndAreaGroupLocation = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum FamilySearchMode
+    {
+        PhoneNumber = 0x0,
+        Name = 0x1,
+        NameAndPhone = 0x2,
+        ScannedId = 0x3,
+        FamilyId = 0x4,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum KioskCheckInMode
+    {
+        Individual = 0x0,
+        Family = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum PhoneSearchMode
+    {
+        Contains = 0x0,
+        EndsWith = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum SuccessLavaTemplateDisplayMode
+    {
+        Never = 0x0,
+        Replace = 0x1,
+        Append = 0x2,
+    }
+
+}
+
 namespace Rock.Client.Enums.Blocks.Security.AccountEntry
 {
     /// <summary>
@@ -545,6 +602,7 @@ namespace Rock.Client.Enums
         StepAdded = 0x11,
         StepStatusModify = 0x12,
         StepCampusModify = 0x13,
+        EmailUnsubscribed = 0x14,
     }
 
     /// <summary>
@@ -1062,6 +1120,14 @@ namespace Rock.Client.Enums
 
     /// <summary>
     /// </summary>
+    public enum WorkflowActionFormShowHideOption
+    {
+        Hide = 0x0,
+        Show = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
     public enum WorkflowLoggingLevel
     {
         None = 0x0,
@@ -1108,14 +1174,92 @@ namespace Rock.Client.Enums.Crm
     public enum AgeBracket
     {
         Unknown = 0x0,
-        ZeroToTwelve = 0x1,
-        ThirteenToSeventeen = 0x2,
-        EighteenToTwentyFour = 0x3,
-        TwentyFiveToThirtyFour = 0x4,
-        ThirtyFiveToFortyFour = 0x5,
-        FortyFiveToFiftyFour = 0x6,
-        FiftyFiveToSixtyFour = 0x7,
-        SixtyFiveOrOlder = 0x8,
+        ZeroToFive = 0x1,
+        SixToTwelve = 0x2,
+        ThirteenToSeventeen = 0x3,
+        EighteenToTwentyFour = 0x4,
+        TwentyFiveToThirtyFour = 0x5,
+        ThirtyFiveToFortyFour = 0x6,
+        FortyFiveToFiftyFour = 0x7,
+        FiftyFiveToSixtyFour = 0x8,
+        SixtyFiveOrOlder = 0x9,
+    }
+
+}
+
+namespace Rock.Client.Enums.Lms
+{
+    /// <summary>
+    /// </summary>
+    public enum AssignTo
+    {
+        Student = 0x0,
+        Facilitator = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum AvailableDateCalculationMethod
+    {
+        Specific = 0x0,
+        ClassStartOffset = 0x1,
+        EnrollmentOffset = 0x2,
+        AlwaysAvailable = 0x3,
+        AfterPreviousCompleted = 0x4,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum CommunicationMode
+    {
+        None = 0x0,
+        Email = 0x1,
+        SMS = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum CompletionStatus
+    {
+        Pending = 0x0,
+        Completed = 0x1,
+        Expired = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum ConfigurationMode
+    {
+        AcademicCalendar = 0x0,
+        OnDemandLearning = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum DueDateCalculationMethod
+    {
+        Specific = 0x0,
+        ClassStartOffset = 0x1,
+        EnrollmentOffset = 0x2,
+        NoDate = 0x3,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum LearningCompletionStatus
+    {
+        Incomplete = 0x0,
+        Fail = 0x1,
+        Pass = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum RequirementType
+    {
+        Prerequisite = 0x0,
+        Corequisite = 0x1,
+        Equivalent = 0x2,
     }
 
 }
@@ -1129,6 +1273,17 @@ namespace Rock.Client.Enums.Event
         DidNotAttend = 0x0,
         DidAttend = 0x1,
         IsPresent = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum CheckInStatus
+    {
+        Unknown = 0x0,
+        Pending = 0x1,
+        NotPresent = 0x2,
+        Present = 0x3,
+        CheckedOut = 0x4,
     }
 
     /// <summary>
@@ -1160,8 +1315,99 @@ namespace Rock.Client.Enums.Event
 
 }
 
+namespace Rock.Client.Enums.CheckIn.Labels
+{
+    /// <summary>
+    /// </summary>
+    public enum BarcodeFormat
+    {
+        QRCode = 0x0,
+        Code128 = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum DitherMode
+    {
+        None = 0x0,
+        Fast = 0x1,
+        Quality = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum HorizontalTextAlignment
+    {
+        Left = 0x0,
+        Center = 0x1,
+        Right = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum LabelFieldType
+    {
+        Text = 0x0,
+        Line = 0x1,
+        Rectangle = 0x2,
+        Ellipse = 0x3,
+        Icon = 0x4,
+        Image = 0x5,
+        AttendeePhoto = 0x6,
+        Barcode = 0x7,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum LabelFormat
+    {
+        Designed = 0x0,
+        Zpl = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum LabelType
+    {
+        Family = 0x0,
+        Person = 0x1,
+        Attendance = 0x2,
+        Checkout = 0x3,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum TextCollectionFormat
+    {
+        FirstItemOnly = 0x0,
+        CommaDelimited = 0x1,
+        OnePerLine = 0x2,
+        TwoColumn = 0x3,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum TextFieldSubType
+    {
+        Custom = 0x0,
+        AttendeeInfo = 0x1,
+        CheckInInfo = 0x2,
+        AchievementInfo = 0x3,
+    }
+
+}
+
 namespace Rock.Client.Enums.Core
 {
+    /// <summary>
+    /// </summary>
+    public enum BenchmarkRepititionMode
+    {
+        Normal = 0x0,
+        Fast = 0x1,
+        Extended = 0x2,
+    }
+
     /// <summary>
     /// </summary>
     public enum ColorRecipe
@@ -1184,11 +1430,198 @@ namespace Rock.Client.Enums.Core
 
     /// <summary>
     /// </summary>
+    public enum KeyboardInputMode
+    {
+        Default = 0x0,
+        Email = 0x1,
+        Numeric = 0x2,
+        Decimal = 0x3,
+        Telephone = 0x4,
+        Text = 0x5,
+        Url = 0x6,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum NoteFormatType
+    {
+        Unknown = 0x0,
+        Unstructured = 0x1,
+        Structured = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
     public enum NotificationMessageActionType
     {
         Invalid = 0x0,
         ShowMessage = 0x1,
         LinkToPage = 0x2,
+    }
+
+}
+
+namespace Rock.Client.Enums.Cms
+{
+    /// <summary>
+    /// </summary>
+    public enum BlockReloadMode
+    {
+        None = 0x0,
+        Block = 0x1,
+        Page = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum BotGuardianLevel
+    {
+        Disable = 0x0,
+        Enable = 0x1,
+        Inherit = -1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum ContentCollectionFilterControl
+    {
+        Pills = 0x0,
+        Dropdown = 0x1,
+        Boolean = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum ContentLibraryItemExperienceLevel
+    {
+        Foundational = 0x1,
+        Intermediate = 0x2,
+        Advanced = 0x3,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum MobilePageType
+    {
+        NativePage = 0x0,
+        InternalWebPage = 0x1,
+        ExternalWebPage = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    [Flags]
+    public enum SiteTypeFlags
+    {
+        None = 0x0,
+        Web = 0x1,
+        Mobile = 0x2,
+        Tv = 0x4,
+    }
+
+}
+
+namespace Rock.Client.Enums.Core.Grid
+{
+    /// <summary>
+    /// </summary>
+    public enum BooleanFilterMethod
+    {
+        All = 0x0,
+        No = 0x1,
+        Yes = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum ColumnPositionAnchor
+    {
+        FirstColumn = 0x0,
+        LastColumn = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum DateFilterMethod
+    {
+        Equals = 0x0,
+        DoesNotEqual = 0x1,
+        Before = 0x2,
+        After = 0x3,
+        Between = 0x4,
+        ThisWeek = 0x5,
+        LastWeek = 0x6,
+        NextWeek = 0x7,
+        ThisMonth = 0x8,
+        LastMonth = 0x9,
+        NextMonth = 0xa,
+        ThisYear = 0xb,
+        LastYear = 0xc,
+        NextYear = 0xd,
+        YearToDate = 0xe,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum NumberFilterMethod
+    {
+        Equals = 0x0,
+        DoesNotEqual = 0x1,
+        GreaterThan = 0x2,
+        GreaterThanOrEqual = 0x3,
+        LessThan = 0x4,
+        LessThanOrEqual = 0x5,
+        Between = 0x6,
+        TopN = 0x7,
+        AboveAverage = 0x8,
+        BelowAverage = 0x9,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum PickExistingFilterMethod
+    {
+        Any = 0x0,
+        Exclude = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum TextFilterMethod
+    {
+        StartsWith = 0x0,
+        Contains = 0x1,
+        DoesNotContain = 0x2,
+        EndsWith = 0x3,
+        Equals = 0x4,
+        DoesNotEqual = 0x5,
+    }
+
+}
+
+namespace Rock.Client.Enums.AI
+{
+    /// <summary>
+    /// </summary>
+    public enum ChatMessageRole
+    {
+        User = 0x0,
+        System = 0x1,
+        Assistant = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    [Flags]
+    public enum ModerationFlags
+    {
+        None = 0x0,
+        Hate = 0x1,
+        Threat = 0x2,
+        SelfHarm = 0x4,
+        Sexual = 0x8,
+        SexualMinor = 0x10,
+        Violent = 0x20,
     }
 
 }
@@ -1206,15 +1639,67 @@ namespace Rock.Client.Enums.Communication
 
 }
 
-namespace Rock.Client.Enums.Cms
+namespace Rock.Client.Enums.Blocks.Crm.FamilyPreRegistration
 {
     /// <summary>
     /// </summary>
-    public enum ContentCollectionFilterControl
+    public enum CommunicationPreference
     {
-        Pills = 0x0,
-        Dropdown = 0x1,
-        Boolean = 0x2,
+        None = 0x0,
+        Email = 0x1,
+        SMS = 0x2,
+        PushNotification = 0x3,
+    }
+
+}
+
+namespace Rock.Client.Enums.Blocks.Security.ConfirmAccount
+{
+    /// <summary>
+    /// </summary>
+    public enum ConfirmAccountViewType
+    {
+        AccountConfirmation = 0x0,
+        Alert = 0x1,
+        DeleteConfirmation = 0x2,
+        ChangePassword = 0x3,
+        Content = 0x4,
+    }
+
+}
+
+namespace Rock.Client.Enums.Net
+{
+    /// <summary>
+    /// </summary>
+    public enum CookieSameSiteMode
+    {
+        None = 0x0,
+        Lax = 0x1,
+        Strict = 0x2,
+        Unspecified = -1,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum ResponseElementLocation
+    {
+        Header = 0x0,
+        Footer = 0x1,
+    }
+
+}
+
+namespace Rock.Client.Enums.Configuration
+{
+    /// <summary>
+    /// </summary>
+    public enum DatabasePlatform
+    {
+        Unknown = 0x0,
+        SqlServer = 0x1,
+        AzureSql = 0x2,
+        Other = 0x3,
     }
 
 }
@@ -1250,6 +1735,23 @@ namespace Rock.Client.Enums.Controls
 
     /// <summary>
     /// </summary>
+    public enum DetailPanelMode
+    {
+        View = 0x0,
+        Edit = 0x1,
+        Add = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum MediaSelectorMode
+    {
+        Image = 0x0,
+        Audio = 0x1,
+    }
+
+    /// <summary>
+    /// </summary>
     public enum MergeTemplateOwnership
     {
         Global = 0x0,
@@ -1265,6 +1767,16 @@ namespace Rock.Client.Enums.Controls
         Optional = 0x1,
         Required = 0x2,
         Unavailable = 0x3,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum RockCacheabilityType
+    {
+        Public = 0x0,
+        Private = 0x1,
+        NoCache = 0x2,
+        NoStore = 0x3,
     }
 
     /// <summary>
@@ -1292,6 +1804,15 @@ namespace Rock.Client.Enums.Controls
         Year = 0x4,
     }
 
+    /// <summary>
+    /// </summary>
+    public enum UniversalItemValuePickerDisplayStyle
+    {
+        Auto = 0x0,
+        List = 0x1,
+        Condensed = 0x2,
+    }
+
 }
 
 namespace Rock.Client.Enums.Reporting
@@ -1301,6 +1822,7 @@ namespace Rock.Client.Enums.Reporting
     public enum FieldFilterSourceType
     {
         Attribute = 0x0,
+        Property = 0x1,
     }
 
 }
@@ -1370,6 +1892,27 @@ namespace Rock.Client.Enums.Blocks.Engagement.SignUp
 
 }
 
+namespace Rock.Client.Enums.Group
+{
+    /// <summary>
+    /// </summary>
+    public enum RelationshipTrend
+    {
+        Level = 0x0,
+        Down = 0x1,
+        Up = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum ScheduleConfirmationLogic
+    {
+        Ask = 0x0,
+        AutoAccept = 0x1,
+    }
+
+}
+
 namespace Rock.Client.Enums.Blocks.Group.Scheduling
 {
     /// <summary>
@@ -1386,22 +1929,39 @@ namespace Rock.Client.Enums.Blocks.Group.Scheduling
 
     /// <summary>
     /// </summary>
+    public enum ToolboxActionType
+    {
+        ViewCurrent = 0x0,
+        UpdatePreferences = 0x1,
+        SignUp = 0x2,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum ToolboxScheduleRowActionType
+    {
+        Accept = 0x0,
+        Decline = 0x1,
+        Cancel = 0x2,
+        Delete = 0x3,
+    }
+
+    /// <summary>
+    /// </summary>
+    public enum ToolboxScheduleRowConfirmationStatus
+    {
+        Pending = 0x0,
+        Confirmed = 0x1,
+        Declined = 0x2,
+        Unavailable = 0x3,
+    }
+
+    /// <summary>
+    /// </summary>
     public enum UpdateSchedulePreferenceMode
     {
         ReplacePreference = 0x0,
         AddToPreference = 0x1,
-    }
-
-}
-
-namespace Rock.Client.Enums.Group
-{
-    /// <summary>
-    /// </summary>
-    public enum ScheduleConfirmationLogic
-    {
-        Ask = 0x0,
-        AutoAccept = 0x1,
     }
 
 }
@@ -1417,6 +1977,22 @@ namespace Rock.Client.Enums.Blocks.Cms.ContentCollectionView
         Oldest = 0x2,
         Trending = 0x3,
         Alphabetical = 0x4,
+    }
+
+}
+
+namespace Rock.Client.Enums.Blocks.Security.ForgotUserName
+{
+    /// <summary>
+    /// </summary>
+    public enum SendInstructionsResultType
+    {
+        InstructionsSent = 0x0,
+        EmailInvalid = 0x1,
+        ChangePasswordNotSupported = 0x2,
+
+        [Obsolete( "No longer used and will be removed in the future.", false )]
+        CaptchaInvalid = 0x3,
     }
 
 }

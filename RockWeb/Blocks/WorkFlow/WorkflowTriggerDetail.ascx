@@ -50,14 +50,15 @@
                                         <Rock:DataTextBox ID="tbQualifierValueAlt" runat="server"  onkeypress="javascript:clearQualifierData()" SourceTypeName="Rock.Model.WorkflowTrigger, Rock" PropertyName="EntityTypeQualifierValue" Label="To" Help="Optional: Provide a specific value for the property to filter on.  If left blank it means the previous value must be different than its new value (i.e. changed)." />
                                     </div>
                                 </div>
-                                <Rock:DataTextBox ID="tbQualifierValue" runat="server" onkeypress="javascript:clearAltQualifierData()" SourceTypeName="Rock.Model.WorkflowTrigger, Rock" PropertyName="EntityTypeQualifierValue" Label="Or value is" Help="Optional: Provide a specific value for the property to filter on." />                            </div>
+                                <Rock:DataTextBox ID="tbQualifierValue" runat="server" onkeypress="javascript:clearAltQualifierData()" SourceTypeName="Rock.Model.WorkflowTrigger, Rock" PropertyName="EntityTypeQualifierValue" Label="Or value is" Help="Optional: Provide a specific value for the property to filter on." />
+                            </div>
                         </div>
                     </div>
                 </fieldset>
 
                 <div class="actions">
-                    <asp:LinkButton ID="btnSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click" />
-                    <asp:LinkButton ID="btnCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="btnCancel_Click" />
+                    <asp:LinkButton ID="btnSave" runat="server" data-shortcut-key="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnSave_Click" />
+                    <asp:LinkButton ID="btnCancel" runat="server" data-shortcut-key="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" CausesValidation="false" OnClick="btnCancel_Click" />
                 </div>
 
             </div>

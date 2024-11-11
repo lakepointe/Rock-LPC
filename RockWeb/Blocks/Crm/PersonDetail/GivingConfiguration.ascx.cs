@@ -127,6 +127,8 @@ namespace RockWeb.Blocks.Crm.PersonDetail
             public const string PersonActionIdentifier = "rckid";
             public const string PledgeId = "PledgeId";
             public const string StatementYear = "StatementYear";
+            public const string AutoEdit = "autoEdit";
+            public const string ReturnUrl = "returnUrl";
         }
 
         #endregion Attribute Keys
@@ -208,7 +210,7 @@ namespace RockWeb.Blocks.Crm.PersonDetail
             }
             else if ( financialPledge.StartDate != DateTime.MinValue.Date && financialPledge.EndDate == DateTime.MaxValue.Date )
             {
-                lPledgeDate.Text = string.Format( "{0} On-Ward", financialPledge.StartDate.ToShortDateString() );
+                lPledgeDate.Text = string.Format( "{0} Onward", financialPledge.StartDate.ToShortDateString() );
             }
             else
             {
@@ -237,7 +239,7 @@ namespace RockWeb.Blocks.Crm.PersonDetail
             var btnScheduledTransactionInactivate = e.Item.FindControl( "btnScheduledTransactionInactivate" ) as LinkButton;
             btnScheduledTransactionInactivate.CommandArgument = financialScheduledTransaction.Guid.ToString();
 
-            if ( financialScheduledTransaction.IsActive )
+            if ( financialScheduledTransaction.IsActive && financialScheduledTransaction.FinancialGateway.GetGatewayComponent().UpdateScheduledPaymentSupported )
             {
                 btnScheduledTransactionInactivate.Visible = true;
             }
@@ -294,7 +296,15 @@ namespace RockWeb.Blocks.Crm.PersonDetail
 
             if ( financialPaymentDetail?.FinancialPersonSavedAccount != null )
             {
-                lScheduledTransactionSavedAccountName.Text = financialPaymentDetail?.FinancialPersonSavedAccount.Name;
+                var savedAccount = financialPaymentDetail.FinancialPersonSavedAccount;
+                lScheduledTransactionSavedAccountName.Text = savedAccount.Name;
+
+                if ( savedAccount.LastErrorCode.IsNotNullOrWhiteSpace() )
+                {
+                    var errorStatus = $"The associated account has {savedAccount.LastErrorCode} on {savedAccount.LastErrorCodeDateTime.ToShortDateString()}.";
+                    lScheduledTransactionStatusHtml.Text = $"<span class='text-xs text-danger text-nowrap' data-toggle='tooltip' data-placement='auto' data-container='body' title data-original-title='{errorStatus}'>Error</span>";
+                }
+
             }
 
             var frequencyText = DefinedValueCache.GetValue( financialScheduledTransaction.TransactionFrequencyValueId );
@@ -439,7 +449,7 @@ namespace RockWeb.Blocks.Crm.PersonDetail
 
             var lSavedAccountCardTypeLast4 = e.Item.FindControl( "lSavedAccountCardTypeLast4" ) as Literal;
             var lSavedAccountExpiration = e.Item.FindControl( "lSavedAccountExpiration" ) as Literal;
-            var lSavedAccountInUseStatusHtml = e.Item.FindControl( "lSavedAccountInUseStatusHtml" ) as Literal;
+            var lSavedAccountStatusHtml = e.Item.FindControl( "lSavedAccountStatusHtml" ) as Literal;
             var btnSavedAccountDelete = e.Item.FindControl( "btnSavedAccountDelete" ) as LinkButton;
 
             lSavedAccountName.Text = financialPersonSavedAccount.Name;
@@ -493,21 +503,26 @@ namespace RockWeb.Blocks.Crm.PersonDetail
 
             if ( cardIsExpired )
             {
-                lSavedAccountInUseStatusHtml.Text = "<span class='text-xs text-danger text-nowrap'>Expired</span>";
+                lSavedAccountStatusHtml.Text = "<span class='text-xs text-danger text-nowrap'>Expired</span>";
             }
             else
             {
-                if ( cardInUse )
+                if ( financialPersonSavedAccount.LastErrorCode.IsNotNullOrWhiteSpace() )
                 {
-                    lSavedAccountInUseStatusHtml.Text = "<span class='text-xs text-success text-nowrap'>In Use</span>";
+                    var errorStatus = $" {financialPersonSavedAccount.LastErrorCode} on {financialPersonSavedAccount.LastErrorCodeDateTime.ToShortDateString()}.";
+                    lSavedAccountStatusHtml.Text = $"<span class='text-xs text-danger text-nowrap' data-toggle='tooltip' data-placement='auto' data-container='body' title data-original-title='{errorStatus}'>Error</span>";
+                }
+                else if ( cardInUse )
+                {
+                    lSavedAccountStatusHtml.Text = "<span class='text-xs text-success text-nowrap'>In Use</span>";
                 }
                 else if ( financialPersonSavedAccount.IsDefault )
                 {
-                    lSavedAccountInUseStatusHtml.Text = "<span class='text-xs text-muted text-nowrap'>Default</span>";
+                    lSavedAccountStatusHtml.Text = "<span class='text-xs text-muted text-nowrap'>Default</span>";
                 }
                 else
                 {
-                    lSavedAccountInUseStatusHtml.Text = "<span class='text-xs text-muted text-nowrap'>Not In Use</span>";
+                    lSavedAccountStatusHtml.Text = "<span class='text-xs text-muted text-nowrap'>Not In Use</span>";
                 }
             }
         }
@@ -533,6 +548,8 @@ namespace RockWeb.Blocks.Crm.PersonDetail
             var queryParams = new Dictionary<string, string>();
             queryParams.AddOrReplace( PageParameterKey.PledgeId, "0" );
             queryParams.AddOrReplace( PageParameterKey.PersonActionIdentifier, Person.GetPersonActionIdentifier( "pledge" ) );
+            queryParams.AddOrReplace( PageParameterKey.AutoEdit, "true" );
+            queryParams.AddOrReplace( PageParameterKey.ReturnUrl, Request.RawUrl );
             NavigateToLinkedPage( AttributeKey.PledgeDetailPage, queryParams );
         }
 
@@ -642,6 +659,8 @@ namespace RockWeb.Blocks.Crm.PersonDetail
                 var queryParams = new Dictionary<string, string>();
                 queryParams.AddOrReplace( PageParameterKey.PledgeId, pledge.Id.ToString() );
                 queryParams.AddOrReplace( PageParameterKey.PersonActionIdentifier, Person.GetPersonActionIdentifier( "pledge" ) );
+                queryParams.AddOrReplace( PageParameterKey.AutoEdit, "true" );
+                queryParams.AddOrReplace( PageParameterKey.ReturnUrl, Request.RawUrl );
                 NavigateToLinkedPage( AttributeKey.PledgeDetailPage, queryParams );
             }
         }

@@ -86,7 +86,26 @@ namespace RockWeb.Blocks.CheckIn
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void ddlGroupType_SelectedIndexChanged( object sender, EventArgs e )
         {
-            SetBlockUserPreference( "Group Type", ddlGroupType.SelectedValueAsId().ToString() );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( "Group Type", ddlGroupType.SelectedValueAsId().ToString() );
+            preferences.Save();
+
+            BindGrid();
+        }
+
+        /// <summary>
+        /// Handles the SelectedIndexChanged event of the ddlArea control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void ddlArea_SelectedIndexChanged( object sender, EventArgs e )
+        {
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( "Area", ddlArea.SelectedValueAsId().ToString() );
+            preferences.Save();
+
             BindGrid();
         }
 
@@ -97,7 +116,11 @@ namespace RockWeb.Blocks.CheckIn
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void pkrParentLocation_SelectItem( object sender, EventArgs e )
         {
-            SetBlockUserPreference( "Parent Location", pkrParentLocation.SelectedValueAsId().ToString() );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( "Parent Location", pkrParentLocation.SelectedValueAsId().ToString() );
+            preferences.Save();
+
             BindGrid();
         }
 
@@ -108,7 +131,11 @@ namespace RockWeb.Blocks.CheckIn
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void pCategory_SelectItem( object sender, EventArgs e )
         {
-            SetBlockUserPreference( "Category", pCategory.SelectedValueAsId().ToString() );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( "Category", pCategory.SelectedValueAsId().ToString() );
+            preferences.Save();
+
             BindGrid();
         }
 
@@ -237,7 +264,8 @@ namespace RockWeb.Blocks.CheckIn
         /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>
         protected void btnCancel_Click( object sender, EventArgs e )
         {
-            if ( _groupTypeId.HasValue ) { 
+            if ( _groupTypeId.HasValue )
+            {
                 NavigateToParentPage( new Dictionary<string, string> { { "CheckinTypeId", _groupTypeId.ToString() } } );
             }
         }
@@ -256,12 +284,14 @@ namespace RockWeb.Blocks.CheckIn
             ddlGroupType.Items.Add( Rock.Constants.All.ListItem );
 
             var rockContext = new RockContext();
+            var preferences = GetBlockPersonPreferences();
 
-            foreach( var groupType in GetTopGroupTypes( rockContext ) )
+            var groupTypes = GetTopGroupTypes( rockContext );
+            foreach ( var groupType in groupTypes )
             {
                 ddlGroupType.Items.Add( new ListItem( groupType.Name, groupType.Id.ToString() ) );
             }
-            ddlGroupType.SetValue( GetBlockUserPreference( "Group Type" ) );
+            ddlGroupType.SetValue( preferences.GetValue( "Group Type" ) );
 
             // hide the GroupType filter if this page has a groupTypeId parameter
             if ( _groupTypeId.HasValue )
@@ -269,11 +299,11 @@ namespace RockWeb.Blocks.CheckIn
                 pnlGroupType.Visible = false;
             }
 
-            int? categoryId = GetBlockUserPreference( "Category" ).AsIntegerOrNull();
+            int? categoryId = preferences.GetValue( "Category" ).AsIntegerOrNull();
             if ( !categoryId.HasValue )
             {
                 var categoryCache = CategoryCache.Get( Rock.SystemGuid.Category.SCHEDULE_SERVICE_TIMES.AsGuid() );
-                categoryId = categoryCache != null ? categoryCache.Id : (int?)null;
+                categoryId = categoryCache != null ? categoryCache.Id : ( int? ) null;
             }
 
             pCategory.EntityTypeId = EntityTypeCache.GetId( typeof( Rock.Model.Schedule ) ) ?? 0;
@@ -286,7 +316,25 @@ namespace RockWeb.Blocks.CheckIn
                 pCategory.SetValue( null );
             }
 
-            pkrParentLocation.SetValue( GetBlockUserPreference( "Parent Location" ).AsIntegerOrNull() );
+            pkrParentLocation.SetValue( preferences.GetValue( "Parent Location" ).AsIntegerOrNull() );
+
+            var groupTypeService = new GroupTypeService( rockContext );
+            if ( _groupTypeId.HasValue )
+            {
+                var areas = groupTypeService.GetCheckinAreaDescendants( _groupTypeId.Value ).Where( a => a.GroupTypePurposeValue == null || !a.GroupTypePurposeValue.Guid.Equals( Rock.SystemGuid.DefinedValue.GROUPTYPE_PURPOSE_CHECKIN_FILTER.AsGuid() ) );
+                ddlArea.SetGroupTypes( areas );
+            }
+            else
+            {
+                List<GroupTypeCache> allAreas = new List<GroupTypeCache>();
+                foreach ( var groupType in groupTypes )
+                {
+                    var areas = groupTypeService.GetCheckinAreaDescendants( groupType.Id ).Where( a => a.GroupTypePurposeValue == null || !a.GroupTypePurposeValue.Guid.Equals( Rock.SystemGuid.DefinedValue.GROUPTYPE_PURPOSE_CHECKIN_FILTER.AsGuid() ) );
+                    allAreas.AddRange( areas );
+                }
+
+                ddlArea.SetGroupTypes( allAreas );
+            }
         }
 
         /// <summary>
@@ -316,9 +364,15 @@ namespace RockWeb.Blocks.CheckIn
                 groupTypeId = ddlGroupType.SelectedValueAsInt() ?? Rock.Constants.All.Id;
             }
 
+            var selectedAreaId = ddlArea.SelectedValueAsInt();
             if ( groupTypeId != Rock.Constants.All.Id )
             {
                 var descendantGroupTypeIds = groupTypeService.GetCheckinAreaDescendants( groupTypeId ).Select( a => a.Id );
+
+                if ( selectedAreaId.HasValue )
+                {
+                    descendantGroupTypeIds = descendantGroupTypeIds.Where( a => a == selectedAreaId.Value );
+                }
 
                 // filter to groups that either are of the GroupType or are of a GroupType that has the selected GroupType as a parent (ancestor)
                 groupLocationQry = groupLocationQry.Where( a => a.Group.GroupType.Id == groupTypeId || descendantGroupTypeIds.Contains( a.Group.GroupTypeId ) );
@@ -328,8 +382,8 @@ namespace RockWeb.Blocks.CheckIn
             else
             {
                 List<int> descendantGroupTypeIds = new List<int>();
-                foreach ( GroupType groupType in GetTopGroupTypes( rockContext  ))
-                { 
+                foreach ( GroupType groupType in GetTopGroupTypes( rockContext ) )
+                {
                     descendantGroupTypeIds.Add( groupType.Id );
 
                     groupPaths.AddRange( groupTypeService.GetCheckinAreaDescendantsPath( groupType.Id ).ToList() );
@@ -338,6 +392,11 @@ namespace RockWeb.Blocks.CheckIn
                         descendantGroupTypeIds.Add( childGroupType.Id );
                         descendantGroupTypeIds.AddRange( groupTypeService.GetCheckinAreaDescendants( childGroupType.Id ).Select( a => a.Id ).ToList() );
                     }
+                }
+
+                if ( selectedAreaId.HasValue )
+                {
+                    descendantGroupTypeIds = descendantGroupTypeIds.Where( a => a == selectedAreaId.Value ).ToList();
                 }
 
                 groupLocationQry = groupLocationQry.Where( a => descendantGroupTypeIds.Contains( a.Group.GroupTypeId ) );
@@ -372,7 +431,7 @@ namespace RockWeb.Blocks.CheckIn
                 var currentAndDescendantLocationIds = new List<int>();
                 currentAndDescendantLocationIds.Add( parentLocationId );
                 currentAndDescendantLocationIds.AddRange( locationService.GetAllDescendents( parentLocationId ).Select( a => a.Id ) );
-                
+
                 qryList = qryList.Where( a => currentAndDescendantLocationIds.Contains( a.Location.Id ) ).ToList();
             }
 

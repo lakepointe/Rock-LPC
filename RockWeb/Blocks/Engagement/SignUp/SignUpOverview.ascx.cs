@@ -126,7 +126,6 @@ namespace RockWeb.Blocks.Engagement.SignUp
 
         #region Fields
 
-        private bool _canEdit;
         private RockDropDownList _ddlAction;
         private int _entitySetItemEntityId;
 
@@ -185,8 +184,6 @@ namespace RockWeb.Blocks.Engagement.SignUp
         protected override void OnInit( System.EventArgs e )
         {
             base.OnInit( e );
-
-            _canEdit = IsUserAuthorized( Authorization.EDIT );
 
             InitializeGrid();
 
@@ -320,9 +317,9 @@ namespace RockWeb.Blocks.Engagement.SignUp
         /// <param name="e">The <see cref="System.EventArgs" /> instance containing the event data.</param>
         protected void gfOpportunities_ApplyFilterClick( object sender, System.EventArgs e )
         {
-            gfOpportunities.SaveUserPreference( GridFilterKey.DateRange, "Date Range", sdrpDateRange.DelimitedValues );
-            gfOpportunities.SaveUserPreference( GridFilterKey.ParentGroup, "Parent Group", gpParentGroup.SelectedValue );
-            gfOpportunities.SaveUserPreference( GridFilterKey.SlotsAvailable, "Slots Available", NumberComparisonFilter.SelectedValueAsDelimited(
+            gfOpportunities.SetFilterPreference( GridFilterKey.DateRange, "Date Range", sdrpDateRange.DelimitedValues );
+            gfOpportunities.SetFilterPreference( GridFilterKey.ParentGroup, "Parent Group", gpParentGroup.SelectedValue );
+            gfOpportunities.SetFilterPreference( GridFilterKey.SlotsAvailable, "Slots Available", NumberComparisonFilter.SelectedValueAsDelimited(
                 ddlSlotsAvailableComparisonType,
                 nbSlotsAvailableFilterCompareValue
             ) );
@@ -337,7 +334,7 @@ namespace RockWeb.Blocks.Engagement.SignUp
         /// <param name="e">The <see cref="System.EventArgs" /> instance containing the event data.</param>
         protected void gfOpportunities_ClearFilterClick( object sender, System.EventArgs e )
         {
-            gfOpportunities.DeleteUserPreferences();
+            gfOpportunities.DeleteFilterPreferences();
 
             SetGridFilters();
         }
@@ -388,6 +385,11 @@ namespace RockWeb.Blocks.Engagement.SignUp
             if ( opportunity == null )
             {
                 return;
+            }
+
+            if ( !opportunity.CanDelete )
+            {
+                e.Row.AddCssClass( "js-cannot-delete" );
             }
 
             if ( opportunity.ParticipantCount > 0 )
@@ -468,6 +470,8 @@ namespace RockWeb.Blocks.Engagement.SignUp
         /// <param name="e">The <see cref="RowEventArgs"/> instance containing the event data.</param>
         protected void dfOpportunities_Click( object sender, RowEventArgs e )
         {
+            nbNotAuthorizedToDelete.Visible = false;
+
             var groupId = e.RowKeyValues[DataKeyName.GroupId].ToIntSafe();
             var locationId = e.RowKeyValues[DataKeyName.LocationId].ToIntSafe();
             var scheduleId = e.RowKeyValues[DataKeyName.ScheduleId].ToIntSafe();
@@ -506,7 +510,21 @@ namespace RockWeb.Blocks.Engagement.SignUp
                 groupMemberAssignmentService.DeleteRange( groupMemberAssignments );
 
                 // Get the GroupType to check if this Group has history enabled below, so we know whether to call GroupMemberService.CanDelete() for each GroupMember.
-                var group = new GroupService( rockContext ).GetNoTracking( groupId );
+                var group = new GroupService( rockContext )
+                    .Queryable()
+                    .AsNoTracking()
+                    .Include( g => g.ParentGroup ) // ParentGroup may be needed for a proper authorization check.
+                    .FirstOrDefault( g => g.Id == groupId );
+
+                // Because sign-ups are a special usage of groups, people with "schedule" authorization may delete opportunities.
+                var canDelete = group.IsAuthorized( Authorization.EDIT, this.CurrentPerson ) || group.IsAuthorized( Authorization.SCHEDULE, this.CurrentPerson );
+
+                if ( !canDelete )
+                {
+                    nbNotAuthorizedToDelete.Visible = true;
+                    return;
+                }
+
                 var groupTypeCache = GroupTypeCache.Get( group.GroupTypeId );
 
                 var groupMemberService = new GroupMemberService( rockContext );
@@ -594,7 +612,8 @@ namespace RockWeb.Blocks.Engagement.SignUp
             // We'll have custom JavaScript (see SignUpOverview.ascx) do this instead.
             gOpportunities.ShowConfirmDeleteDialog = false;
 
-            gOpportunities.IsDeleteEnabled = _canEdit;
+            // We'll assume we can delete (so all delete buttons are enabled by default); then disable per row, via JavaScript if necessary.
+            gOpportunities.IsDeleteEnabled = true;
 
             _ddlAction = new RockDropDownList();
             _ddlAction.ID = "ddlAction";
@@ -605,7 +624,7 @@ namespace RockWeb.Blocks.Engagement.SignUp
 
             gOpportunities.Actions.AddCustomActionControl( _ddlAction );
 
-            gfOpportunities.UserPreferenceKeyPrefix = $"{this.SignUpGroupTypeId}-";
+            gfOpportunities.PreferenceKeyPrefix = $"{this.SignUpGroupTypeId}-";
         }
 
         /// <summary>
@@ -613,7 +632,7 @@ namespace RockWeb.Blocks.Engagement.SignUp
         /// </summary>
         private void SetGridFilters()
         {
-            sdrpDateRange.DelimitedValues = gfOpportunities.GetUserPreference( GridFilterKey.DateRange );
+            sdrpDateRange.DelimitedValues = gfOpportunities.GetFilterPreference( GridFilterKey.DateRange );
 
             var signUpGroupTypeIds = GroupTypeCache
                 .All()
@@ -623,7 +642,7 @@ namespace RockWeb.Blocks.Engagement.SignUp
 
             gpParentGroup.IncludedGroupTypeIds = signUpGroupTypeIds;
 
-            var parentGroupId = gfOpportunities.GetUserPreference( GridFilterKey.ParentGroup ).AsIntegerOrNull();
+            var parentGroupId = gfOpportunities.GetFilterPreference( GridFilterKey.ParentGroup ).AsIntegerOrNull();
             Group group = null;
             if ( parentGroupId.HasValue )
             {
@@ -640,7 +659,7 @@ namespace RockWeb.Blocks.Engagement.SignUp
             gpParentGroup.SetValue( group );
 
             NumberComparisonFilter.SetValue(
-                gfOpportunities.GetUserPreference( GridFilterKey.SlotsAvailable ),
+                gfOpportunities.GetFilterPreference( GridFilterKey.SlotsAvailable ),
                 ddlSlotsAvailableComparisonType,
                 nbSlotsAvailableFilterCompareValue
             );
@@ -700,6 +719,8 @@ namespace RockWeb.Blocks.Engagement.SignUp
             /// This is a runtime Guid, not related to any Entity in particular.
             /// </summary>
             public Guid Guid { get; set; }
+
+            public bool CanDelete { get; set; }
 
             public int GroupId { get; set; }
 
@@ -904,6 +925,7 @@ namespace RockWeb.Blocks.Engagement.SignUp
                 .Queryable()
                 .AsNoTracking()
                 .Include( gma => gma.GroupMember.GroupRole )
+                .Include( gma => gma.GroupMember.Group.ParentGroup ) // ParentGroup may be needed for a proper authorization check.
                 .Where( gma =>
                     !gma.GroupMember.Person.IsDeceased
                     && qryGroupLocationSchedules.Any( gls =>
@@ -918,6 +940,9 @@ namespace RockWeb.Blocks.Engagement.SignUp
                 .ToList() // Execute the query.
                 .Select( gls =>
                 {
+                    // Because sign-ups are a special usage of groups, people with "schedule" authorization may delete opportunities.
+                    var canDelete = gls.Group.IsAuthorized( Authorization.EDIT, this.CurrentPerson ) || gls.Group.IsAuthorized( Authorization.SCHEDULE, this.CurrentPerson );
+
                     var locationId = gls.Location.Id;
                     var scheduleId = gls.Schedule.Id;
 
@@ -943,6 +968,7 @@ namespace RockWeb.Blocks.Engagement.SignUp
                     {
                         Id = ++_entitySetItemEntityId,
                         Guid = Guid.NewGuid(),
+                        CanDelete = canDelete,
                         GroupId = gls.Group.Id,
                         GroupLocationId = gls.GroupLocationId,
                         LocationId = locationId,

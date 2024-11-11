@@ -17,20 +17,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 using Rock.Data;
 using Rock.Jobs;
-using Rock.Model;
 using Rock.Tests.Shared;
+using Rock.Tests.Shared.TestFramework;
 using Rock.Web.Cache;
 
-namespace Rock.Tests.Integration.Crm.Prayer
+namespace Rock.Tests.Integration.Modules.Crm.Prayer
 {
     /// <summary>
     /// Integration tests for the "Send Prayer Comments" Job.
     /// </summary>
     [TestClass]
-    public class SendPrayerCommentsJobTests : DatabaseIntegrationTestClassBase
+    public class SendPrayerCommentsJobTests : DatabaseTestsBase
     {
         #region Initialization
 
@@ -43,46 +45,37 @@ namespace Rock.Tests.Integration.Crm.Prayer
             TestDataHelper.AddTestDataSet( TestDataHelper.DataSetIdentifiers.PrayerSampleData );
         }
 
-        /// <summary>
-        /// Runs after all tests in this class is executed.
-        /// </summary>
-        [ClassCleanup]
-        public static void ClassCleanup()
-        {
-            TestDataHelper.RemoveTestDataSet( TestDataHelper.DataSetIdentifiers.PrayerSampleData );
-        }
-
         #endregion
 
         #region Configuration
 
         private DateTime _TestPeriodStartDate = new DateTime( 2019, 1, 1 );
 
-        protected override void OnValidateTestData( out bool isValid, out string stateMessage )
-        {
-            try
-            {
-                // Verify that the necessary test data exists by retrieving a well-known test record.
-                var dataContext = GetNewDataContext();
+        //protected override void OnValidateTestData( out bool isValid, out string stateMessage )
+        //{
+        //    try
+        //    {
+        //        // Verify that the necessary test data exists by retrieving a well-known test record.
+        //        var dataContext = GetNewDataContext();
 
-                var prayerRequestService = new PrayerRequestService( dataContext );
+        //        var prayerRequestService = new PrayerRequestService( dataContext );
 
-                var testEntryId = prayerRequestService.GetId( TestGuids.PrayerRequestGuid.AllChurchForEmployment.AsGuid() );
+        //        var testEntryId = prayerRequestService.GetId( TestGuids.PrayerRequestGuid.AllChurchForEmployment.AsGuid() );
 
-                if ( testEntryId == null )
-                {
-                    throw new Exception( "Prayer Request test data is either incomplete or does not exist in this database." );
-                }
+        //        if ( testEntryId == null )
+        //        {
+        //            throw new Exception( "Prayer Request test data is either incomplete or does not exist in this database." );
+        //        }
 
-                isValid = true;
-                stateMessage = null;
-            }
-            catch ( Exception ex )
-            {
-                isValid = false;
-                stateMessage = ex.Message;
-            }
-        }
+        //        isValid = true;
+        //        stateMessage = null;
+        //    }
+        //    catch ( Exception ex )
+        //    {
+        //        isValid = false;
+        //        stateMessage = ex.Message;
+        //    }
+        //}
 
         #endregion
 
@@ -94,8 +87,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_SendNotificationsWithInvalidEmailTemplate_FailsWithError()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var job = GetJobWithDefaultConfiguration();
 
             // Ensure no system email template is specified.
@@ -119,8 +110,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_DateFilterForWeek1_ReturnsCommentsInWeek1Only()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var dataContext = new RockContext();
 
             var job = GetJobWithDefaultConfiguration();
@@ -147,8 +136,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_DateFilterForWeek2_ReturnsWeek1PrayerRequestWithWeek2Comments()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var dataContext = new RockContext();
 
             var job = GetJobWithDefaultConfiguration();
@@ -181,8 +168,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_PrivateComments_AreExcluded()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var dataContext = new RockContext();
 
             var job = GetJobWithDefaultConfiguration();
@@ -217,8 +202,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_FilterWithChildCategoriesExcluded_ReturnsRequestsInParentCategoryOnly()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var dataContext = new RockContext();
 
             var job = GetJobWithDefaultConfiguration();
@@ -244,8 +227,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_ChildCategoriesIncluded_ReturnsRequestsInParentAndChildCategories()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var dataContext = new RockContext();
 
             var job = GetJobWithDefaultConfiguration();
@@ -280,8 +261,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_SendNotificationsWithCreateCommunicationEnabled_CreatesCommunicationEntries()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var job = GetJobWithDefaultConfiguration();
 
             // Configure for the first week of the test period.
@@ -299,8 +278,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_CommunicationTemplateValidMergeFields_AreCorrectlyReplacedInTemplate()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var job = GetJobWithDefaultConfiguration();
 
             job.CategoryGuidList = new List<Guid> { TestGuids.Category.PrayerRequestFinancesOnly.AsGuid() };
@@ -322,8 +299,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_SendNotificationsFirstRun_SetsLastNotificationDateToToday()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var job = GetJobWithDefaultConfiguration();
 
             // Reset the last notification date to simulate a first run of this Job.
@@ -352,8 +327,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_SendNotificationsSecondRun_SetsNextStartTimeToLastEndTime()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var job = GetJobWithDefaultConfiguration();
 
             // Configure for the first week of the test period.
@@ -377,8 +350,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_SendNotificationsForWeek1_ContainsCorrectComments()
         {
-            VerifyTestPreconditionsOrThrow();
-
             // Simulate executing the task on Day 7 of the test period.
             var job = GetJobWithDefaultConfiguration();
 
@@ -423,8 +394,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_SendNotificationsForWeek2_ContainsCorrectComments()
         {
-            VerifyTestPreconditionsOrThrow();
-
             // Simulate executing the task on Day 7 of the test period.
             var job = GetJobWithDefaultConfiguration();
 
@@ -453,8 +422,6 @@ namespace Rock.Tests.Integration.Crm.Prayer
         [TestMethod]
         public void SendPrayerComments_SendNotificationsRepeatExecution_DoesNotSendAdditionalNotifications()
         {
-            VerifyTestPreconditionsOrThrow();
-
             var job = GetJobWithDefaultConfiguration();
 
             // Reset the last notification date.

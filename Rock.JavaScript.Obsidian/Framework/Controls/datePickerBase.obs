@@ -22,17 +22,16 @@
         }
         /* eslint-enable @typescript-eslint/naming-convention */
     }
-
-    export enum StartViewOption {
-        Month = 0,
-        Year = 1,
-        Decade = 2
-    }
 </script>
 
 <script setup lang="ts">
-    import { computed, onMounted, PropType, watch, ref } from "vue";
+    import { computed, onMounted, PropType, watch, ref, nextTick } from "vue";
     import { newGuid } from "@Obsidian/Utility/guid";
+    import { DateTime } from "luxon";
+
+    type DatePickerActions = {
+        onSetLocalDate: ((localDate: Date) => void) | null;
+    };
 
     const props = defineProps({
         modelValue: {
@@ -84,12 +83,36 @@
         startView: {
             type: Number as PropType<0 | 1 | 2>,
             default: 0
+        },
+
+        /**
+         * The container to attach the popup to, if not specified it will
+         * default to the document body.
+         */
+        container: {
+            type: HTMLElement as PropType<HTMLElement | null>,
+            required: false
+        },
+
+        /**
+         * The horizontal orientation of the popup. Left will attempt to keep
+         * the left edge aligned with the control and right will attempt to
+         * keep the right edge aligned with the control.
+         */
+        horizontalOrientation: {
+            type: String as PropType<"left" | "right">,
+            required: false
         }
     });
 
     const emit = defineEmits<{
         (e: "update:modelValue", val: string | null): void
     }>();
+
+    /** Actions to which the datepicker can handle. */
+    const actions: DatePickerActions = {
+        onSetLocalDate: null
+    };
 
     // #region Values
 
@@ -130,6 +153,34 @@
 
     // #endregion
 
+    // #region Functions
+
+    function initializePopup(): void {
+        const input = inputEl.value;
+
+        if (!input) {
+            return;
+        }
+
+        window.Rock.controls.datePicker.initialize({
+            ...(dateLimiterOptions.value),
+            id: input.id,
+            startView: props.startView,
+            showOnFocus: !props.disableShowOnFocus,
+            format: "mm/dd/yyyy",
+            todayHighlight: !props.disableHighlightToday,
+            forceParse: !props.disableForceParse,
+            onChangeScript: () => {
+                internalValue.value = input.value;
+            },
+            container: props.container ?? "body",
+            orientation: props.horizontalOrientation || "auto",
+            actions
+        });
+    }
+
+    // #endregion
+
     // #region Watchers
 
     watch(() => props.modelValue, () => {
@@ -147,6 +198,12 @@
         else {
             internalValue.value = null;
         }
+
+        // Update the underlying datepicker when the props.modelValue changes.
+        if (internalValue.value && actions.onSetLocalDate) {
+            const localDate = DateTime.fromFormat(internalValue.value, "MM/dd/yyyy").toJSDate();
+            actions.onSetLocalDate(localDate);
+        }
     }, { immediate: true });
 
     watch(asRockDateOrNull, () => {
@@ -158,22 +215,11 @@
     // #region Lifecycle
 
     onMounted(() => {
-        const input = inputEl.value as HTMLInputElement;
-
-        window.Rock.controls.datePicker.initialize({
-            ...(dateLimiterOptions.value),
-            id: input.id,
-            startView: props.startView,
-            showOnFocus: !props.disableShowOnFocus,
-            format: "mm/dd/yyyy",
-            todayHighlight: !props.disableHighlightToday,
-            forceParse: !props.disableForceParse,
-            onChangeScript: () => {
-                internalValue.value = input.value;
-            }
+        // Bit of a back to make sure all our props are set correctly.
+        nextTick(() => {
+            initializePopup();
         });
     });
 
     // #endregion
-
 </script>
