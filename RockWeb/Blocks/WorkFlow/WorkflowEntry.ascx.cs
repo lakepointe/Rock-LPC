@@ -1261,7 +1261,9 @@ namespace RockWeb.Blocks.WorkFlow
                 ShowNotes( false );
             }
 
-            var disableCaptcha = GetAttributeValue( AttributeKey.DisableCaptchaSupport ).AsBoolean() || !cpCaptcha.IsAvailable;
+            // LPC MODIFIED CODE
+            var disableCaptcha = GetAttributeValue( AttributeKey.DisableCaptchaSupport ).AsBoolean() || !cpCaptcha.IsAvailable || IsTrustedUser;
+            // END LPC MODIFIED CODE
 
             if ( disableCaptcha || IsCaptchaValid )
             {
