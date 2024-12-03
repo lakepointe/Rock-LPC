@@ -388,6 +388,7 @@ SELECT
                 AND dbindexes.[name] IS NOT NULL
 				AND indexstats.page_count > @PageCountLimit
 				AND indexstats.avg_fragmentation_in_percent > @MinFragmentation
+                AND dbindexes.type_desc <> 'HEAP'
 ";
 
             var dataTable = DbService.GetDataTable( qry, System.Data.CommandType.Text, parms, commandTimeoutSeconds );
@@ -421,7 +422,48 @@ SELECT
                 var rebuildSQL = $"ALTER INDEX [{indexInfo.IndexName}] ON [{indexInfo.SchemaName}].[{indexInfo.TableName}]";
                 if ( indexInfo.FragmentationPercent > minimumFragmentationPercentage )
                 {
+                    Dictionary<string, object> dataTypeParms = new Dictionary<string, object>
+                    {
+                        { "@SchemaName", indexInfo.SchemaName },
+                        { "@TableName", indexInfo.TableName },
+                        { "@IndexName", indexInfo.IndexName }
+                    };
+
                     var commandOption = rebuildFillFactorOption;
+
+                    var dataTypeQry = @"
+                    SELECT LOWER(sc.[Name]) as [ColumnName], LOWER(st.[Name]) as [DataType]
+                    FROM sys.indexes si
+			            INNER JOIN sys.index_columns sic ON sic.object_id = si.object_id AND sic.index_id = si.index_id
+			            INNER JOIN sys.columns sc ON sc.object_id = sic.object_id AND sc.column_id = sic.column_id
+			            INNER JOIN sys.types st ON st.system_type_id = sc.system_type_id
+		            WHERE 
+			            si.OBJECT_ID = OBJECT_ID(CONCAT(@SchemaName,'.',@TableName))
+			            AND si.[name] = @IndexName
+			            AND sic.[key_ordinal] = 1 --Only look at the first column in the index
+";
+
+                    var dataTypeDataTable = DbService.GetDataTable( dataTypeQry, System.Data.CommandType.Text, dataTypeParms, commandTimeoutSeconds );
+
+                    var columnName = dataTypeDataTable.Rows.OfType<DataRow>().First()?["ColumnName"]?.ToString() ?? "";
+                    var dataType = dataTypeDataTable.Rows.OfType<DataRow>().First()?["DataType"]?.ToString() ?? "";
+
+                    if ( columnName == "id" && ( dataType == "int" || dataType == "smallint" || dataType == "tinyint" || dataType == "bigint" ) )
+                    {
+                        // For "Id" Columns - based on the assumption that "Id" is the clustered primary key in Rock
+                        commandOption = "FILLFACTOR = 95";
+                    }
+                    else if ( dataType == "date" || dataType == "datetime" || dataType == "datetime2" || dataType == "smalldatetime" || dataType == "datetimeoffset" )
+                    {
+                        // For Date fields in first key column
+                        commandOption = "FILLFACTOR = 95";
+                    }
+                    else if ( dataType == "int" || dataType == "smallint" || dataType == "tinyint" || dataType == "bigint" )
+                    {
+                        // For Integer Keys not named Id (generally these are not primary keys)
+                        commandOption = "FILLFACTOR = 90";
+                    }
+
                     if ( useONLINEIndexRebuild && ( indexInfo.IndexType != "SPATIAL" && indexInfo.IndexType != "XML" ) )
                     {
                         commandOption = commandOption + $", ONLINE = ON";
