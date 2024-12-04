@@ -45,101 +45,25 @@
 
 //login page
 .block-instance.login {
-	.btn.btn-primary {
-		margin-left: auto;
-		display: block;
-		width: min-content;
-	}
-	fieldset {
-		legend {
-			font-weight: 700;
-			text-transform: uppercase;
-			font-size: 24px;
-			padding-top: 0;
-		}
-		.form-group.rock-text-box {
-			float: none;
-		}
-		.form-control {
-			box-shadow: none;
-			height: unset;
-			padding: 12px 12px;
+	.btn.btn-action {
+		color: @btn-default-color;
+		background-color: @btn-default-bg;
+		border-color: @btn-default-border;
+		&:hover, &:focus {
+			background-color: darken(@btn-default-bg, 10%);
+			border-color: darken(@btn-default-border, 10%);
 		}
 	}
-	.control-label {
-		text-transform: uppercase;
-	}
-	.checkbox>label {
-		width: 100%;
-		text-align: right;
-	}	
-	.btn.btn-action,
 	.btn.btn-link {
-		float: right;
-		margin-top: 0;
 		color: @link-color!important;
 		background: none!important;
 		border: none;
-		text-transform: uppercase;
-		font-size: 16px;
-		padding-top: 25px;
-		padding-right: 0;
-		width:unset;
 		&:hover, &:focus {
 			color: @link-hover-color!important;
 		}
 		&:focus {
 			outline: none;
 			text-decoration: none;
-		}
-	}
-}
-
-@media (min-width: @grid-float-breakpoint-min) {
-	
-	.block-instance.login {
-		fieldset {
-			.form-group {
-				width: 50%!important;
-			}
-		}	
-		fieldset {
-			>.row {
-				>div {
-					display: flex;
-					flex-wrap: wrap;
-					margin: 0 -1%;
-					.checkbox {
-						width: 100%;
-					}
-					>*:not(.btn-primary) {
-						padding-right: 1%!important;
-						padding-left: 1%!important;
-					}
-					.btn.btn-primary {
-						margin-right: 1%;
-					}
-					.btn.btn-action {
-						width: 100%;
-						text-align: right;
-						margin-top: 15px;
-						padding-top: 5px;
-						&:hover, &:focus {
-							text-decoration: none;
-						}
-					}
-					.btn.btn-link {
-						width: 100%;
-						text-align: right;
-						margin-top: 0;
-						padding-top: 0;
-						&:hover, &:focus {
-							text-decoration: none;
-						}
-					}
-				
-				}
-			}
 		}
 	}
 }
