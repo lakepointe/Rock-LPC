@@ -255,17 +255,6 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
             public const string StepProgramId = "StepProgramId";
         }
 
-        /// <summary>
-        /// User preference keys
-        /// </summary>
-        private static class PreferenceKey
-        {
-            /// <summary>
-            /// The is card view user preference key
-            /// </summary>
-            public const string IsCardView = "PersonProgramStepList.IsCardView";
-        }
-
         #endregion Keys
 
         #region Events
@@ -277,6 +266,8 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
         protected override void OnInit( EventArgs e )
         {
             base.OnInit( e );
+
+            RockPage.AddCSSLink( "~/Styles/Blocks/Steps/PersonProgramStepList.css" );
 
             ClearError();
             BlockUpdated += PersonProgramStepList_BlockUpdated;
@@ -354,7 +345,7 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
         }
 
         /// <summary>
-        /// Show the grid view and save the user's preference.
+        /// Show the grid view
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -362,11 +353,10 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
         {
             hfIsCardView.Value = false.ToString();
             RenderViewMode();
-            SetUserPreference( PreferenceKey.IsCardView, hfIsCardView.Value, true );
         }
 
         /// <summary>
-        /// Show the card view and save the user's preference.
+        /// Show the card view
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -374,7 +364,6 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
         {
             hfIsCardView.Value = true.ToString();
             RenderViewMode();
-            SetUserPreference( PreferenceKey.IsCardView, hfIsCardView.Value, true );
         }
 
         /// <summary>
@@ -700,8 +689,6 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void gfGridFilter_ApplyFilterClick( object sender, EventArgs e )
         {
-            gfGridFilter.SaveUserPreference( FilterKey.StepTypeName, tbStepTypeName.Text );
-            gfGridFilter.SaveUserPreference( FilterKey.StepStatusName, tbStepStatus.Text );
             RenderGridView();
         }
 
@@ -712,7 +699,6 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void gfGridFilter_ClearFilterClick( object sender, EventArgs e )
         {
-            gfGridFilter.DeleteUserPreferences();
             BindFilter();
         }
 
@@ -721,11 +707,8 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
         /// </summary>
         private void BindFilter()
         {
-            var stepTypeNameFilter = gfGridFilter.GetUserPreference( FilterKey.StepTypeName );
-            tbStepTypeName.Text = !string.IsNullOrWhiteSpace( stepTypeNameFilter ) ? stepTypeNameFilter : string.Empty;
-
-            var stepStatusNameFilter = gfGridFilter.GetUserPreference( FilterKey.StepStatusName );
-            tbStepStatus.Text = !string.IsNullOrWhiteSpace( stepStatusNameFilter ) ? stepStatusNameFilter : string.Empty;
+            tbStepTypeName.Text = string.Empty;
+            tbStepStatus.Text = string.Empty;
         }
 
         #endregion GridFilter Events
@@ -1250,16 +1233,6 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
             // Get the initial query
             var stepTypes = GetStepTypes();
 
-            // Get filter values
-            var stepTypeNameFilter = gfGridFilter.GetUserPreference( FilterKey.StepTypeName );
-            var stepStatusNameFilter = gfGridFilter.GetUserPreference( FilterKey.StepStatusName );
-
-            // Apply step type filters
-            if ( !string.IsNullOrEmpty( stepTypeNameFilter ) )
-            {
-                stepTypes = stepTypes.Where( st => st.Name.Contains( stepTypeNameFilter ) ).ToList();
-            }
-
             // Get the step type Ids
             var stepTypeIds = stepTypes.Select( st => st.Id ).ToList();
 
@@ -1275,12 +1248,6 @@ namespace RockWeb.Plugins.org_lakepointe.Steps
                 .Where( s =>
                     s.PersonAlias.PersonId == person.Id &&
                     stepTypeIds.Contains( s.StepTypeId ) );
-
-            // Apply step filters
-            if ( !string.IsNullOrEmpty( stepStatusNameFilter ) )
-            {
-                stepsQuery = stepsQuery.Where( s => s.StepStatus != null && s.StepStatus.Name.Contains( stepStatusNameFilter ) );
-            }
 
             // Create a view model for each step
             var viewModels = stepsQuery.Select( s => new StepGridRowViewModel
