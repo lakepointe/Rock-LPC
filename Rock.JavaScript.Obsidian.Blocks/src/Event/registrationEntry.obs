@@ -254,8 +254,8 @@
         else {
             title = StringFilter.toTitleCase(
                 registrationEntryState.value.registrants.length <= 1 ?
-                    "Persona" :
-                    ordinal + " " + "Persona");
+                    uppercaseRegistrantTerm.value :
+                    ordinal + " " + uppercaseRegistrantTerm.value);
         }
         // END LPC MODIFIED CODE
 
