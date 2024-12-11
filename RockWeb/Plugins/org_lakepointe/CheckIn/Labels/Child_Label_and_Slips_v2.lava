@@ -75,7 +75,6 @@
 {% assign personFoster = Person | FosterAdoptedChildCheck %}
 {% assign personSelfRelease = Person | Attribute:'Arena-16-384' %}
 {% assign personGrade = Person | Property:'GradeFormatted' %}
-{% assign personFirstTime = Person.FirstTime %}
 
 {% comment %} Only print child labels for Young Christians Class if attendee is a child {% endcomment %}
 {% if yccCheckin == true and personAge >= 18 %}
@@ -109,7 +108,7 @@ CT~~CD,~CC^~CT~
 ^FO170,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personBaptized  != ''  %}B{% endif %}^FS
 ^FO225,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personFoster == 'true' %}P{% endif %}^FS
 ^FO275,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personSelfRelease == 'Yes' and isSelfReleaseEligible == true %}S{% endif %}^FS
-^FO325,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personFirstTime == true %}F{% endif %}^FS
+^FO325,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if Person.FirstTime == true %}F{% endif %}^FS
 
 {% if Person.DaysToBirthday < 7 %}
 ^FO470,330^GFA,201,792,12,:Z64:eJzVzjEKwzAMBVAbDR51BF2jQ2guFmiOlqPkCN4qqJFqxzJJKaakS6kE5g2S9d3F7TW4CLP5mr00ew6rWYDR7DUwHTx+suzzrrj9P/kV290JIi7/a9JcUn0r1vnNG7UubKO2nMoTqvmkHxEi3Ks1YUL7X4WEmg93X0y5R8tDgmJ5OJT+Lk/P3Qwd/6qe5tKwVw==:52D8
