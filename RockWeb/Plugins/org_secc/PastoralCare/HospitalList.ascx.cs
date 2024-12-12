@@ -617,11 +617,13 @@ namespace RockWeb.Plugins.org_secc.PastoralCare
                 Workflow = w.Workflow,
                 Name = w.Workflow.Name,
                 Hospital = w.AttributeValues.Where( av => av.AttributeKey == "Hospital" ).Select( av => av.ValueFormatted ).FirstOrDefault(),
+                // LPC CODE - Added a field for the hospital's phone number to make following up on these easier
                 HospitalPhone = new Func<string>( () =>
                 {
                     DefinedValueCache dv = DefinedValueCache.Get( w.AttributeValues.Where( av => av.AttributeKey == "Hospital" ).Select( av => av.Value ).FirstOrDefault().AsGuid() );
                     return dv.AttributeValues["Qualifier5"].ValueFormatted;
                 } )(),
+                // END LPC CODE
                 HospitalAddress = new Func<string>( () =>
                 {
                     DefinedValueCache dv = DefinedValueCache.Get( w.AttributeValues.Where( av => av.AttributeKey == "Hospital" ).Select( av => av.Value ).FirstOrDefault().AsGuid() );
