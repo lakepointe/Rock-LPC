@@ -118,10 +118,17 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "org.lakepointe.RockJobCustomizations", "org.lakepointe.RockJobCustomizations\org.lakepointe.RockJobCustomizations.csproj", "{042B2639-1684-469D-A584-0F492C6D34A0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "org.lakepointe.Workflow", "org.lakepointe.Workflow\org.lakepointe.Workflow.csproj", "{FDCA79EA-D361-49E9-9B79-0441C738D241}"
+	ProjectSection(ProjectDependencies) = postProject
+		{185A31D7-3037-4DAE-8797-0459849A84BD} = {185A31D7-3037-4DAE-8797-0459849A84BD}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "org.secc.RecurringCommunications", "org.secc.RecurringCommunications\org.secc.RecurringCommunications.csproj", "{13BE8167-EFA3-45DF-924D-469630047717}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "com.bemaservices.GroupTools", "com.bemaservices.GroupTools\com.bemaservices.GroupTools.csproj", "{FF5D6B63-2F2A-47A8-94D5-93A0B7248595}"
+	ProjectSection(ProjectDependencies) = postProject
+		{185A31D7-3037-4DAE-8797-0459849A84BD} = {185A31D7-3037-4DAE-8797-0459849A84BD}
+		{ADD1EDD0-A4CB-4E82-B6AD-6AD1D556DEAE} = {ADD1EDD0-A4CB-4E82-B6AD-6AD1D556DEAE}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "org.lakepointe.Rest", "org.lakepointe.Rest\org.lakepointe.Rest.csproj", "{D2323321-97F8-4BAD-8179-90C88892A982}"
 EndProject
@@ -132,6 +139,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "com.kfs.SignNow", "com.kfs.SignNow\com.kfs.SignNow.csproj", "{F5F8590E-3E85-44C1-9ED9-552B1B105AE8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "com.pillars.Jobs", "rocks.pillars.Jobs\com.pillars.Jobs.csproj", "{5535B310-37BF-4C86-A5E2-8CC8B529FDCD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{185A31D7-3037-4DAE-8797-0459849A84BD} = {185A31D7-3037-4DAE-8797-0459849A84BD}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "org.thecrossingchurch.CustomJobs", "org.thecrossingchurch.CustomJobs\org.thecrossingchurch.CustomJobs.csproj", "{33EDBB84-66B6-4028-A231-1E14E6601031}"
 EndProject
