@@ -20,12 +20,11 @@
                 <Rock:GridFilter runat="server" ID ="fReport" OnApplyFilterClick="fReport_ApplyFilterClick">
                     <Rock:CampusPicker runat="server" ID="pCampus" Label="Campus" />
                 </Rock:GridFilter>
+                <!-- LPC CODE - Added a field for the hospital's phone number to make following up on these easier -->
                 <Rock:Grid ID="gReport" runat="server" AllowSorting="true" EmptyDataText="No Results" DataKeyNames="Id" OnRowSelected="gReport_RowSelected">
                     <Columns>
                         <Rock:RockBoundField DataField="Hospital" HeaderText="Hospital" SortExpression="Hospital"></Rock:RockBoundField>
-                        <!-- LPC CODE - Added a field for the hospital's phone number to make following up on these easier -->
                         <Rock:RockBoundField DataField="HospitalPhone" HeaderText="Hospital Phone" SortExpression="HospitalPhone"></Rock:RockBoundField>
-                        <!-- END LPC CODE -->
                         <Rock:PersonField DataField="PersonToVisit" HeaderText="Person To Visit" SortExpression="Person.LastName" />
                         <Rock:PersonField DataField="Campus" HeaderText="Campus" SortExpression="Person.PrimaryCampus.Name" />
                         <Rock:RockBoundField DataField="Age" HeaderText="Age" SortExpression="Age"></Rock:RockBoundField>
@@ -53,6 +52,7 @@
                         </Rock:RockTemplateField>
                     </Columns>
                 </Rock:Grid>
+                <!-- END LPC CODE -->
             </div>
         </asp:Panel>
     </ContentTemplate>
