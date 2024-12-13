@@ -69,6 +69,7 @@
 {% assign personAge = Person | Property:'Age' %}
 {% assign personAllergy = Person | Attribute:'Allergy' %}
 {% assign personMedicalAlert = Person | Attribute:'Arena-16-81' %}
+{% assign personMedicalAlert2 = Person | Attribute:'MedicalConcerns1' %}
 {% assign personLegalNotes = Person | Attribute:'LegalNotes' %}
 {% assign personBaptized = Person | Attribute:'Arena-15-73' %}
 {% assign personFoster = Person | FosterAdoptedChildCheck %}
@@ -101,12 +102,17 @@ CT~~CD,~CC^~CT~
 
 ^FO560,340^FB290,1,0,C^A0N,60,60^FD{{ Person.SecurityCode }}^FS
 
-^FO7,363^FB67,1,0,L^A0N,43,43^FH\^FD{% if personAllergy != '' %}A{% endif %}^FS
-^FO73,363^FB67,1,0,L^A0N,43,43^FH\^FD{% if personMedicalAlert  != '' %}M{% endif %}^FS
-^FO140,363^FB67,1,0,L^A0N,43,43^FH\^FD{% if personLegalNotes != '' %}C{% endif %}^FS
-^FO207,363^FB67,1,0,L^A0N,43,43^FH\^FD{% if personBaptized  != ''  %}B{% endif %}^FS
-^FO273,363^FB67,1,0,L^A0N,43,43^FH\^FD{% if personFoster == 'true' %}P{% endif %}^FS
-^FO340,363^FB67,1,0,L^A0N,43,43^FH\^FD{% if personSelfRelease == 'Yes' and isSelfReleaseEligible == true %}S{% endif %}^FS
+^FO10,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personAllergy != '' %}A{% endif %}^FS
+^FO60,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personMedicalAlert  != '' or personMedicalAlert2 == 'Yes' %}M{% endif %}^FS
+^FO120,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personLegalNotes != '' %}C{% endif %}^FS
+^FO170,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personBaptized  != ''  %}B{% endif %}^FS
+^FO225,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personFoster == 'true' %}P{% endif %}^FS
+^FO275,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if personSelfRelease == 'Yes' and isSelfReleaseEligible == true %}S{% endif %}^FS
+^FO325,355^FB67,1,0,L^A0N,43,43^FH\^FD{% if Person.FirstTime == true %}F{% endif %}^FS
+
+{% if Person.DaysToBirthday < 7 %}
+^FO470,330^GFA,201,792,12,:Z64:eJzVzjEKwzAMBVAbDR51BF2jQ2guFmiOlqPkCN4qqJFqxzJJKaakS6kE5g2S9d3F7TW4CLP5mr00ew6rWYDR7DUwHTx+suzzrrj9P/kV290JIi7/a9JcUn0r1vnNG7UubKO2nMoTqvmkHxEi3Ks1YUL7X4WEmg93X0y5R8tDgmJ5OJT+Lk/P3Qwd/6qe5tKwVw==:52D8
+{% endif %}
 
 ^MMT
 ^XZ
