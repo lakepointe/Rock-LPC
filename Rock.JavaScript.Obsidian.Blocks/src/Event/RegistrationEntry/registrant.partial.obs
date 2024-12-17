@@ -59,7 +59,7 @@
                 <div class="col-xs-6">
                     <RockButton v-if="showPrevious" btnType="default" @click="onPrevious">
                         <!-- LPC MODIFIED CODE -->
-                        {{ getLang() == "es" ? "Anterior" : "Next" }}
+                        {{ getLang() == "es" ? "Anterior" : "Previous" }}
                         <!-- END LPC MODIFIED CODE -->
                     </RockButton>
                 </div>

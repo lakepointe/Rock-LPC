@@ -11,7 +11,7 @@
                 <input type="text" :disabled="loading || !isDiscountCodeAllowed" class="form-control input-width-md input-sm" v-model="discountCodeInput" />
                 <RockButton v-if="isDiscountCodeAllowed" btnSize="sm" :isLoading="loading" class="margin-l-sm" @click="tryDiscountCode(false)">
                     <!-- LPC MODIFIED CODE -->
-                    Apply
+                    {{ getLang() == "es" ? "Aplicar" : "Apply" }}
                     <!-- END LPC MODIFIED CODE -->
                 </RockButton>
             </div>

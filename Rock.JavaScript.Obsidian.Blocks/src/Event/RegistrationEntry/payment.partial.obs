@@ -52,7 +52,9 @@
 
             <div class="actions text-right">
                 <RockButton class="pull-left" btnType="default" @click="onPrevious" :isLoading="loading" autoDisable>
-                    Previous
+                    <!-- LPC MODIFIED CODE -->
+                    {{ getLang() == "es" ? "Anterior" : "Previous" }}
+                    <!-- END LPC MODIFIED CODE -->
                 </RockButton>
 
                 <RockButton v-if="gatewayControlModel" btnType="primary" type="submit" :isLoading="loading" autoDisable>
