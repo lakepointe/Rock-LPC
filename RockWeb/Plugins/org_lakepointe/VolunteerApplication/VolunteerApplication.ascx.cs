@@ -777,10 +777,10 @@ namespace RockWeb.Plugins.org_lakepointe.VolunteerApplication
             rblHasBeenAccused.Items[0].Text = Translation["Yes"];
             rblHasBeenAccused.Items[1].Text = Translation["No"];
             rtbHasBeenAccused.Label = Translation["LabelHasBeenAccusedExplain"];
-            rblPsycho.Label = Translation["LabelMentalHealth"];
-            rblPsycho.Items[0].Text = Translation["Yes"];
-            rblPsycho.Items[1].Text = Translation["No"];
-            rtbPsycho.Label = Translation["LabelMentalHealthExplain"];
+            rblMentalHealth.Label = Translation["LabelMentalHealth"];
+            rblMentalHealth.Items[0].Text = Translation["Yes"];
+            rblMentalHealth.Items[1].Text = Translation["No"];
+            rtbMentalHealthExplain.Label = Translation["LabelMentalHealthExplain"];
             rblHindrance.Label = Translation["LabelHindrance"];
             rblHindrance.Items[0].Text = Translation["Yes"];
             rblHindrance.Items[1].Text = Translation["No"];
@@ -1088,8 +1088,8 @@ namespace RockWeb.Plugins.org_lakepointe.VolunteerApplication
             rtbHasAbused.Text = SavedValues["HasAbusedChildInfo"];
             rblHasBeenAccused.SelectedValue = MapTrueFalseToYesNo( SavedValues["HasBeenAccused"] );
             rtbHasBeenAccused.Text = SavedValues["HasBeenAccusedInfo"];
-            rblPsycho.SelectedValue = MapTrueFalseToYesNo( SavedValues["Psycho"] );
-            rtbPsycho.Text = SavedValues["PsychoInfo"];
+            rblMentalHealth.SelectedValue = MapTrueFalseToYesNo( SavedValues["MentalHealth"] );
+            rtbMentalHealthExplain.Text = SavedValues["MentalHealthInfo"];
             rblHindrance.SelectedValue = MapTrueFalseToYesNo( SavedValues["Hinderence"] );
             rtbHindrance.Text = SavedValues["HinderenceInfo"];
 
@@ -1211,8 +1211,8 @@ namespace RockWeb.Plugins.org_lakepointe.VolunteerApplication
             rtbHasAbused.Visible = false;
             rblHasBeenAccused.Visible = false;
             rtbHasBeenAccused.Visible = false;
-            rblPsycho.Visible = false;
-            rtbPsycho.Visible = false;
+            rblMentalHealth.Visible = false;
+            rtbMentalHealthExplain.Visible = false;
             rblHindrance.SelectedValue = MapTrueFalseToYesNo( SavedValues["Hinderence"] );
             rtbHindrance.Text = SavedValues["HinderenceInfo"];
 
@@ -1297,8 +1297,8 @@ namespace RockWeb.Plugins.org_lakepointe.VolunteerApplication
             rtbHasAbused.Text = SavedValues["HasAbusedChildInfo"];
             rblHasBeenAccused.SelectedValue = MapTrueFalseToYesNo( SavedValues["HasBeenAccused"] );
             rtbHasBeenAccused.Text = SavedValues["HasBeenAccusedInfo"];
-            rblPsycho.SelectedValue = MapTrueFalseToYesNo( SavedValues["Psycho"] );
-            rtbPsycho.Text = SavedValues["PsychoInfo"];
+            rblMentalHealth.SelectedValue = MapTrueFalseToYesNo( SavedValues["MentalHealth"] );
+            rtbMentalHealthExplain.Text = SavedValues["MentalHealthInfo"];
             rblHindrance.SelectedValue = MapTrueFalseToYesNo( SavedValues["Hinderence"] );
             rtbHindrance.Text = SavedValues["HinderenceInfo"];
 
@@ -1433,14 +1433,14 @@ namespace RockWeb.Plugins.org_lakepointe.VolunteerApplication
                         SavedValues["HasAbusedChildInfo"] = rtbHasAbused.Text;
                         SavedValues["HasBeenAccused"] = MapYesNoToTrueFalse( rblHasBeenAccused.SelectedValue );
                         SavedValues["HasBeenAccusedInfo"] = rtbHasBeenAccused.Text;
-                        SavedValues["Psycho"] = MapYesNoToTrueFalse( rblPsycho.SelectedValue );
-                        SavedValues["PsychoInfo"] = rtbPsycho.Text;
+                        SavedValues["MentalHealth"] = MapYesNoToTrueFalse( rblMentalHealth.SelectedValue );
+                        SavedValues["MentalHealthInfo"] = rtbMentalHealthExplain.Text;
                         SavedValues["Hinderence"] = MapYesNoToTrueFalse( rblHindrance.SelectedValue );
                         SavedValues["HinderenceInfo"] = rtbHindrance.Text;
 
                         if ( rblHasAbused.SelectedValue.Equals( "Yes" )
                             || rblHasBeenAccused.SelectedValue.Equals( "Yes" )
-                            || rblPsycho.SelectedValue.Equals( "Yes" )
+                            || rblMentalHealth.SelectedValue.Equals( "Yes" )
                             || rblHindrance.SelectedValue.Equals( "Yes" ))
                         {
                             SavedValues["Sensitive"] = "True";
@@ -1912,8 +1912,8 @@ namespace RockWeb.Plugins.org_lakepointe.VolunteerApplication
                 rtbHasAbused.Enabled = false;
                 rblHasBeenAccused.Enabled = false;
                 rtbHasBeenAccused.Enabled = false;
-                rblPsycho.Enabled = false;
-                rtbPsycho.Enabled = false;
+                rblMentalHealth.Enabled = false;
+                rtbMentalHealthExplain.Enabled = false;
                 rblHindrance.Enabled = false;
                 rtbHindrance.Enabled = false;
 
