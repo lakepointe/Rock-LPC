@@ -54,6 +54,7 @@
                     {% assign mediaEmbedCode = item | Attribute:'Video','RawValue' %}
                     {% assign videoLessonCode = item | Attribute:'VideoLesson','RawValue' %}
                     {% assign lessonDocGuid = item | Attribute:'LessonGuideWordDoc','RawValue' %}
+                    {% assign lessonCommentaryGuid = item | Attribute:'LessonCommentary','RawValue' %}
                     {% assign commentaryUrl = item.ContentChannel | Attribute:'AdditionalCommentary','RawValue' %}
                     {% if mediaEmbedCode != '' %}
                         <div class="col-md-6" align="center">
@@ -73,6 +74,9 @@
                                 <div class="col-md-12">
                                     {% if lessonPlanGuid != '' %}
                                         <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ lessonPlanGuid }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">Lección (Formato imprimible)</a></p>
+                                    {% endif %}
+                                    {% if lessonCommentaryGuid != '' %}
+                                        <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ lessonCommentaryGuid }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">Comentario de la Lección</a></p>
                                     {% endif %}
                                     {% if discussionGuideGuid != '' %}
                                         <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ discussionGuideGuid }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">Guía de discusión</a></p>
@@ -108,6 +112,9 @@
                                 <div class="col-md-12">
                                     {% if lessonPlanGuid != '' %}
                                         <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ lessonPlanGuid }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">Lección (Formato imprimible)</a></p>
+                                    {% endif %}
+                                    {% if lessonCommentaryGuid != '' %}
+                                        <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ lessonCommentaryGuid }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">Comentario de la Lección</a></p>
                                     {% endif %}
                                     {% if discussionGuideGuid != '' %}
                                         <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ discussionGuideGuid }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">Guía de discusión</a></p>
