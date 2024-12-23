@@ -263,13 +263,13 @@
             </div>
             <div class="row">
                 <div class="col-md-6">
-                    <Rock:RockRadioButtonList ID="rblPsycho" runat="server" Enabled="true" Required="true">
+                    <Rock:RockRadioButtonList ID="rblMentalHealth" runat="server" Enabled="true" Required="true">
                         <asp:ListItem Value="Yes" Selected="False"></asp:ListItem>
                         <asp:ListItem Value="No" Selected="False"></asp:ListItem>
                     </Rock:RockRadioButtonList>
                 </div>
                 <div class="col-md-6">
-                    <Rock:RockTextBox ID="rtbPsycho" runat="server" TextMode="MultiLine" Rows="5" Visible="true" Required="false" />
+                    <Rock:RockTextBox ID="rtbMentalHealthExplain" runat="server" TextMode="MultiLine" Rows="5" Visible="true" Required="false" />
                 </div>
             </div>
             <div class="row">
