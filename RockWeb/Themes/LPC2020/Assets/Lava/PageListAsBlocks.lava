@@ -5,10 +5,10 @@
                 <div class="card">
                     <div class="card-body row">
                         {% if childPage.IconCssClass != '' %}
-                            <div class="col-xs-4">
+                            <div class="col-xs-4 icon-col">
                                 <i class="{{ childPage.IconCssClass }}"></i>
                             </div>
-                            <div class="col-xs-8">
+                            <div class="col-xs-8 content-col">
                                 <h3 class="card-title">{{ childPage.Title }}</h3>
                                 <p class="card-text">{{ childPage.Description }}</p>
                             </div>

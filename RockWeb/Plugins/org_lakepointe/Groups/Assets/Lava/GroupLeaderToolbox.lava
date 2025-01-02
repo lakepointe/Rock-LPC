@@ -13,10 +13,10 @@
                         <a href="/page/4670">
                             <div class="card">
                                 <div class="card-body row">
-                                    <div class="col-xs-4">
+                                    <div class="col-xs-4 icon-col">
                                         <i class="fa fa-file-certificate"></i>
                                     </div>
-                                    <div class="col-xs-8">
+                                    <div class="col-xs-8 content-col">
                                         <h3 class="card-title">Potential Group Leader Application</h3>
                                         <p class="card-text">Take the next step towards becoming a life group leader</p>
                                     </div>
@@ -58,10 +58,10 @@
                         <a href="/page/5021?Group={{ coach.Group }}&Person={{ Person.PrimaryAlias.Guid }}">
                             <div class="card">
                                 <div class="card-body row">
-                                    <div class="col-xs-4">
+                                    <div class="col-xs-4 icon-col">
                                         <i class="fa fa-clipboard-check"></i>
                                     </div>
-                                    <div class="col-xs-8">
+                                    <div class="col-xs-8 content-col">
                                         <h3 class="card-title">Check in as a {{ coach.GroupType | TrimStart:'V2 ' }}</h3>
                                         <p class="card-text">Check in when supervising Life Groups</p>
                                     </div>
@@ -203,10 +203,10 @@
                                 <a href="/page/4656?GroupId={{ team.GroupId }}">
                                     <div class="card">
                                         <div class="card-body row">
-                                            <div class="col-xs-4">
+                                            <div class="col-xs-4 icon-col">
                                                 <i class="{{ team.IconCssClass }}"></i>
                                             </div>
-                                            <div class="col-xs-8">
+                                            <div class="col-xs-8 content-col">
                                                 <h3 class="card-title">{{ team.GroupName }}</h3>
                                                 <p class="card-text">Manage your life group</p>
                                             </div>
@@ -221,10 +221,10 @@
                             <a href="/page/4656?GroupId={{ team.GroupId }}">
                                 <div class="card">
                                     <div class="card-body row">
-                                        <div class="col-xs-4">
+                                        <div class="col-xs-4 icon-col">
                                             <i class="{{ team.IconCssClass }}"></i>
                                         </div>
-                                        <div class="col-xs-8">
+                                        <div class="col-xs-8 content-col">
                                             <h3 class="card-title">{{ team.GroupName }}</h3>
                                             <p class="card-text">Manage your life group</p>
                                         </div>
@@ -239,10 +239,10 @@
                             <a href="{{ link }}">
                                 <div class="card">
                                     <div class="card-body row">
-                                        <div class="col-xs-4">
+                                        <div class="col-xs-4 icon-col">
                                             <i class="{{ team.LeaderGroupIconCssClass }}"></i>
                                         </div>
-                                        <div class="col-xs-8">
+                                        <div class="col-xs-8 content-col">
                                             <h3 class="card-title">{{ team.LeaderGroupName }}</h3>
                                             <p class="card-text">Manage the life groups you lead</p>
                                         </div>
@@ -385,10 +385,10 @@
                                 <a href="{{ link }}">
                                     <div class="card">
                                         <div class="card-body row">
-                                            <div class="col-xs-4">
+                                            <div class="col-xs-4 icon-col">
                                                 <i class="{{ team.IconCssClass }}"></i>
                                             </div>
-                                            <div class="col-xs-8">
+                                            <div class="col-xs-8 content-col">
                                                 <h3 class="card-title">{{ team.GroupName }}</h3>
                                                 <p class="card-text">Manage and schedule your serve team</p>
                                             </div>
@@ -410,10 +410,10 @@
                             <a href="{{ link }}">
                                 <div class="card">
                                     <div class="card-body row">
-                                        <div class="col-xs-4">
+                                        <div class="col-xs-4 icon-col">
                                             <i class="{{ team.IconCssClass }}"></i>
                                         </div>
-                                        <div class="col-xs-8">
+                                        <div class="col-xs-8 content-col">
                                             <h3 class="card-title">{{ team.GroupName }}</h3>
                                             <p class="card-text">Manage and schedule your serve team</p>
                                         </div>
@@ -428,10 +428,10 @@
                             <a href="{{ link }}">
                                 <div class="card">
                                     <div class="card-body row">
-                                        <div class="col-xs-4">
+                                        <div class="col-xs-4 icon-col">
                                             <i class="{{ team.LeaderGroupIconCssClass }}"></i>
                                         </div>
-                                        <div class="col-xs-8">
+                                        <div class="col-xs-8 content-col">
                                             <h3 class="card-title">{{ team.LeaderGroupName }}</h3>
                                             <p class="card-text">Manage the serve teams you lead</p>
                                         </div>
@@ -484,10 +484,10 @@
                     <a href="/page/4977">
                         <div class="card">
                             <div class="card-body row">
-                                <div class="col-xs-4">
+                                <div class="col-xs-4 icon-col">
                                     <i class="fa fa-newspaper"></i>
                                 </div>
-                                <div class="col-xs-8">
+                                <div class="col-xs-8 content-col">
                                     <h3 class="card-title">Leader News Portal</h3>
                                     <p class="card-text">See the latest news and information for the ministries you support</p>
                                 </div>
@@ -543,10 +543,10 @@
                     <a href="/page/4978">
                         <div class="card">
                             <div class="card-body row">
-                                <div class="col-xs-4">
+                                <div class="col-xs-4 icon-col">
                                     <i class="fa fa-bible"></i>
                                 </div>
-                                <div class="col-xs-8">
+                                <div class="col-xs-8 content-col">
                                     <h3 class="card-title">Curriculum</h3>
                                     <p class="card-text">Access the curriculum for the groups you lead</p>
                                 </div>
@@ -599,10 +599,10 @@
                     <a href="/page/4979">
                         <div class="card">
                             <div class="card-body row">
-                                <div class="col-xs-4">
+                                <div class="col-xs-4 icon-col">
                                     <i class="fa fa-treasure-chest"></i>
                                 </div>
-                                <div class="col-xs-8">
+                                <div class="col-xs-8 content-col">
                                     <h3 class="card-title">Leader Resources</h3>
                                     <p class="card-text">Resources to support you in your ministry</p>
                                 </div>
@@ -617,10 +617,10 @@
                 <a href="/page/4980">
                     <div class="card">
                         <div class="card-body row">
-                            <div class="col-xs-4">
+                            <div class="col-xs-4 icon-col">
                                 <i class="fa fa-calendar-edit"></i>
                             </div>
-                            <div class="col-xs-8">
+                            <div class="col-xs-8 content-col">
                                 <h3 class="card-title">Serve Schedule Toolbox</h3>
                                 <p class="card-text">Manage your serve schedule</p>
                             </div>
@@ -636,10 +636,10 @@
                     <a href="/page/4998">
                         <div class="card">
                             <div class="card-body row">
-                                <div class="col-xs-4">
+                                <div class="col-xs-4 icon-col">
                                     <i class="fa fa-people-carry"></i>
                                 </div>
-                                <div class="col-xs-8">
+                                <div class="col-xs-8 content-col">
                                     <h3 class="card-title">Coordinator Dashboard</h3>
                                     <p class="card-text">Check the status of the Serve Teams you manage</p>
                                 </div>
@@ -656,10 +656,10 @@
                     <a href="/page/4996">
                         <div class="card">
                             <div class="card-body row">
-                                <div class="col-xs-4">
+                                <div class="col-xs-4 icon-col">
                                     <i class="fa fa-handshake"></i>
                                 </div>
-                                <div class="col-xs-8">
+                                <div class="col-xs-8 content-col">
                                     <h3 class="card-title">My Connections</h3>
                                     <p class="card-text">Manage the connection requests that have been assigned to you</p>
                                 </div>
@@ -676,10 +676,10 @@
                     <a href="/page/4999">
                         <div class="card">
                             <div class="card-body row">
-                                <div class="col-xs-4">
+                                <div class="col-xs-4 icon-col">
                                     <i class="fa fa-praying-hands"></i>
                                 </div>
-                                <div class="col-xs-8">
+                                <div class="col-xs-8 content-col">
                                     <h3 class="card-title">Prayer Ministry</h3>
                                     <p class="card-text">Find where your prayers can have an impact</p>
                                 </div>
@@ -696,10 +696,10 @@
                     <a href="/page/5000">
                         <div class="card">
                             <div class="card-body row">
-                                <div class="col-xs-4">
+                                <div class="col-xs-4 icon-col">
                                     <i class="fa fa-hospitals"></i>
                                 </div>
-                                <div class="col-xs-8">
+                                <div class="col-xs-8 content-col">
                                     <h3 class="card-title">Pastoral Care Ministry</h3>
                                     <p class="card-text">Find where you can touch the lives of those in need</p>
                                 </div>
@@ -716,10 +716,10 @@
                     <a href="/StudentConnectTeam">
                         <div class="card">
                             <div class="card-body row">
-                                <div class="col-xs-4">
+                                <div class="col-xs-4 icon-col">
                                     <i class="fa fa-envelope"></i>
                                 </div>
-                                <div class="col-xs-8">
+                                <div class="col-xs-8 content-col">
                                     <h3 class="card-title">Student Connect Reports</h3>
                                     <p class="card-text">Write cards to students to show them you care</p>
                                 </div>
@@ -734,10 +734,10 @@
                 <a href="https://lakepointe.church/serve">
                     <div class="card">
                         <div class="card-body row">
-                            <div class="col-xs-4">
+                            <div class="col-xs-4 icon-col">
                                 <i class="fa fa-people-carry"></i>
                             </div>
-                            <div class="col-xs-8">
+                            <div class="col-xs-8 content-col">
                                 <h3 class="card-title">Find Your Place to Serve</h3>
                                 <p class="card-text">Learn where you can make a difference</p>
                             </div>

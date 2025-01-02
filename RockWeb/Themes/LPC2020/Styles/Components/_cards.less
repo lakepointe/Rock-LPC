@@ -130,7 +130,7 @@
 			padding: 0;
 		}
 		i {
-			font-size: 4.5rem;
+			font-size: 5rem;
 		}
 		.card-title {
 			color: @brand-primary;
@@ -138,6 +138,22 @@
 		}
 		.card-text:last-child {
 			padding-bottom: 0;
+		}
+
+		.icon-col {
+			container-type: inline-size;
+			container-name: sidebar;
+			padding-left: 8px;
+			padding-right: 0;
+		}
+		.content-col {
+			padding-left: 8px;
+			padding-right: 8px;
+		}
+		@container icon-col (max-width: 100px) {
+			i {
+				font-size: 80cqw;
+			}
 		}
 	}
 }
