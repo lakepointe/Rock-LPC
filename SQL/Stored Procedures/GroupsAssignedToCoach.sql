@@ -9,10 +9,14 @@ GO
 01/05/2024 Steve Swaringen - Updated to use new serve team structure instead of group attributes
 06/18/2024 Jon Corey - Updated to use new life group structure instead of group attributes
 07/25/2024 Jon Corey - Removed the references to group attributes since we've fully switched over now
+01/08/2025 Jon Corey - Filtered to just show groups types tagged with the "Groups Toolbox" or "Serve Toolbox" tag
 ************************************************************************************************************************************************/
 ALTER   PROCEDURE [dbo].[_org_lakepointe_sp_GroupsAssignedToCoach] @PersonAliasGuid NVARCHAR(40)
 AS
 BEGIN
+	DECLARE @GroupsTag INT = 471;
+	DECLARE @ServeTag INT = 472;
+
 	-- Identify current user
 	DECLARE @PersonId INT;
 	SELECT @PersonId = p.Id
@@ -33,6 +37,7 @@ BEGIN
 	JOIN [GroupType] gt ON gt.Id = g.GroupTypeId AND gt.IsSchedulingEnabled = 1
 	JOIN [Group] coachGroup ON coachGroup.Id = g.ParentGroupId
 	JOIN leaders coach ON coach.GroupId = coachGroup.Id AND coach.Id = @PersonId
+	JOIN [TaggedItem] ti ON ti.EntityGuid = gt.Guid AND ti.TagId = @ServeTag
 	WHERE gt.GroupTypePurposeValueId = 184 AND g.IsActive = 1 AND g.IsArchived = 0 AND g.DisableScheduling = 0
 
 	UNION ALL
@@ -44,6 +49,7 @@ BEGIN
 	JOIN [Group] coachGroup ON coachGroup.Id = g.ParentGroupId
 	JOIN [Group] captainGroup ON captainGroup.Id = coachGroup.ParentGroupId
 	JOIN leaders captain ON captain.GroupId = captainGroup.Id AND captain.Id = @PersonId
+	JOIN [TaggedItem] ti ON ti.EntityGuid = gt.Guid AND ti.TagId = @ServeTag
 	WHERE gt.GroupTypePurposeValueId = 184 AND g.IsActive = 1 AND g.IsArchived = 0 AND g.DisableScheduling = 0
 
 	UNION ALL
@@ -54,6 +60,7 @@ BEGIN
 	JOIN [GroupType] gt ON gt.Id = g.GroupTypeId
 	JOIN [Group] coachGroup ON coachGroup.Id = g.ParentGroupId
 	JOIN leaders coach ON coach.GroupId = coachGroup.Id AND coach.Id = @PersonId
+	JOIN [TaggedItem] ti ON ti.EntityGuid = gt.Guid AND ti.TagId = @GroupsTag
 	WHERE gt.GroupTypePurposeValueId = 5856 AND g.IsActive = 1 AND g.IsArchived = 0
 
 	UNION ALL
@@ -65,5 +72,6 @@ BEGIN
 	JOIN [Group] coachGroup ON coachGroup.Id = g.ParentGroupId
 	JOIN [Group] captainGroup ON captainGroup.Id = coachGroup.ParentGroupId
 	JOIN leaders captain ON captain.GroupId = captainGroup.Id AND captain.Id = @PersonId
+	JOIN [TaggedItem] ti ON ti.EntityGuid = gt.Guid AND ti.TagId = @GroupsTag
 	WHERE gt.GroupTypePurposeValueId = 5856 AND g.IsActive = 1 AND g.IsArchived = 0
 END;
