@@ -15,12 +15,13 @@
 // </copyright>
 //
 using System;
-using System.Collections.Generic;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 using Rock.Data;
 using Rock.Jobs;
 using Rock.Model;
-using Rock.Tests.Integration.Core.Lava;
+using Rock.Tests.Integration.Modules.Core.Lava;
 using Rock.Tests.Shared;
 
 namespace Rock.Tests.Integration.BugFixes
@@ -57,8 +58,8 @@ namespace Rock.Tests.Integration.BugFixes
                 Guid = testInteractionGuid1.AsGuid(),
                 ForeignKey = "IntegrationTestData",
                 ViewDateTime = RockDateTime.Now,
-                SiteId = 1,
-                PageId = 1,
+                SiteIdentifier = SystemGuid.Site.EXTERNAL_SITE,
+                PageIdentifier = SystemGuid.Page.EXTERNAL_HOMEPAGE,
                 UserAgentString = "test-agent",
                 BrowserIpAddress = "1.1.1.1",
                 BrowserSessionGuid = Guid.Empty,

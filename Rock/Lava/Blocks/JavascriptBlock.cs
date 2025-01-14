@@ -16,12 +16,11 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
 
+using Rock.Web.Cache;
 using Rock.Web.UI;
 
 namespace Rock.Lava.Blocks
@@ -64,7 +63,8 @@ namespace Rock.Lava.Blocks
                 page = HttpContext.Current.Handler as RockPage;
             }
 
-            var parms = ParseMarkup( _markup, context );
+            var settings = GetAttributesFromMarkup( _markup, context );
+            var parms = settings.Attributes;
 
             using ( TextWriter twJavascript = new StringWriter() )
             {
@@ -126,7 +126,7 @@ namespace Rock.Lava.Blocks
                 }
                 else
                 {
-                    var url = ResolveRockUrl( parms["url"] );
+                    var url = ResolveRockUrl( context, parms["url"] );
 
                     var scriptText = $"{Environment.NewLine}<script src='{url}' type='text/javascript'></script>{Environment.NewLine}";
                     if ( parms.ContainsKey( "id" ) )
@@ -172,17 +172,25 @@ namespace Rock.Lava.Blocks
         /// <summary>
         /// Resolves the rock URL.
         /// </summary>
+        /// <param name="context">The lava render context.</param>
         /// <param name="url">The URL.</param>
-        /// <returns></returns>
-        private string ResolveRockUrl(string url )
+        /// <returns>The resolved rock URL.</returns>
+        private string ResolveRockUrl( ILavaRenderContext context, string url )
         {
-            // If we are not operating in the context of a page, return the unresolved URL.
-            if ( HttpContext.Current == null )
+            // Some requests (i.e.Obsidian block action requests) won't have a RockPage,
+            // so try to resolve the URL using the RockRequestContext first.
+            var rockRequestContext = context?.GetRockRequestContext();
+            if ( rockRequestContext != null )
             {
-                return url;
+                return rockRequestContext.ResolveRockUrl( url );
             }
 
-            RockPage page = HttpContext.Current.Handler as RockPage;
+            var page = HttpContext.Current?.Handler as RockPage;
+            if ( page == null )
+            {
+                // If we are not operating in the context of a page, return the unresolved URL.
+                return url;
+            }
 
             if ( url.StartsWith( "~~" ) )
             {
@@ -202,39 +210,16 @@ namespace Rock.Lava.Blocks
             return page.ResolveUrl( url );
         }
 
-        /// <summary>
-        /// Parses the markup.
-        /// </summary>
-        /// <param name="markup">The markup.</param>
-        /// <param name="context">The context.</param>
-        /// <returns></returns>
-        private Dictionary<string, string> ParseMarkup( string markup, ILavaRenderContext context )
+        internal static LavaElementAttributes GetAttributesFromMarkup( string markup, ILavaRenderContext context )
         {
-            // first run lava across the inputted markup
-            var internalMergeFields = context.GetMergeFields();
+            var settings = LavaElementAttributes.NewFromMarkup( markup, context );
 
-            var resolvedMarkup = markup.ResolveMergeFields( internalMergeFields );
+            settings.AddOrIgnore( "cacheduration", "0" );
+            settings.AddOrIgnore( "references", string.Empty );
+            settings.AddOrIgnore( "disableanonymousfunction", "false" );
+            settings.AddOrIgnore( "url", string.Empty );
 
-            var parms = new Dictionary<string, string>();
-            parms.Add( "cacheduration", "0" );
-            parms.Add( "references", string.Empty );
-            parms.Add( "disableanonymousfunction", "false" );
-            parms.Add( "url", string.Empty );
-
-            var markupItems = Regex.Matches( resolvedMarkup, @"(\S*?:'[^']+')" )
-                .Cast<Match>()
-                .Select( m => m.Value )
-                .ToList();
-
-            foreach ( var item in markupItems )
-            {
-                var itemParts = item.ToString().Split( new char[] { ':' }, 2 );
-                if ( itemParts.Length > 1 )
-                {
-                    parms.AddOrReplace( itemParts[0].Trim().ToLower(), itemParts[1].Trim().Substring( 1, itemParts[1].Length - 2 ) );
-                }
-            }
-            return parms;
+            return settings;
         }
     }
 }

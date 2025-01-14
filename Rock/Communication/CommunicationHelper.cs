@@ -148,11 +148,12 @@ namespace Rock.Communication
 
             var message = new RockSMSMessage( systemCommunication );
             message.SetRecipients( recipients );
+            message.AdditionalMergeFields = mergeObjects;
             createMessageResult.Message = message;
             return createMessageResult;
         }
 
-        private static CreateMessageResult CreateEmailMessage( Person person, Dictionary<string, object> mergeObjects, SystemCommunication systemCommunication )
+        internal static CreateMessageResult CreateEmailMessage( Person person, Dictionary<string, object> mergeObjects, SystemCommunication systemCommunication )
         {
             var createMessageResult = new CreateMessageResult();
 
@@ -187,6 +188,7 @@ namespace Rock.Communication
 
             var message = new RockEmailMessage( systemCommunication );
             message.SetRecipients( recipients );
+            message.AdditionalMergeFields = mergeObjects;
             createMessageResult.Message = message;
             return createMessageResult;
         }

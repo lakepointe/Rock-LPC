@@ -1,19 +1,21 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 using Rock.Data;
 using Rock.Jobs;
 using Rock.Model;
-using Rock.Tests.Integration.Core.Jobs;
+using Rock.Tests.Shared.TestFramework;
 using Rock.Web.Cache;
 
-namespace Rock.Tests.Integration.Core.Jobs
+namespace Rock.Tests.Integration.Modules.Core.Jobs
 {
     /// <summary>
     /// Defines test class SendFollowingEventNotificationTests.
     /// </summary>
     [TestClass]
-    public class SendFollowingEventNotificationTests
+    public class SendFollowingEventNotificationTests : DatabaseTestsBase
     {
         #region Tests
 
@@ -133,14 +135,13 @@ namespace Rock.Tests.Integration.Core.Jobs
                 followingService.Add( following );
                 rockContext.SaveChanges();
             }
-            
+
             var job = new SendFollowingEvents();
-            var jobContext = new TestJobContext();
             var followingEventSystemEmailGuid = "CA7576CD-0A10-4ADA-A068-62EE598178F5".AsGuid();
             var testAttributeValues = new Dictionary<string, string>();
             testAttributeValues.AddOrReplace( "EligibleFollowers", rsrStaffWorkersGroupGuid.ToString() );
             testAttributeValues.AddOrReplace( "EmailTemplate", followingEventSystemEmailGuid.ToString());
-            job.ExecuteAsIntegrationTest( jobContext, testAttributeValues );
+            job.ExecuteInternal( testAttributeValues );
         }
 
         #endregion Tests

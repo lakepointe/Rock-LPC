@@ -20,8 +20,12 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+
+using Rock.Attribute;
 using Rock.BulkImport;
 using Rock.Data;
+using Rock.Transactions;
+using Rock.Utility;
 using Rock.Web.Cache;
 
 namespace Rock.Model
@@ -106,7 +110,7 @@ namespace Rock.Model
             // but at least one of these has a value, then we should lookup or create a session
             if ( browserSessionId.HasValue || ipAddress.IsNotNullOrWhiteSpace() || deviceTypeId.HasValue )
             {
-                var interactionSessionId = GetInteractionSessionId( browserSessionId ?? Guid.NewGuid(), ipAddress, deviceTypeId );
+                var interactionSessionId = GetInteractionSessionId( browserSessionId ?? Guid.NewGuid(), ipAddress, deviceTypeId, interaction.InteractionDateKey );
                 interaction.InteractionSessionId = interactionSessionId;
             }
 
@@ -116,7 +120,23 @@ namespace Rock.Model
         /// <summary>
         /// The ua parser
         /// </summary>
-        private static UAParser.Parser uaParser = UAParser.Parser.GetDefault();
+        private static UAParser.Parser _uaParser = UAParser.Parser.GetDefault();
+
+        /// <summary>
+        /// Parse the user agent string from a HTTP Request to extract information about the client device.
+        /// </summary>
+        /// <param name="userAgent"></param>
+        /// <param name="deviceOs"></param>
+        /// <param name="deviceApplication"></param>
+        /// <param name="deviceClientType"></param>
+        public static void ParseUserAgentString( string userAgent, out string deviceOs, out string deviceApplication, out string deviceClientType )
+        {
+            userAgent = userAgent ?? string.Empty;
+
+            deviceOs = _uaParser.ParseOS( userAgent ).ToString();
+            deviceApplication = _uaParser.ParseUserAgent( userAgent ).ToString();
+            deviceClientType = InteractionDeviceType.GetClientType( userAgent );
+        }
 
         /// <summary>
         /// Creates the interaction.
@@ -130,9 +150,12 @@ namespace Rock.Model
         public Interaction CreateInteraction( int interactionComponentId, string userAgent, string url, string ipAddress, Guid? browserSessionId )
         {
             userAgent = userAgent ?? string.Empty;
-            var deviceOs = uaParser.ParseOS( userAgent ).ToString();
-            var deviceApplication = uaParser.ParseUserAgent( userAgent ).ToString();
-            var deviceClientType = InteractionDeviceType.GetClientType( userAgent );
+
+            string deviceOs;
+            string deviceApplication;
+            string deviceClientType;
+
+            ParseUserAgentString( userAgent, out deviceOs, out deviceApplication, out deviceClientType );
 
             var interaction = CreateInteraction( interactionComponentId, null, null, string.Empty, null, null, RockDateTime.Now, deviceApplication, deviceOs, deviceClientType, userAgent, ipAddress, browserSessionId );
 
@@ -205,7 +228,7 @@ namespace Rock.Model
             return AddInteraction( interactionComponentId, entityId, operation, string.Empty, interactionData, personAliasId, dateTime, deviceApplication, deviceOs, deviceClientType, deviceTypeData, ipAddress, null );
         }
 
-        private static ConcurrentDictionary<string, int> _deviceTypeIdLookup = new ConcurrentDictionary<string, int>();
+        private const string DeviceTypeIdLookupCacheKey = "InteractionServiceDeviceTypeIdLookup";
 
         /// <summary>
         /// Gets the interaction device type identifier.
@@ -217,12 +240,20 @@ namespace Rock.Model
         /// <returns></returns>
         public int GetInteractionDeviceTypeId( string application, string operatingSystem, string clientType, string deviceTypeData )
         {
+            var lookupTable = RockCacheManager<object>.Instance.Get( DeviceTypeIdLookupCacheKey ) as ConcurrentDictionary<string, int>;
+
+            if ( lookupTable == null )
+            {
+                lookupTable = new ConcurrentDictionary<string, int>();
+                RockCacheManager<object>.Instance.AddOrUpdate( DeviceTypeIdLookupCacheKey, lookupTable );
+            }
+
             var lookupKey = $"{application}|{operatingSystem}|{clientType}";
-            int? deviceTypeId = _deviceTypeIdLookup.GetValueOrNull( lookupKey );
+            int? deviceTypeId = lookupTable.GetValueOrNull( lookupKey );
             if ( deviceTypeId == null )
             {
                 deviceTypeId = GetOrCreateInteractionDeviceTypeId( application, operatingSystem, clientType, deviceTypeData );
-                _deviceTypeIdLookup.AddOrReplace( lookupKey, deviceTypeId.Value );
+                lookupTable.AddOrReplace( lookupKey, deviceTypeId.Value );
             }
 
             return deviceTypeId.Value;
@@ -322,8 +353,9 @@ namespace Rock.Model
         /// <param name="browserSessionId">The browser session identifier.</param>
         /// <param name="ipAddress">The ip address.</param>
         /// <param name="interactionDeviceTypeId">The interaction device type identifier.</param>
+        /// <param name="interactionDateKey">The interaction date key.</param>
         /// <returns></returns>
-        private int GetInteractionSessionId( Guid browserSessionId, string ipAddress, int? interactionDeviceTypeId )
+        private int GetInteractionSessionId( Guid browserSessionId, string ipAddress, int? interactionDeviceTypeId, int? interactionDateKey = null )
         {
             object deviceTypeId = DBNull.Value;
             if ( interactionDeviceTypeId != null )
@@ -332,6 +364,7 @@ namespace Rock.Model
             }
 
             var currentDateTime = RockDateTime.Now;
+            interactionDateKey = interactionDateKey ?? currentDateTime.ToString( "yyyyMMdd" ).AsInteger();
 
             // To make this more thread safe and to avoid overhead of an extra database call, etc, run a SQL block to Get/Create in one quick SQL round trip
             int interactionSessionId = this.Context.Database.SqlQuery<int>(
@@ -350,6 +383,7 @@ namespace Rock.Model
                             ,[Guid]
                             ,[CreatedDateTime]
                             ,[ModifiedDateTime]
+                            ,[SessionStartDateKey]
                             )
                         OUTPUT inserted.Id
                         VALUES (
@@ -358,6 +392,7 @@ namespace Rock.Model
                             ,@browserSessionId
                             ,@currentDateTime
                             ,@currentDateTime
+                            ,@sessionStartDateKey
                             )
                     END
                     ELSE
@@ -368,7 +403,8 @@ namespace Rock.Model
                 new SqlParameter( "@browserSessionId", browserSessionId ),
                 new SqlParameter( "@ipAddress", ipAddress.Truncate( 45 ) ),
                 new SqlParameter( "@interactionDeviceTypeId", deviceTypeId ),
-                new SqlParameter( "@currentDateTime", currentDateTime ) )
+                new SqlParameter( "@currentDateTime", currentDateTime ),
+                new SqlParameter( "@sessionStartDateKey", interactionDateKey ) )
                 .FirstOrDefault();
 
             return interactionSessionId;
@@ -397,6 +433,154 @@ namespace Rock.Model
             }
 
             return interactionsCount;
+        }
+
+        /// <summary>
+        /// Create an interaction for a web page.
+        /// </summary>
+        /// <param name="interactionInfo"></param>
+        /// <param name="immediate"></param>
+        internal static void RegisterPageInteraction( RegisterPageInteractionActionInfo interactionInfo, bool immediate = false )
+        {
+            // Get the Page.
+            var page = PageCache.Get( interactionInfo.PageId );
+            if ( page == null )
+            {
+                throw new Exception( $"Invalid page reference. [PageId={interactionInfo.PageId}]" );
+            }
+
+            // Get the Site.
+            var site = SiteCache.Get( page.SiteId );
+
+            // Get the Person.
+            int? personAliasId = null;
+            if ( !string.IsNullOrWhiteSpace( interactionInfo.UserIdKey ) )
+            {
+                personAliasId = IdHasher.Instance.GetId( interactionInfo.UserIdKey );
+                if ( personAliasId == null )
+                {
+                    throw new Exception( $"Invalid user reference. [UserIdKey={interactionInfo.UserIdKey}]" );
+                }
+            }
+
+            // Get the interaction channel and component for a page interaction.
+            var dvWebsiteChannelType = DefinedValueCache.Get( SystemGuid.DefinedValue.INTERACTIONCHANNELTYPE_WEBSITE );
+
+            // Use the Page Title as the InteractionSummary.
+            var title = page.BrowserTitle ?? page.PageTitle ?? string.Empty;
+
+            if ( title.Contains( "|" ) )
+            {
+                // Remove the site name.
+                title = title.Substring( 0, title.LastIndexOf( '|' ) ).Trim();
+            }
+
+            // Create the interaction transaction.
+            var interactionTransactionInfo = new InteractionTransactionInfo
+            {
+                GetValuesFromHttpRequest = false,
+                PersonAliasId = personAliasId,
+                InteractionData = interactionInfo.PageRequestUrl,
+                InteractionTimeToServe = interactionInfo.PageRequestTimeToServe,
+                InteractionChannelCustomIndexed1 = interactionInfo.UrlReferrerHostAddress,
+                InteractionChannelCustom2 = interactionInfo.UrlReferrerSearchTerms,
+                InteractionSummary = title,
+                UserAgent = interactionInfo.UserAgent,
+                IPAddress = interactionInfo.UserHostAddress,
+                BrowserSessionId = interactionInfo.BrowserSessionGuid,
+                InteractionSource = interactionInfo.InteractionSource,
+                InteractionMedium = interactionInfo.InteractionMedium,
+                InteractionCampaign = interactionInfo.InteractionCampaign,
+                InteractionContent = interactionInfo.InteractionContent,
+                InteractionTerm = interactionInfo.InteractionTerm
+            };
+
+            var pageViewTransaction = new InteractionTransaction( dvWebsiteChannelType,
+                site,
+                page,
+                interactionTransactionInfo );
+
+            // Either queue the interaction to be sent or
+            // immediately post it to the database.
+            if ( immediate )
+            {
+                pageViewTransaction.Execute();
+            }
+            else
+            {
+                pageViewTransaction.Enqueue();
+            }
+
+            var intentSettings = page.GetAdditionalSettings<PageService.IntentSettings>();
+            RegisterIntentInteractions( intentSettings.InteractionIntentValueIds, immediate: immediate );
+        }
+
+        /// <summary>
+        /// Creates interactions for the provided interaction intent defined values.
+        /// </summary>
+        /// <param name="interactionIntentValueIds">The interaction intent defined value identifiers.</param>
+        /// <param name="interactionOperation">The optional interaction operation.</param>
+        /// <param name="immediate">Whether the transaction should be written to the database immediately. If false, it will be added to the transaction queue.</param>
+        /// <remarks>
+        ///     <para>
+        ///         <strong>This is an internal API</strong> that supports the Rock
+        ///         infrastructure and not subject to the same compatibility standards
+        ///         as public APIs. It may be changed or removed without notice in any
+        ///         release and should therefore not be directly used in any plug-ins.
+        ///     </para>
+        /// </remarks>
+        [RockInternal( "1.16.4" )]
+        public static void RegisterIntentInteractions( IEnumerable<int> interactionIntentValueIds, string interactionOperation = "View", bool immediate = false )
+        {
+            if ( interactionIntentValueIds?.Any() != true )
+            {
+                return;
+            }
+
+            var channelTypeMediumValueId = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.INTERACTIONCHANNELTYPE_INTERACTION_INTENTS )?.Id;
+            var definedTypeEntityTypeId = EntityTypeCache.Get( Rock.SystemGuid.EntityType.DEFINED_TYPE )?.Id;
+            var interactionIntentDefinedTypeId = DefinedTypeCache.Get( Rock.SystemGuid.DefinedType.INTERACTION_INTENT.AsGuid() )?.Id;
+
+            if ( !channelTypeMediumValueId.HasValue
+                || !definedTypeEntityTypeId.HasValue
+                || !interactionIntentDefinedTypeId.HasValue )
+            {
+                // Missing required system values.
+                return;
+            }
+
+            foreach ( var intentValueId in interactionIntentValueIds )
+            {
+                var intentValue = DefinedValueCache.Get( intentValueId );
+                if ( intentValue == null
+                    || intentValue.DefinedTypeId != interactionIntentDefinedTypeId.Value
+                    || intentValue.Value.IsNullOrWhiteSpace() )
+                {
+                    continue;
+                }
+
+                var info = new InteractionTransactionInfo
+                {
+                    ChannelTypeMediumValueId = channelTypeMediumValueId,
+                    ChannelName = "Interaction Intents",
+                    ComponentEntityTypeId = definedTypeEntityTypeId,
+                    ChannelEntityId = interactionIntentDefinedTypeId,
+                    ComponentEntityId = intentValue.Id,
+                    ComponentName = intentValue.Value,
+                    InteractionOperation = interactionOperation
+                };
+
+                var intentTransaction = new InteractionTransaction( info );
+
+                if ( immediate )
+                {
+                    intentTransaction.Execute();
+                }
+                else
+                {
+                    intentTransaction.Enqueue();
+                }
+            }
         }
 
         #region Queryables that return Page Views
@@ -656,4 +840,169 @@ namespace Rock.Model
     }
 
     #endregion BulkImport related
+
+
+    #region Support Classes
+
+    /// <summary>
+    /// Describes a web page interaction.
+    /// </summary>
+    public class PageInteractionInfo
+    {
+        /// <summary>
+        /// The unique identifier of the page.
+        /// </summary>
+        public int PageId { get; set; }
+
+        /// <summary>
+        /// The name of the action being registered.
+        /// </summary>
+        public string ActionName { get; set; } = "View";
+
+        /// <summary>
+        /// The unique identifier for the browser session.
+        /// </summary>
+        public Guid BrowserSessionGuid { get; set; }
+
+        /// <summary>
+        /// The URL requested by the client browser.
+        /// </summary>
+        public string PageRequestUrl { get; set; }
+
+        /// <summary>
+        /// The server date and time on which the page was requested.
+        /// </summary>
+        public DateTime PageRequestDateTime { get; set; }
+
+        /// <summary>
+        /// The time in seconds required to serve the initial page request.
+        /// </summary>
+        public double? PageRequestTimeToServe { get; set; }
+
+        /// <summary>
+        /// Gets the raw user agent string of the client browser.
+        /// </summary>
+        public string UserAgent { get; set; }
+
+        /// <summary>
+        /// Gets the IP host address of the remote client.
+        /// </summary>
+        public string UserHostAddress { get; set; }
+
+        /// <summary>
+        /// Gets the DNS host name or IP address of the client's previous request that linked to the current URL.
+        /// </summary>
+        public string UrlReferrerHostAddress { get; set; }
+
+        /// <summary>
+        /// Gets the query search terms of the client's previous request that linked to the current URL.
+        /// </summary>
+        public string UrlReferrerSearchTerms { get; set; }
+
+        /// <summary>
+        /// The unique identifier of the user initiating this interaction.
+        /// </summary>
+        public string UserIdKey { get; set; }
+    }
+
+    /// <summary>
+    /// Describes a processing request to register a page interaction.
+    /// </summary>
+    internal class RegisterPageInteractionActionInfo
+    {
+        /// <summary>
+        /// Create a new instance from a PageInteractionInfo object.
+        /// </summary>
+        /// <param name="interactionInfo"></param>
+        /// <returns></returns>
+        public static RegisterPageInteractionActionInfo FromPageInteraction( PageInteractionInfo interactionInfo )
+        {
+            var actionInfo = new RegisterPageInteractionActionInfo()
+            {
+                PageId = interactionInfo.PageId,
+                UserIdKey = interactionInfo.UserIdKey,
+                PageRequestUrl = interactionInfo.PageRequestUrl,
+                PageRequestTimeToServe = interactionInfo.PageRequestTimeToServe,
+                UrlReferrerHostAddress = interactionInfo.UrlReferrerHostAddress,
+                UrlReferrerSearchTerms = interactionInfo.UrlReferrerSearchTerms,
+                UserAgent = interactionInfo.UserAgent,
+                UserHostAddress = interactionInfo.UserHostAddress,
+                BrowserSessionGuid = interactionInfo.BrowserSessionGuid
+            };
+
+            return actionInfo;
+        }
+
+        /// <summary>
+        /// The unique identifier of the page.
+        /// </summary>
+        public int PageId { get; set; }
+
+        /// <summary>
+        /// The name of the action being registered.
+        /// </summary>
+        public string ActionName { get; set; } = "View";
+
+        /// <summary>
+        /// The unique identifier for the browser session.
+        /// </summary>
+        public Guid BrowserSessionGuid { get; set; }
+
+        /// <summary>
+        /// The URL requested by the client browser.
+        /// </summary>
+        public string PageRequestUrl { get; set; }
+
+        /// <summary>
+        /// The server date and time on which the page was requested.
+        /// </summary>
+        public DateTime PageRequestDateTime { get; set; }
+
+        /// <summary>
+        /// The time in seconds required to serve the initial page request.
+        /// </summary>
+        public double? PageRequestTimeToServe { get; set; }
+
+        /// <summary>
+        /// Gets the raw user agent string of the client browser.
+        /// </summary>
+        public string UserAgent { get; set; }
+
+        /// <summary>
+        /// Gets the IP host address of the remote client.
+        /// </summary>
+        public string UserHostAddress { get; set; }
+
+        /// <summary>
+        /// Gets the DNS host name or IP address of the client's previous request that linked to the current URL.
+        /// </summary>
+        public string UrlReferrerHostAddress { get; set; }
+
+        /// <summary>
+        /// Gets the query search terms of the client's previous request that linked to the current URL.
+        /// </summary>
+        public string UrlReferrerSearchTerms { get; set; }
+
+        /// <summary>
+        /// The unique identifier of the user initiating this interaction.
+        /// </summary>
+        public string UserIdKey { get; set; }
+
+        /// <inheritdoc cref="Interaction.Source"/>
+        public string InteractionSource { get; set; }
+
+        /// <inheritdoc cref="Interaction.Medium"/>
+        public string InteractionMedium { get; set; }
+
+        /// <inheritdoc cref="Interaction.Campaign"/>
+        public string InteractionCampaign { get; set; }
+
+        /// <inheritdoc cref="Interaction.Content"/>
+        public string InteractionContent { get; set; }
+
+        /// <inheritdoc cref="Interaction.Term"/>
+        public string InteractionTerm { get; set; }
+    }
+
+    #endregion
 }

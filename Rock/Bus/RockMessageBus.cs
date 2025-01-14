@@ -187,6 +187,41 @@ namespace Rock.Bus
         }
 
         /// <summary>
+        /// Starts the unit test in-memory bus.
+        /// </summary>
+        internal static async Task StartTestMemoryBusAsync()
+        {
+            _transportComponent = new InMemory( false );
+
+            await ConfigureAndStartBusAsync();
+        }
+
+        /// <summary>
+        /// Start bus with the specified component.
+        /// </summary>
+        /// <remarks>This is meant to be used by unit tests.</remarks>
+        /// <param name="component">The component to initialize the bus with.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        internal static async Task StartBusInternalAsync( TransportComponent component )
+        {
+            _transportComponent = component;
+
+            await ConfigureAndStartBusAsync();
+        }
+
+        /// <summary>
+        /// Stops the bus.
+        /// </summary>
+        /// <remarks>This is meant to be used by unit tests.</remarks>
+        internal static void StopBusInternal()
+        {
+            _transportComponent = null;
+            _bus = null;
+            _isBusStarted = false;
+            _busStartupCompleted = new TaskCompletionSource<bool>();
+        }
+
+        /// <summary>
         /// Determines whether the message was sent by this Rock instance.
         /// </summary>
         /// <typeparam name="TQueue">The type of the queue.</typeparam>

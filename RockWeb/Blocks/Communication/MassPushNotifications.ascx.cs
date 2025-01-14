@@ -27,6 +27,7 @@ using Rock.Communication;
 using Rock.Data;
 using Rock.Model;
 using Rock.Tasks;
+using Rock.Utility;
 using Rock.Web.Cache;
 using Rock.Web.UI;
 using Rock.Web.UI.Controls;
@@ -444,7 +445,9 @@ namespace RockWeb.Blocks.Communication
         /// </summary>
         private void ShowTemplateSelection()
         {
-            cpCommunicationTemplate.SetValue( GetBlockUserPreference( UserPreference.CategoryCommunicationTemplate ).AsIntegerOrNull() );
+            var preferences = GetBlockPersonPreferences();
+
+            cpCommunicationTemplate.SetValue( preferences.GetValue( UserPreference.CategoryCommunicationTemplate ).AsIntegerOrNull() );
             pnlTemplateSelection.Visible = true;
 
             if ( !BindTemplatePicker() )
@@ -508,7 +511,7 @@ namespace RockWeb.Blocks.Communication
 
                 if ( communicationTemplate.ImageFileId.HasValue )
                 {
-                    var imageUrl = string.Format( "~/GetImage.ashx?id={0}", communicationTemplate.ImageFileId );
+                    var imageUrl = FileUrlHelper.GetImageUrl( communicationTemplate.ImageFileId.Value );
                     lTemplateImagePreview.Text = string.Format( "<img src='{0}' width='100%'/>", this.ResolveRockUrl( imageUrl ) );
                 }
                 else
@@ -579,7 +582,11 @@ namespace RockWeb.Blocks.Communication
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void cpCommunicationTemplate_SelectItem( object sender, EventArgs e )
         {
-            SetBlockUserPreference( UserPreference.CategoryCommunicationTemplate, cpCommunicationTemplate.SelectedValue );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( UserPreference.CategoryCommunicationTemplate, cpCommunicationTemplate.SelectedValue );
+            preferences.Save();
+
             BindTemplatePicker();
         }
 

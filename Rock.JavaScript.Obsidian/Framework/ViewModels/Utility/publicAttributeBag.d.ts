@@ -30,7 +30,7 @@ import { PublicAttributeCategoryBag } from "@Obsidian/ViewModels/Utility/publicA
  */
 export type PublicAttributeBag = {
     /** Gets or sets the attribute unique identifier. */
-    attributeGuid?: Guid | null;
+    attributeGuid: Guid;
 
     /** Gets or sets the categories. */
     categories?: PublicAttributeCategoryBag[] | null;
@@ -42,7 +42,7 @@ export type PublicAttributeBag = {
     description?: string | null;
 
     /** Gets or sets the field type unique identifier. */
-    fieldTypeGuid?: Guid | null;
+    fieldTypeGuid: Guid;
 
     /** Gets or sets a value indicating whether this attribute value is required. */
     isRequired: boolean;
@@ -56,11 +56,9 @@ export type PublicAttributeBag = {
     /** Gets or sets the order. */
     order: number;
 
-    // LPC CODE - Pulled in v15.2 changes
     /** Gets or sets the pre HTML. */
     postHtml?: string | null;
 
     /** Gets or sets the pre HTML. */
     preHtml?: string | null;
-    // END LPC CODE - Pulled in v15.2 changes
 };

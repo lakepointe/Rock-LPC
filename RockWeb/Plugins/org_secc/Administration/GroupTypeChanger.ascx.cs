@@ -26,6 +26,8 @@ using Rock.Model;
 using Rock.Web.UI;
 using Rock.Web.UI.Controls;
 
+// LPC MODIFIED CODE - Made major changes to this block to support v14 of Rock, to improve performance, to delete orphaned attribute values, and to improve the ease of usability of this block
+
 namespace RockWeb.Plugins.org_secc.Administration
 {
     /// <summary>

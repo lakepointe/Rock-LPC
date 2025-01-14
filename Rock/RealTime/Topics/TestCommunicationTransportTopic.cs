@@ -19,9 +19,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
+using Rock.Communication;
 using Rock.Data;
 using Rock.Model;
+using Rock.Utility;
 
 namespace Rock.RealTime.Topics
 {
@@ -62,7 +63,16 @@ namespace Rock.RealTime.Topics
         {
             if ( !message.PipelineGuid.HasValue )
             {
-                new Rock.Communication.Medium.Sms().ProcessResponse( message.ToNumber, message.FromNumber, message.Body, out var errorMessage );
+                string errorMessage;
+                var medium = CommunicationServicesHost.GetCommunicationMediumSms();
+                if ( medium != null )
+                {
+                    medium.ProcessResponse( message.ToNumber, message.FromNumber, message.Body, out errorMessage );
+                }
+                else
+                {
+                    errorMessage = "SMS Medium not available.";
+                }
 
                 if ( errorMessage.IsNotNullOrWhiteSpace() )
                 {
@@ -120,8 +130,8 @@ namespace Rock.RealTime.Topics
                     {
                         FileName = bf.FileName,
                         Url = isImage
-                            ? $"{publicAppRoot}GetImage.ashx?Id={bf.Id}"
-                            : $"{publicAppRoot}GetFile.ashx?Id={bf.Id}"
+                            ? FileUrlHelper.GetImageUrl( bf.Id, new GetImageUrlOptions { PublicAppRoot = publicAppRoot } )
+                            : FileUrlHelper.GetFileUrl( bf.Id, new GetFileUrlOptions { PublicAppRoot = publicAppRoot } )
                     };
                 } )
                 .ToList();

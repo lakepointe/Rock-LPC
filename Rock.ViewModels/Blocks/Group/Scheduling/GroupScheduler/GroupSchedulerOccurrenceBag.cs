@@ -33,6 +33,14 @@ namespace Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler
         public int AttendanceOccurrenceId { get; set; }
 
         /// <summary>
+        /// Gets or sets the group order for this occurrence.
+        /// </summary>
+        /// <value>
+        /// The group order for this occurrence.
+        /// </value>
+        public int GroupOrder { get; set; }
+
+        /// <summary>
         /// Gets or sets the group ID for this occurrence.
         /// </summary>
         /// <value>
@@ -113,28 +121,20 @@ namespace Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler
         public int ScheduleOrder { get; set; }
 
         /// <summary>
-        /// Gets or sets the ISO 8601 date for this occurrence.
-        /// </summary>
-        /// <value>
-        /// The ISO 8601 date for this occurrence.
-        /// </value>
-        public string OccurrenceDate { get; set; }
-
-        /// <summary>
-        /// Gets or sets the friendly occurrence date.
-        /// </summary>
-        /// <value>
-        /// The friendly occurrence date.
-        /// </value>
-        public string FriendlyOccurrenceDate { get; set; }
-
-        /// <summary>
         /// Gets or sets the occurrence date and time.
         /// </summary>
         /// <value>
         /// The occurrence date and time.
         /// </value>
         public DateTimeOffset OccurrenceDateTime { get; set; }
+
+        /// <summary>
+        /// Gets the occurrence date.
+        /// </summary>
+        /// <value>
+        /// The occurrence date.
+        /// </value>
+        public DateTimeOffset OccurrenceDate => OccurrenceDateTime.Date;
 
         /// <summary>
         /// Gets or sets the ISO 8601 Sunday date for this occurrence.

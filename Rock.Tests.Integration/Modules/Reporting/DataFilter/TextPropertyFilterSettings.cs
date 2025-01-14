@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using Rock.Model;
 using Rock.Web.Cache;
 
-namespace Rock.Tests.Integration.Reporting.DataFilter
+namespace Rock.Tests.Integration.Modules.Reporting.DataFilter
 {
     /// <summary>
     /// Represents the settings for a DataFilter that can be applied to the text property of an entity.
@@ -67,15 +67,22 @@ namespace Rock.Tests.Integration.Reporting.DataFilter
             ValidateSettings();
 
             var filter = new DataViewFilter();
-
             filter.ExpressionType = FilterExpressionType.Filter;
             filter.EntityTypeId = EntityTypeCache.GetId( typeof( Rock.Reporting.DataFilter.PropertyFilter ) );
-
-            var settings = new List<string> { $"Property_{PropertyName}", Comparison.ConvertToInt().ToString(), Value };
-
-            filter.Selection = settings.ToJson();
+            filter.Selection = GetSettingsString();
 
             return filter;
+        }
+
+        /// <summary>
+        /// Gets the settings for the filter as a JSON string.
+        /// </summary>
+        /// <returns></returns>
+        public string GetSettingsString()
+        {
+            var settings = new List<string> { $"Property_{PropertyName}", Comparison.ConvertToInt().ToString(), Value };
+            var json = settings.ToJson();
+            return json;
         }
     }
 }

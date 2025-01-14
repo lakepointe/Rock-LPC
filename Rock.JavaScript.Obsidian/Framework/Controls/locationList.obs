@@ -44,13 +44,13 @@
     import { LocationListSaveNewLocationOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/locationListSaveNewLocationOptionsBag";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
     import { computed, PropType, ref, watch } from "vue";
-    import BaseAsyncPicker from "./baseAsyncPicker";
-    import RockLabel from "./rockLabel";
-    import RockForm from "./rockForm";
-    import AttributeValuesContainer from "./attributeValuesContainer";
-    import TextBox from "./textBox";
-    import RockButton from "./rockButton";
-    import Loading from "./loading";
+    import BaseAsyncPicker from "./baseAsyncPicker.obs";
+    import RockLabel from "./rockLabel.obs";
+    import RockForm from "./rockForm.obs";
+    import AttributeValuesContainer from "./attributeValuesContainer.obs";
+    import TextBox from "./textBox.obs";
+    import RockButton from "./rockButton.obs";
+    import Loading from "./loading.obs";
     import NotificationBox from "./notificationBox.obs";
     import { BtnSize } from "@Obsidian/Enums/Controls/btnSize";
     import { BtnType } from "@Obsidian/Enums/Controls/btnType";
@@ -59,11 +59,12 @@
     import { AddressControlBag } from "@Obsidian/ViewModels/Controls/addressControlBag";
     import { validateAddress } from "@Obsidian/Utility/address";
     import { FormError } from "@Obsidian/Utility/form";
-    import RockValidation from "./rockValidation";
+    import RockValidation from "./rockValidation.obs";
+    import { emptyGuid, toGuidOrNull } from "@Obsidian/Utility/guid";
 
     const props = defineProps({
         modelValue: {
-            type: Object as PropType<ListItemBag | ListItemBag[] | null>,
+            type: Object as PropType<ListItemBag | ListItemBag[] | null | undefined>,
             required: false
         },
 
@@ -73,13 +74,13 @@
         },
 
         locationTypeValueGuid: {
-            type: String as PropType<Guid>,
-            default: ""
+            type: String as PropType<Guid | null>,
+            default: null
         },
 
         parentLocationGuid: {
-            type: String as PropType<Guid>,
-            default: ""
+            type: String as PropType<Guid | null>,
+            default: null
         },
 
         showCityState: {
@@ -109,18 +110,12 @@
     const itemsSource = ref<(() => Promise<ListItemBag[]>) | null>(null);
 
     async function loadItems(): Promise<ListItemBag[]> {
-        const options: Partial<LocationListGetLocationsOptionsBag> = {
+        const options: LocationListGetLocationsOptionsBag = {
             showCityState: props.showCityState,
-            securityGrantToken: securityGrantToken.value
+            securityGrantToken: securityGrantToken.value,
+            locationTypeValueGuid: toGuidOrNull(props.locationTypeValueGuid) ?? emptyGuid,
+            parentLocationGuid: toGuidOrNull(props.parentLocationGuid) ?? emptyGuid,
         };
-
-        if (props.parentLocationGuid) {
-            options.parentLocationGuid = props.parentLocationGuid;
-        }
-
-        if (props.locationTypeValueGuid) {
-            options.locationTypeValueGuid = props.locationTypeValueGuid;
-        }
 
         //var locationTypeValueGuid = "C0D7AE35-7901-4396-870E-3AAF472AAE88";
         const url = "/api/v2/Controls/LocationListGetLocations";
@@ -217,23 +212,17 @@
         isValidating.value = false;
         isLoading.value = true;
 
-        const options: Partial<LocationListSaveNewLocationOptionsBag> = {
+        const options: LocationListSaveNewLocationOptionsBag = {
             securityGrantToken: securityGrantToken.value,
             name: newLocationName.value,
             showCityState: props.showCityState,
-            attributeValues: attributeValues.value
+            attributeValues: attributeValues.value,
+            locationTypeValueGuid: toGuidOrNull(props.locationTypeValueGuid) ?? emptyGuid,
+            parentLocationGuid: toGuidOrNull(props.parentLocationGuid) ?? emptyGuid,
         };
 
         if (newLocationAddress.value.street1 || props.isAddressRequired) {
             options.address = newLocationAddress.value;
-        }
-
-        if (props.parentLocationGuid) {
-            options.parentLocationGuid = props.parentLocationGuid;
-        }
-
-        if (props.locationTypeValueGuid) {
-            options.locationTypeValueGuid = props.locationTypeValueGuid;
         }
 
         const url = "/api/v2/Controls/LocationListSaveNewLocation";
@@ -275,5 +264,5 @@
         return props.isAddressRequired ? "required" : "";
     });
 
-                    // #endregion
+    // #endregion
 </script>

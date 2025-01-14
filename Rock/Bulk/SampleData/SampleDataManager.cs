@@ -14,6 +14,13 @@
 // limitations under the License.
 // </copyright>
 
+using Rock;
+using Rock.Attribute;
+using Rock.Communication;
+using Rock.Data;
+using Rock.Logging;
+using Rock.Model;
+using Rock.Web.Cache;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -26,13 +33,6 @@ using System.Text;
 using System.Web;
 using System.Web.UI.WebControls;
 using System.Xml.Linq;
-
-using Rock;
-using Rock.Attribute;
-using Rock.Data;
-using Rock.Logging;
-using Rock.Model;
-using Rock.Web.Cache;
 
 namespace Rock.Utility
 {
@@ -793,7 +793,7 @@ namespace Rock.Utility
                         fee.DiscountApplies = GetBooleanValueSafe( feeElement, "discountApplies" );
                         fee.IsRequired = GetBooleanValueSafe( feeElement, "isRequired" );
                         fee.HideWhenNoneRemaining = GetBooleanValueSafe( feeElement, "hideWhenNoneRemaining" );
-                        fee.IsActive = GetBooleanValueSafe( feeElement, "isActive" );
+                        fee.IsActive = GetBooleanValueSafe( feeElement, "isActive", true );
                         registrationTemplate.Fees.Add( fee );
 
                         switch ( feeElement.Attribute( "type" ).Value.Trim().ToLowerInvariant() )
@@ -1019,9 +1019,9 @@ namespace Rock.Utility
             }
         }
 
-        private bool GetBooleanValueSafe( XElement element, string name )
+        private bool GetBooleanValueSafe( XElement element, string name, bool defaultValue = false)
         {
-            return element.Attribute( name ) != null && element.Attribute( name ).Value.AsBoolean();
+            return  element?.Attribute( name )?.Value?.AsBoolean() ?? defaultValue;
         }
 
         private int? GetNullableIntegerValueSafe( XElement element, string name )
@@ -1282,7 +1282,7 @@ namespace Rock.Utility
                         GroupTypeId = knownRelationshipGroup.GroupTypeId
                     };
 
-                    rockContext.GroupMembers.Add( groupMember );
+                    new GroupMemberService( rockContext ).Add( groupMember );
                 }
 
                 // Now create thee inverse relationship.
@@ -1323,7 +1323,7 @@ namespace Rock.Utility
             _personImageBinaryFileTypeSettings = settings.ToJson();
 
             GroupService groupService = new GroupService( rockContext );
-            var allFamilies = rockContext.Groups;
+            var attributeValueService = new AttributeValueService( rockContext );
 
             List<Group> allGroups = new List<Group>();
             var attendanceData = new Dictionary<Guid, List<Attendance>>();
@@ -1339,7 +1339,7 @@ namespace Rock.Utility
                 family.Guid = guid;
 
                 // add the family to the context's list of groups
-                allFamilies.Add( family );
+                groupService.Add( family );
 
                 // add the families address(es)
                 AddFamilyAddresses( groupService, family, elemFamily.Element( "addresses" ), rockContext );
@@ -1388,7 +1388,7 @@ namespace Rock.Utility
                             attributeValue.Value = newValue.Value;
                             // PA: setting the dirty bit so that the Update Persisted Attribute Values job can populate the field related columns like ValueAsDateTime
                             attributeValue.IsPersistedValueDirty = true;
-                            rockContext.AttributeValues.Add( attributeValue );
+                            attributeValueService.Add( attributeValue );
                         }
                     }
                 }
@@ -2034,6 +2034,7 @@ namespace Rock.Utility
                     ConnectionRequest connectionRequest = new ConnectionRequest()
                     {
                         ConnectionOpportunityId = connectionOpportunity.Id,
+                        ConnectionTypeId = connectionOpportunity.ConnectionTypeId,
                         PersonAliasId = _peopleAliasDictionary[personGuid],
                         Comments = comment,
                         ConnectionStatus = noContact,
@@ -2876,7 +2877,7 @@ namespace Rock.Utility
                     if ( personElem.Attribute( "age" ) != null )
                     {
                         int age = int.Parse( personElem.Attribute( "age" ).Value.Trim() );
-                        int ageDiff = person.Age - age ?? 0;
+                        int ageDiff = Person.GetAge( person.BirthDate, null ) - age ?? 0;
                         person.SetBirthDate( person.BirthDate.Value.AddYears( ageDiff ) );
                     }
 
@@ -2885,7 +2886,7 @@ namespace Rock.Utility
                     if ( personElem.Attribute( "email" ) != null )
                     {
                         var emailAddress = personElem.Attribute( "email" ).Value.Trim();
-                        if ( emailAddress.IsValidEmail() )
+                        if ( EmailAddressFieldValidator.IsValid( emailAddress ) )
                         {
                             person.Email = emailAddress;
                             person.IsEmailActive = personElem.Attribute( "emailIsActive" ) != null && personElem.Attribute( "emailIsActive" ).Value.AsBoolean();

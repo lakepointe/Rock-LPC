@@ -1,0 +1,286 @@
+﻿<!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
+<template>
+    <component v-if="component" :is="component" v-bind="fieldControlComponentProps" v-model="fieldValues[field.guid]" />
+    <NotificationBox v-else alertType="danger">Could not load the control for person field {{ fieldType }}.</NotificationBox>
+</template>
+<script setup lang="ts">
+    import { computed, PropType } from "vue";
+    import { CurrentRegistrationEntryState, use } from "./utils.partial";
+    import AddressControl from "@Obsidian/Controls/addressControl.obs";
+    import BirthdayPicker from "@Obsidian/Controls/birthdayPicker.obs";
+    import DropDownList from "@Obsidian/Controls/dropDownList.obs";
+    import EmailBox from "@Obsidian/Controls/emailBox.obs";
+    import GenderDropDownList from "@Obsidian/Controls/genderDropDownList.obs";
+    import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
+    import PhoneNumberBox from "@Obsidian/Controls/phoneNumberBox.obs";
+    import PhoneNumberBoxWithSms from "@Obsidian/Controls/phoneNumberBoxWithSms.obs";
+    import TextBox from "@Obsidian/Controls/textBox.obs";
+    import { RegistrationPersonFieldType } from "@Obsidian/Enums/Event/registrationPersonFieldType";
+    import { Guid } from "@Obsidian/Types";
+    import { RegistrationEntryFormFieldBag } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrationEntryFormFieldBag";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
+
+    const props = defineProps({
+        field: {
+            type: Object as PropType<RegistrationEntryFormFieldBag>,
+            required: true
+        },
+        fieldValues: {
+            type: Object as PropType<Record<Guid, unknown>>,
+            required: true
+        },
+        disabled: {
+            type: Boolean as PropType<boolean>,
+            default: false
+        }
+    });
+
+    const registrationEntryState = use(CurrentRegistrationEntryState);
+
+    // #region Values
+
+    // #endregion
+
+    // #region Computed Values
+
+    const component = computed(() => {
+        switch (props.field.personFieldType) {
+            case RegistrationPersonFieldType.FirstName:
+                return TextBox;
+
+            case RegistrationPersonFieldType.LastName:
+                return TextBox;
+
+            case RegistrationPersonFieldType.MiddleName:
+                return TextBox;
+
+            case RegistrationPersonFieldType.Campus:
+                return DropDownList;
+
+            case RegistrationPersonFieldType.Email:
+                return EmailBox;
+
+            case RegistrationPersonFieldType.Gender:
+                return GenderDropDownList;
+
+            case RegistrationPersonFieldType.Birthdate:
+                return BirthdayPicker;
+
+            case RegistrationPersonFieldType.AnniversaryDate:
+                return BirthdayPicker;
+
+            case RegistrationPersonFieldType.Address:
+                return AddressControl;
+
+            case RegistrationPersonFieldType.MaritalStatus:
+                return DropDownList;
+
+            case RegistrationPersonFieldType.ConnectionStatus:
+                return DropDownList;
+
+            case RegistrationPersonFieldType.Grade:
+                return DropDownList;
+
+            case RegistrationPersonFieldType.HomePhone:
+                return PhoneNumberBox;
+
+            case RegistrationPersonFieldType.WorkPhone:
+                return PhoneNumberBox;
+
+            case RegistrationPersonFieldType.MobilePhone:
+                if (registrationEntryState.viewModel?.showSmsOptIn ?? false) {
+                    return PhoneNumberBoxWithSms;
+                }
+
+                return PhoneNumberBox;
+
+            case RegistrationPersonFieldType.Race:
+                return DropDownList;
+
+            case RegistrationPersonFieldType.Ethnicity:
+                return DropDownList;
+        }
+    });
+
+    const fieldControlComponentProps = computed(() => {
+        const componentProps: Record<string, unknown> = {
+            rules: props.field.isRequired ? "required" : "",
+            disabled: props.disabled
+        };
+
+        // LPC CODE
+        if (getLang() == 'es') {
+            for (let i = 0; i < (registrationEntryState.viewModel.maritalStatuses?.length ?? 0); i++) {
+                if (registrationEntryState.viewModel.maritalStatuses) {
+                    if (registrationEntryState.viewModel.maritalStatuses[i].text == "Married") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Casado";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Single") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Soltero";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Engaged") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Comprometido";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Divorced") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Divorciado";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Unknown") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Desconocido";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Widowed") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Viudo";
+                    }
+                    else if (registrationEntryState.viewModel.maritalStatuses[i].text == "Separated") {
+                        registrationEntryState.viewModel.maritalStatuses[i].text = "Separado";
+                    }
+                }
+            }
+        }
+        // END LPC CODE
+
+        switch (props.field.personFieldType) {
+            case RegistrationPersonFieldType.FirstName:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Nombre" : "First Name";
+                // END LPC MODIFIED CODE
+                break;
+
+            case RegistrationPersonFieldType.LastName:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Apellido" : "Last Name";
+                // END LPC MODIFIED CODE
+                break;
+
+            case RegistrationPersonFieldType.MiddleName:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Segundo Nombre" : "Middle Name";
+                // END LPC MODIFIED CODE
+                break;
+
+            case RegistrationPersonFieldType.Campus:
+                componentProps.label = "Campus";
+                componentProps.items = [...registrationEntryState.viewModel.campuses ?? []];
+                break;
+
+            case RegistrationPersonFieldType.Email:
+                componentProps.label = "Email";
+                break;
+
+            case RegistrationPersonFieldType.Gender:
+                break;
+
+            case RegistrationPersonFieldType.Birthdate:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Fecha de Nacimiento" : "Birthday";
+                // END LPC MODIFIED CODE
+                break;
+
+            case RegistrationPersonFieldType.AnniversaryDate:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Fecha de Aniversario" : "Anniversary Date";
+                // END LPC MODIFIED CODE
+                break;
+
+            case RegistrationPersonFieldType.Address:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Dirección" : "Address";
+                // END LPC MODIFIED CODE
+                break;
+
+            case RegistrationPersonFieldType.MaritalStatus:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Estado Civil" : "Marital Status";
+                // END LPC MODIFIED CODE
+                componentProps.items = [...registrationEntryState.viewModel.maritalStatuses ?? []];
+                break;
+
+            case RegistrationPersonFieldType.ConnectionStatus:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Estatus de Conexión" : "Connection Status";
+                // END LPC MODIFIED CODE
+                componentProps.items = [...registrationEntryState.viewModel.connectionStatuses ?? []];
+                break;
+
+            case RegistrationPersonFieldType.Grade:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Grado Escolar" : "Grade";
+                // END LPC MODIFIED CODE
+                componentProps.items = [...registrationEntryState.viewModel.grades ?? []];
+                break;
+
+            case RegistrationPersonFieldType.HomePhone:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Teléfono de Casa" : "Home Phone";
+                // END LPC MODIFIED CODE
+                break;
+
+            case RegistrationPersonFieldType.WorkPhone:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Teléfono de Trabajo" : "Work Phone";
+                // END LPC MODIFIED CODE
+                break;
+
+            case RegistrationPersonFieldType.MobilePhone:
+                // LPC MODIFIED CODE
+                componentProps.label = getLang() == "es" ? "Teléfono Celular" : "Mobile Phone";
+                // END LPC MODIFIED CODE
+                break;
+
+            case RegistrationPersonFieldType.Race:
+                componentProps.label = "Race";
+                componentProps.items = [...registrationEntryState.viewModel.races ?? []];
+                break;
+
+            case RegistrationPersonFieldType.Ethnicity:
+                componentProps.label = "Ethnicity";
+                componentProps.items = [...registrationEntryState.viewModel.ethnicities ?? []];
+                break;
+        }
+
+        return componentProps;
+    });
+
+    const fieldType = computed<RegistrationPersonFieldType>(() => {
+        return props.field.personFieldType;
+    });
+
+    // #endregion
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
+
+    // Set the default value if needed
+    if (!(props.field.guid in props.fieldValues)) {
+        let defaultValue: unknown = "";
+
+        switch (props.field.personFieldType) {
+            case RegistrationPersonFieldType.Birthdate:
+                defaultValue = undefined;
+                break;
+
+            case RegistrationPersonFieldType.AnniversaryDate:
+                defaultValue = undefined;
+                break;
+
+            case RegistrationPersonFieldType.Address:
+                // Address Control now handles the default value itself.
+                defaultValue = {};
+                break;
+        }
+
+        props.fieldValues[props.field.guid] = defaultValue;
+    }
+</script>

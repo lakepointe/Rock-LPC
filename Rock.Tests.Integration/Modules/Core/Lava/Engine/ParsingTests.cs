@@ -14,12 +14,15 @@
 // limitations under the License.
 // </copyright>
 //
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 using Rock.Lava;
 using Rock.Lava.Fluid;
 using Rock.Tests.Shared;
+using Rock.Tests.Shared.Lava;
 
-namespace Rock.Tests.Integration.Core.Lava
+namespace Rock.Tests.Integration.Modules.Core.Lava.Engine
 {
     /// <summary>
     /// Test the compatibility of the Lava parser with the Liquid language syntax.
@@ -27,6 +30,17 @@ namespace Rock.Tests.Integration.Core.Lava
     [TestClass]
     public class LiquidLanguageCompatibilityTests : LavaIntegrationTestBase
     {
+        [TestMethod]
+        public void Whitespace_TagLeftAndRight_ProducesCorrectOutput()
+        {
+            var input = @"
+{%- assign now = 'Now' | Date:'yyyy-MM-ddTHH:mm:sszzz' | AsDateTime -%}
+";
+            var expectedOutput = @"";
+
+            TestHelper.AssertTemplateOutput( expectedOutput, input, new LavaTestRenderOptions { IgnoreWhiteSpace = false } );
+        }
+
         [TestMethod]
         public void Variables_VariableNamesThatDifferOnlyByCase_AreReferencedAsDifferentVariables()
         {
@@ -111,26 +125,40 @@ Slow
             TestHelper.AssertTemplateOutput( expectedOutput, input );
         }
 
-        [TestMethod]
-        public void Operators_IfWithNoOperator_BooleanTrueIsParsedAsTruthy()
+        [DataTestMethod]
+        [DataRow( "true | AsBoolean", true )]
+        [DataRow( "'true'", true )]
+        [DataRow( "''", true )]
+        public void Operators_IfWithNoOperatorAndAnyDefinedValue_ReturnsTrue( string value, bool expectedResult )
         {
             var input = @"
-{% assign isTruthy = true | AsBoolean %}
-{% if isTruthy %}true{% else %}false{% endif %}
+{% assign value = $value %}
+{% if value %}true{% else %}false{% endif %}
 ";
-
-            TestHelper.AssertTemplateOutput( "true", input );
+            input = input.Replace( "$value", value );
+            TestHelper.AssertTemplateOutput( expectedResult.ToString().ToLower(), input );
         }
 
         [TestMethod]
-        public void Operators_IfWithNoOperator_StringWithContentIsParsedAsTruthy()
+        public void Operators_IfWithNoOperatorAndUndefinedVariable_ReturnsFalse()
         {
             var input = @"
-{% assign isTruthy = 'true' %}
-{% if isTruthy %}true{% else %}false{% endif %}
+{% if noVariable %}true{% else %}false{% endif %}
 ";
 
-            TestHelper.AssertTemplateOutput( "true", input );
+            TestHelper.AssertTemplateOutput( "false", input );
+        }
+
+        [TestMethod]
+        public void Operators_IfWithNoOperatorAndNullVariable_ReturnsFalse()
+        {
+            var input = @"
+{% if value %}true{% else %}false{% endif %}
+";
+
+            var options = new LavaTestRenderOptions();
+            options.MergeFields = new Dictionary<string, object> { { "value", null } };
+            TestHelper.AssertTemplateOutput( "false", input, options  );
         }
 
         /// <summary>
@@ -233,15 +261,31 @@ abc <= abc.
         }
 
         [TestMethod]
-        [Ignore( "Requires a fix for the Fluid library. Tags embedded in a raw tag are incorrectly parsed by the Fluid engine." )]
         public void Tags_RawTagWithEmbeddedTag_ReturnsLiteralTagText()
         {
             var inputTemplate = @"
-{% capture lava %}{% raw %}{% assign test = 'hello' %}{{ test }}{% endraw %}{% endcapture %}
-{{ lava | RunLava }}
+{% raw %}{% assign test = 'hello' %}{% endraw %}
 ";
 
-            TestHelper.AssertTemplateOutput( "hello", inputTemplate );
+            TestHelper.AssertTemplateOutput( "{% assign test = 'hello' %}", inputTemplate );
+        }
+
+        /// <summary>
+        /// Verify that a comment tag correctly ignores any other tags that are contained within it.
+        /// </summary>
+        /// <remarks>
+        /// Fluid only. The DotLiquid framework does not support this behaviour.
+        /// </remarks>
+        [TestMethod]
+        public void Tags_CommentTagContainingInvalidRawTag_IsParsedCorrectly()
+        {
+            var inputTemplate = @"
+Comment-->
+{% comment %}Open-ended tag-->{% raw %}, Invalid tag-->{% invalid_tag %}{% endcomment %}
+<--Comment
+";
+
+            TestHelper.AssertTemplateOutput( typeof(FluidEngine), "Comment--><--Comment", inputTemplate );
         }
 
         [TestMethod]
@@ -299,6 +343,95 @@ Slow
             var output = converter.ReplaceTemplateShortcodes( input );
 
             Assert.That.AreEqualIgnoreWhitespace( expectedOutput, output );
+        }
+    }
+
+    /// <summary>
+    /// Test the compatibility of the Lava parser with the Liquid language syntax.
+    /// </summary>
+    [TestClass]
+    public class ParameterParsingTests : LavaIntegrationTestBase
+    {
+        [TestMethod]
+        public void BlockParameters_WithDelimiterInParameterLavaValue_EvaluatesValueCorrectly()
+        {
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+                {
+                    var parameterString = "workflowtype:'51FE9641-FB8F-41BF-B09E-235900C3E53E' workflowname:'{{WorkflowName}}'";
+
+                    var mergeFields = new LavaDataDictionary
+                    {
+                        { "WorkflowName", "Ted's Workflow" }
+                    };
+
+                    var context = engine.NewRenderContext( mergeFields );
+                    var settings = LavaElementAttributes.NewFromMarkup( parameterString, context );
+
+                    Assert.That.AreEqual( "Ted's Workflow", settings.GetString( "workflowname" ) );
+                } );
+        }
+
+        [TestMethod]
+        public void BlockParameters_NamesThatDifferOnlyByCase_AreReferencedAsTheSameParameter()
+        {
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                var parameterString = "param1:'1' PARAM2:'2'";
+
+                var context = engine.NewRenderContext();
+                var settings = LavaElementAttributes.NewFromMarkup( parameterString, context );
+
+                Assert.That.AreEqual( "2", settings.GetString( "param2" ) );
+            } );
+        }
+
+        [TestMethod]
+        public void BlockParameters_WithLavaOutputTagContainingDelimiters_IsParsedCorrectly()
+        {
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                var parameterString = @"where:'ContentChannelId == 1 && Title == `{{ 'Blog Posts' }}`' iterator:'items' sort:'StartDateTime'"
+                        .Replace( "`", @"""" );
+
+                var context = engine.NewRenderContext();
+                var settings = LavaElementAttributes.NewFromMarkup( parameterString, context );
+
+                Assert.That.AreEqual( "ContentChannelId == 1 && Title == `Blog Posts`".Replace("`", @""""), settings.GetStringOrNull( "where" ) );
+                Assert.That.AreEqual( "items", settings.GetStringOrNull( "iterator" ) );
+                Assert.That.AreEqual( "StartDateTime", settings.GetStringOrNull( "sort" ) );
+            } );
+        }
+
+        [TestMethod]
+        public void BlockParameters_WithUndelimitedParameterValue_IsParsedCorrectly()
+        {
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                var parameterString = @"param1:1 param2:'2' param3:abc"
+                        .Replace( "`", @"""" );
+
+                var context = engine.NewRenderContext();
+                var settings = LavaElementAttributes.NewFromMarkup( parameterString, context );
+
+                Assert.That.AreEqual( "1", settings.GetStringOrNull( "param1" ) );
+                Assert.That.AreEqual( "2", settings.GetStringOrNull( "param2" ) );
+                Assert.That.AreEqual( "abc", settings.GetStringOrNull( "param3" ) );
+            } );
+        }
+
+        [TestMethod]
+        public void BlockParameters_WithEmptyParameterValue_IsParsedCorrectly()
+        {
+            TestHelper.ExecuteForActiveEngines( ( engine ) =>
+            {
+                var parameterString = @"param1:'' param2:";
+
+                var context = engine.NewRenderContext();
+                var settings = LavaElementAttributes.NewFromMarkup( parameterString, context );
+
+                Assert.That.AreEqual( "", settings.GetStringOrNull( "param1" ) );
+                Assert.That.AreEqual( "", settings.GetStringOrNull( "param2" ) );
+            } );
         }
     }
 }

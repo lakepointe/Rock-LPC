@@ -14,6 +14,8 @@
 // limitations under the License.
 // </copyright>
 //
+using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
 using System.Linq;
 using System.Web;
@@ -22,6 +24,7 @@ using System.Web.UI.WebControls;
 using Rock.Data;
 using Rock.Model;
 using Rock.Security;
+using Rock.Web.Cache;
 
 namespace Rock.Web.UI.Controls
 {
@@ -30,6 +33,7 @@ namespace Rock.Web.UI.Controls
     /// </summary>
     public class DataViewsPicker : RockListBox
     {
+        #region Properties
         /// <summary>
         /// Gets or sets the data view entity type identifier.
         /// </summary>
@@ -56,6 +60,28 @@ namespace Rock.Web.UI.Controls
         private int? _entityTypeId;
 
         /// <summary>
+        /// Gets or sets a value indicating whether [display persisted only].
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [display pesisted only]; otherwise, <c>false</c>.
+        /// </value>
+        public bool DisplayPersistedOnly
+        {
+            get
+            {
+                return ViewState["DisplayPersistedOnly"] as bool? ?? false;
+            }
+
+            set
+            {
+                ViewState["DisplayPersistedOnly"] = value;
+                LoadListBoxItems();
+            }
+        }
+
+        #endregion Properties
+
+        /// <summary>
         /// Loads the list box items.
         /// </summary>
         private void LoadListBoxItems()
@@ -72,27 +98,18 @@ namespace Rock.Web.UI.Controls
 
             var currentPerson = System.Web.HttpContext.Current?.Items["CurrentPerson"] as Person;
 
-            using ( var rockContext = new RockContext() )
-            {
-                var allEntityFilters = new DataViewFilterService( rockContext )
-                    .Queryable().AsNoTracking()
-                    .Where( f => f.EntityTypeId == _entityTypeId )
-                    .ToList();
+            var allEntityFilters = DataViewFilterCache.All().Where( df => df.EntityTypeId == _entityTypeId ).ToList();
 
-                foreach ( var dataView in new DataViewService( rockContext )
-                    .GetByEntityTypeId( _entityTypeId.Value )
-                    .Include( "EntityType" )
-                    .Include( "Category" )
-                    .Include( "DataViewFilter" )
-                    .AsNoTracking() )
-                {
-                    if ( dataView.IsAuthorized( Authorization.VIEW, currentPerson )
-                        && dataView.DataViewFilter != null
-                        && dataView.DataViewFilter.IsAuthorized( Authorization.VIEW, currentPerson, allEntityFilters ) )
-                    {
-                        this.Items.Add( new ListItem( dataView.Name, dataView.Id.ToString() ) );
-                    }
-                }
+            foreach ( var dataView in DataViewCache.All()
+                .Where( d => d.EntityTypeId == _entityTypeId
+                    && ( !DisplayPersistedOnly || ( d.PersistedScheduleIntervalMinutes.HasValue || d.PersistedScheduleId.HasValue ) )
+                    && d.IsAuthorized( Authorization.VIEW, currentPerson )
+                    && d.DataViewFilter != null
+                    && d.DataViewFilter.IsAuthorized( Authorization.VIEW, currentPerson, allEntityFilters ) )
+                .OrderBy( d => d.Name )
+                .ToList() )
+            {
+                this.Items.Add( new ListItem( dataView.Name, dataView.Id.ToString() ) );
             }
         }
     }

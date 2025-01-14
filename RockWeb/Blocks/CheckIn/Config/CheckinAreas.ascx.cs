@@ -21,7 +21,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+
 using Newtonsoft.Json;
+
 using Rock;
 using Rock.Constants;
 using Rock.Data;
@@ -82,7 +84,9 @@ namespace RockWeb.Blocks.CheckIn.Config
         {
             base.OnInit( e );
 
-            cbShowInactive.Checked = GetUserPreference( BlockCache.Guid.ToString() + "_showInactive" ).AsBoolean();
+            RockPage.AddCSSLink( "~/Styles/Blocks/Checkin/CheckinAreas.css", true );
+
+            cbShowInactive.Checked = GetBlockPersonPreferences().GetValue( "show-inactive" ).AsBoolean();
 
             BuildRows( !Page.IsPostBack );
 
@@ -422,9 +426,66 @@ namespace RockWeb.Blocks.CheckIn.Config
             hfIsDirty.Value = "true";
         }
 
+        protected void checkinArea_AddNextGenCheckInLabelClick( object sender, EventArgs e )
+        {
+            var checkInLabelService = new CheckInLabelService( new RockContext() );
+
+            ddlNextGenCheckInLabel.Items.Clear();
+            ddlNextGenCheckInLabel.AutoPostBack = false;
+            ddlNextGenCheckInLabel.Required = true;
+            ddlNextGenCheckInLabel.Items.Add( new ListItem() );
+
+            var labels = checkInLabelService.Queryable()
+                .Where( l => l.IsActive )
+                .OrderBy( l => l.Name )
+                .Select( l => new
+                {
+                    l.Id,
+                    l.Name
+                } );
+
+            foreach ( var item in labels )
+            {
+                // Only include this label if it isn't already attached to
+                // the current area.
+                if ( !checkinArea.NextGenCheckInLabels.Any( a => a.CheckInLabelId == item.Id ) )
+                {
+                    ddlNextGenCheckInLabel.Items.Add( new ListItem( item.Name, item.Id.ToString() ) );
+                }
+            }
+
+            mdAddNextGenCheckInLabel.Show();
+        }
+
+        protected void checkinArea_DeleteNextGenCheckInLabelClick( object sender, RowEventArgs e )
+        {
+            var rowId = e.RowKeyValue as Guid?;
+
+            var label = checkinArea.NextGenCheckInLabels.FirstOrDefault( a => a.Guid == rowId );
+            checkinArea.NextGenCheckInLabels.Remove( label );
+
+            hfIsDirty.Value = "true";
+        }
+
+        protected void mdAddNextGenCheckInLabel_SaveClick( object sender, EventArgs e )
+        {
+            var labelInfo = new CheckinArea.NextGenCheckInLabelInfo
+            {
+                Guid = Guid.NewGuid(),
+                CheckInLabelId = ddlNextGenCheckInLabel.SelectedValue.AsInteger(),
+                Name = ddlNextGenCheckInLabel.SelectedItem.Text
+            };
+
+            checkinArea.NextGenCheckInLabels.Add( labelInfo );
+
+            mdAddNextGenCheckInLabel.Hide();
+
+            hfIsDirty.Value = "true";
+        }
+
         protected void checkinGroup_AddLocationClick( object sender, EventArgs e )
         {
-            locationPicker.SetValue( (int?)null );
+            locationPicker.SetValue( ( int? ) null );
             mdLocationPicker.Show();
         }
 
@@ -564,6 +625,8 @@ namespace RockWeb.Blocks.CheckIn.Config
                                 attributeService.Add( attribute );
                             }
 
+                            PrepareNextGenCheckInLabelsForSave( groupType.Id, rockContext );
+
                             rockContext.SaveChanges();
 
                             Rock.CheckIn.KioskDevice.Clear();
@@ -589,9 +652,11 @@ namespace RockWeb.Blocks.CheckIn.Config
                         group.LoadAttributes( rockContext );
                         checkinGroup.GetGroupValues( group );
 
+                        var nonOverflowGroupLocations = group.GroupLocations.Where( gl => !gl.IsOverflowLocation ).ToList();
+
                         // populate groupLocations with whatever is currently in the grid, with just enough info to repopulate it and save it later
                         var newLocationIds = checkinGroup.Locations.Select( l => l.LocationId ).ToList();
-                        foreach ( var groupLocation in group.GroupLocations.Where( l => !newLocationIds.Contains( l.LocationId ) ).ToList() )
+                        foreach ( var groupLocation in nonOverflowGroupLocations.Where( l => !newLocationIds.Contains( l.LocationId ) ).ToList() )
                         {
                             groupLocation.GroupLocationScheduleConfigs.Clear();
 
@@ -599,7 +664,7 @@ namespace RockWeb.Blocks.CheckIn.Config
                             group.GroupLocations.Remove( groupLocation );
                         }
 
-                        var existingLocationIds = group.GroupLocations.Select( g => g.LocationId ).ToList();
+                        var existingLocationIds = nonOverflowGroupLocations.Select( g => g.LocationId ).ToList();
                         foreach ( var item in checkinGroup.Locations.Where( l => !existingLocationIds.Contains( l.LocationId ) ).ToList() )
                         {
                             var groupLocation = new GroupLocation();
@@ -607,11 +672,12 @@ namespace RockWeb.Blocks.CheckIn.Config
                             group.GroupLocations.Add( groupLocation );
                         }
 
-                        // Set the new order
+                        // Set the new order and make sure they are all marked as non-overflow.
                         foreach ( var item in checkinGroup.Locations.OrderBy( l => l.Order ).ToList() )
                         {
                             var groupLocation = group.GroupLocations.FirstOrDefault( gl => gl.LocationId == item.LocationId );
                             groupLocation.Order = item.Order ?? 0;
+                            groupLocation.IsOverflowLocation = false;
                         }
 
                         if ( group.IsValid )
@@ -709,7 +775,11 @@ namespace RockWeb.Blocks.CheckIn.Config
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void cbShowInactive_CheckedChanged( object sender, EventArgs e )
         {
-            SetUserPreference( BlockCache.Guid.ToString() + "_showInactive", cbShowInactive.Checked.ToString() );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( "show-inactive", cbShowInactive.Checked.ToString() );
+            preferences.Save();
+
             BuildRows( true );
         }
 
@@ -802,7 +872,7 @@ namespace RockWeb.Blocks.CheckIn.Config
                          !g.ParentGroupId.HasValue ||
                         !allGroupIds.Contains( g.ParentGroupId.Value ) );
 
-                if ( !GetUserPreference( BlockCache.Guid.ToString() + "_showInactive" ).AsBoolean() )
+                if ( !GetBlockPersonPreferences().GetValue( "show-inactive" ).AsBoolean() )
                 {
                     childGroups = childGroups.Where( g => g.IsActive );
                 }
@@ -1013,10 +1083,12 @@ namespace RockWeb.Blocks.CheckIn.Config
                             }
                         }
 
+                        LoadNextGenCheckInLabels( groupType.Id, rockContext );
+
                         checkinArea.Visible = true;
                         btnSave.Visible = true;
                         btnDelete.Visible = true;
-                        btnDelete.Attributes["onclick"] = string.Format( "javascript: return Rock.dialogs.confirmDelete(event, '{0}', '{1}');", "check-in area", "This action cannot be undone." );
+                        btnDelete.Attributes["onclick"] = string.Format( "javascript: return Rock.dialogs.confirmDelete(event, '\"{0}\" check-in area', '{1}');", groupType.Name, "This action cannot be undone." );
 
                     }
                     else
@@ -1032,6 +1104,88 @@ namespace RockWeb.Blocks.CheckIn.Config
 
             BuildRows();
 
+        }
+
+        /// <summary>
+        /// Load all the next-gen <see cref="CheckInLabel"/> objects for this area
+        /// and populate the grid.
+        /// </summary>
+        /// <param name="areaId">The identifier of the check-in area / group type.</param>
+        /// <param name="rockContext">The database context.</param>
+        private void LoadNextGenCheckInLabels( int areaId, RockContext rockContext )
+        {
+            var groupTypeEntityTypeId = EntityTypeCache.Get<GroupType>( true, rockContext ).Id;
+            var checkInLabelEntityTypeId = EntityTypeCache.Get<Rock.Model.CheckInLabel>( true, rockContext ).Id;
+
+            var relatedEntityQry = new RelatedEntityService( rockContext )
+                .Queryable()
+                .Where( a => a.SourceEntityTypeId == groupTypeEntityTypeId
+                    && a.TargetEntityTypeId == checkInLabelEntityTypeId
+                    && a.SourceEntityId == areaId );
+
+            checkinArea.NextGenCheckInLabels = new CheckInLabelService( rockContext )
+                .Queryable()
+                .Join( relatedEntityQry, cl => cl.Id, re => re.TargetEntityId, ( cl, re ) => new CheckinArea.NextGenCheckInLabelInfo
+                {
+                    Guid = re.Guid,
+                    CheckInLabelId = cl.Id,
+                    Name = cl.Name
+                } )
+                .ToList();
+        }
+
+        /// <summary>
+        /// Make any changes on <paramref name="rockContext"/> that are required
+        /// in order to save all the next-gen check-in label linkages.
+        /// </summary>
+        /// <param name="areaId">The identifier of the area / group type the labels will be attached to.</param>
+        /// <param name="rockContext">The database context.</param>
+        private void PrepareNextGenCheckInLabelsForSave( int areaId, RockContext rockContext )
+        {
+            var groupTypeEntityTypeId = EntityTypeCache.Get<GroupType>( true, rockContext ).Id;
+            var checkInLabelEntityTypeId = EntityTypeCache.Get<Rock.Model.CheckInLabel>( true, rockContext ).Id;
+            var relatedEntityService = new RelatedEntityService( rockContext );
+
+            // Find all related entities for the labels that already exist in
+            // the database.
+            var relatedEntities = relatedEntityService
+                .Queryable()
+                .Where( a => a.SourceEntityTypeId == groupTypeEntityTypeId
+                    && a.TargetEntityTypeId == checkInLabelEntityTypeId
+                    && a.SourceEntityId == areaId )
+                .ToList();
+
+            // Delete all related entities that we no longer want to keep.
+            var relatedEntitiesToDelete = relatedEntities
+                .Where( a => !checkinArea.NextGenCheckInLabels.Select( l => l.CheckInLabelId ).Contains( a.TargetEntityId ) )
+                .ToList();
+
+            foreach ( var relatedEntity in relatedEntitiesToDelete )
+            {
+                relatedEntityService.Delete( relatedEntity );
+            }
+
+            // Now add all related entities that we need to add.
+            for ( int labelIndex = 0; labelIndex < checkinArea.NextGenCheckInLabels.Count; labelIndex++ )
+            {
+                var labelId = checkinArea.NextGenCheckInLabels[labelIndex].CheckInLabelId;
+                var existingRelatedEntity = relatedEntities.FirstOrDefault( re => re.TargetEntityId == labelId );
+
+                if ( existingRelatedEntity != null )
+                {
+                    existingRelatedEntity.Order = labelIndex;
+                    continue;
+                }
+
+                relatedEntityService.Add( new RelatedEntity
+                {
+                    SourceEntityTypeId = groupTypeEntityTypeId,
+                    TargetEntityTypeId = checkInLabelEntityTypeId,
+                    SourceEntityId = areaId,
+                    TargetEntityId = labelId,
+                    Order = labelIndex
+                } );
+            }
         }
 
         private void SelectGroup( Guid? groupGuid )
@@ -1057,9 +1211,13 @@ namespace RockWeb.Blocks.CheckIn.Config
 
                         var locationService = new LocationService( rockContext );
                         var locationQry = locationService.Queryable().Select( a => new { a.Id, a.ParentLocationId, a.Name } );
+                        var orderedGroupLocations = group.GroupLocations
+                            .Where( gl => !gl.IsOverflowLocation )
+                            .OrderBy( gl => gl.Order )
+                            .ThenBy( gl => gl.Location.Name );
 
                         checkinGroup.Locations = new List<CheckinGroup.LocationGridItem>();
-                        foreach ( var groupLocation in group.GroupLocations.OrderBy( gl => gl.Order ).ThenBy( gl => gl.Location.Name ) )
+                        foreach ( var groupLocation in orderedGroupLocations )
                         {
                             var location = groupLocation.Location;
                             var gridItem = new CheckinGroup.LocationGridItem();
@@ -1083,7 +1241,7 @@ namespace RockWeb.Blocks.CheckIn.Config
                         checkinGroup.Visible = true;
                         btnSave.Visible = true;
                         btnDelete.Visible = true;
-                        btnDelete.Attributes["onclick"] = string.Format( "javascript: return Rock.dialogs.confirmDelete(event, '{0}', '{1}');", "check-in group", "<br>Any attendance records connected with this group will be lost. This action cannot be undone." );
+                        btnDelete.Attributes["onclick"] = string.Format( "javascript: return Rock.dialogs.confirmDelete(event, '\"{0}\" check-in group', '{1}');", group.Name, "<br>Any attendance records connected with this group will be lost. This action cannot be undone." );
                     }
                     else
                     {

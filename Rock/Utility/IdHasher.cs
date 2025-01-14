@@ -26,13 +26,13 @@ namespace Rock.Utility
     /// of integer id numbers into a hashed text key. These keys are non-sequential
     /// and cannot be guessed. This is not a cryptographic one-way hash.
     /// </summary>
-    internal class IdHasher
+    public class IdHasher
     {
         /// <summary>
         /// Gets the default instance.
         /// </summary>
         /// <value>The default instance.</value>
-        internal static IdHasher Instance { get; } = new IdHasher();
+        public static IdHasher Instance { get; } = new IdHasher();
 
         /// <summary>
         /// The underlying hashing provider used to encode and decode hashes.
@@ -63,6 +63,29 @@ namespace Rock.Utility
             var ids = _hasher.Decode( hashedKey );
 
             return ids.Length == 1 ? ( int? ) ids[0] : null;
+        }
+
+        /// <summary>
+        /// Attempts to get the identifier from the hashed key. The hashed key
+        /// must contain one and only one identifier.
+        /// </summary>
+        /// <param name="hashedKey">The hashed key.</param>
+        /// <param name="id">On return contains the integer identifier found in the hash, or <c>0</c> if not valid.</param>
+        /// <returns><c>true</c> if an integer identifer was found, <c>false</c> otherwise.</returns>
+        public bool TryGetId( string hashedKey, out int id )
+        {
+            var unhashedId = GetId( hashedKey );
+
+            if ( unhashedId.HasValue )
+            {
+                id = unhashedId.Value;
+                return true;
+            }
+            else
+            {
+                id = 0;
+                return false;
+            }
         }
 
         /// <summary>

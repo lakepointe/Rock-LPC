@@ -76,6 +76,14 @@ namespace Rock.Security
         public List<AccountProtectionProfile> DisableTokensForAccountProtectionProfiles { get; set; }
 
         /// <summary>
+        /// Gets or sets the account protection profiles that require two-factor authentication.
+        /// </summary>
+        /// <value>
+        /// The account protection profiles that require two-factor authentication.
+        /// </value>
+        public List<AccountProtectionProfile> RequireTwoFactorAuthenticationForAccountProtectionProfiles { get; set; }
+
+        /// <summary>
         /// Gets or sets the passwordless sign in daily IP throttle.
         /// </summary>
         /// <value>The passwordless sign in daily IP throttle.</value>
@@ -99,6 +107,12 @@ namespace Rock.Security
         public int PasswordlessSignInSessionDuration { get; set; }
 
         /// <summary>
+        /// Gets or sets the toggle option to disable predictable ids for get file.
+        /// </summary>
+        /// <value>The toggle option to disable predictable ids for GetFile, GetImage, and GetAvatar endpoints.</value>
+        public bool DisablePredictableIds { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="SecuritySettings"/> class.
         /// </summary>
         public SecuritySettings()
@@ -106,6 +120,7 @@ namespace Rock.Security
             AccountProtectionProfilesForDuplicateDetectionToIgnore = new List<AccountProtectionProfile>();
             AccountProtectionProfileSecurityGroup = new Dictionary<AccountProtectionProfile, RoleCache>();
             DisableTokensForAccountProtectionProfiles = new List<AccountProtectionProfile>();
+            RequireTwoFactorAuthenticationForAccountProtectionProfiles = new List<AccountProtectionProfile>();
         }
     }
 }

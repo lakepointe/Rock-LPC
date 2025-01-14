@@ -110,6 +110,15 @@ namespace Rock.SystemGuid
         /// </summary>
         public const string SAME_SITE_COOKIE_SETTING = "03F55022-C1E0-45F3-84E1-C2BE8C38E22B";
 
+        #region Observability
+
+        /// <summary>
+        /// The Active attribute for the observability HTTP filter.
+        /// </summary>
+        public const string HTTP_MODULE_OBSERVABILITY_ACTIVE = "DAC40EF2-1616-4E15-A897-8CCD7CF2C588";
+
+        #endregion
+
         #region Assessment Test Related
 
         /// <summary>
@@ -419,6 +428,11 @@ namespace Rock.SystemGuid
         /// </summary>
         public const string GROUP_BIRTHDATE_RANGE = "F1A43EAB-D682-403F-A05E-CCFFBF879F32";
 
+        /// <summary>
+        /// Group attribute to store the birth month range of the group
+        /// </summary>
+        public const string GROUP_BIRTH_MONTH_RANGE = "C86610F1-A011-474A-BB60-1E131F2EEE95";
+
         #endregion
 
         #region Communication Module
@@ -504,6 +518,11 @@ namespace Rock.SystemGuid
         /// The Transaction Source DefinedType > IconCssClass DefinedValue Attribute Guid
         /// </summary>
         public const string DEFINED_TYPE_TRANSACTION_SOURCE_ICONCSSCLASS = "9617D1DC-6561-4314-83EB-7F0ACBA2E259";
+
+        /// <summary>
+        /// The Financial Frequency DefinedType > Interval Days DefinedValue Attribute Guid
+        /// </summary>
+        public const string DEFINED_TYPE_FINANCIAL_FREQUENCY_INTERVAL_DAYS = "E18CB1D2-08A9-4D12-BCEA-33369193C869";
 
         #endregion
 

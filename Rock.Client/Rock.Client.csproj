@@ -44,6 +44,9 @@
     <Compile Include="CodeGenerated\AchievementAttempt.cs" />
     <Compile Include="CodeGenerated\AchievementType.cs" />
     <Compile Include="CodeGenerated\AchievementTypePrerequisite.cs" />
+    <Compile Include="CodeGenerated\AdaptiveMessageAdaptationSegment.cs" />
+    <Compile Include="CodeGenerated\AdaptiveMessageAdaptation.cs" />
+    <Compile Include="CodeGenerated\AdaptiveMessage.cs" />
     <Compile Include="CodeGenerated\AnalyticsDimAttendanceLocation.cs" />
     <Compile Include="CodeGenerated\AnalyticsDimCampus.cs" />
     <Compile Include="CodeGenerated\AnalyticsDimFamilyCurrent.cs" />
@@ -132,6 +135,8 @@
     <Compile Include="CodeGenerated\ContentChannelType.cs" />
     <Compile Include="CodeGenerated\ContentCollection.cs" />
     <Compile Include="CodeGenerated\ContentCollectionSource.cs" />
+    <Compile Include="CodeGenerated\ContentTopic.cs" />
+    <Compile Include="CodeGenerated\ContentTopicDomain.cs" />
     <Compile Include="CodeGenerated\ControlTotalResult.cs" />
     <Compile Include="CodeGenerated\DataView.cs" />
     <Compile Include="CodeGenerated\DataViewFilter.cs" />
@@ -336,6 +341,7 @@
     <Compile Include="CodeGenerated\SystemCommunication.cs" />
     <Compile Include="CodeGenerated\SystemEmail.cs" />
     <Compile Include="CodeGenerated\SystemGuid\RockSystemGuids.cs" />
+    <Compile Include="CodeGenerated\SystemPhoneNumber.cs" />
     <Compile Include="CodeGenerated\Tag.cs" />
     <Compile Include="CodeGenerated\TaggedItem.cs" />
     <Compile Include="CodeGenerated\UserLogin.cs" />
@@ -358,7 +364,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

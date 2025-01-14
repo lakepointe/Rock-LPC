@@ -79,13 +79,17 @@ namespace Rock.Web.Cache
             MaxActionsPerPeriod = maxActionsInPeriod;
 
             if ( minTimeBetweenActions == null )
+            {
                 MinTimeBetweenActions = new TimeSpan( 0 );
+            }
             else
+            {
                 MinTimeBetweenActions = minTimeBetweenActions.Value;
+            }
         }
 
         /// <summary>
-        /// Determines whether this instance [can process page] the specified page identifier.
+        /// Determines whether the RateLimiter can process a page, or if it should be blocked due to exceeding the rate limit.
         /// </summary>
         /// <param name="pageId">The page identifier.</param>
         /// <param name="clientIpAddress">The client ip address.</param>
@@ -93,16 +97,18 @@ namespace Rock.Web.Cache
         /// <param name="maxActionsInPeriod">The maximum actions in period.</param>
         /// <param name="minTimeBetweenActions">The minimum time between actions.</param>
         /// <returns>
-        ///   <c>true</c> if this instance [can process page] the specified page identifier; otherwise, <c>false</c>.
+        ///   <c>true</c> if the RateLimiter can process the page; otherwise, <c>false</c>.
         /// </returns>
         public static bool CanProcessPage( int pageId, string clientIpAddress, TimeSpan period, int maxActionsInPeriod, TimeSpan? minTimeBetweenActions = null )
         {
-            var limiter = GetRateLimiter( pageId, clientIpAddress, period, maxActionsInPeriod, minTimeBetweenActions );
+            var limiter = GetRateLimiter( $"page-${pageId}", clientIpAddress, period, maxActionsInPeriod, minTimeBetweenActions );
+
             if ( limiter.CanPerformAction() )
             {
                 limiter.UpdateActionsPerPeriod();
                 return true;
             }
+
             return false;
         }
 
@@ -116,10 +122,11 @@ namespace Rock.Web.Cache
         }
 
         /// <summary>
-        /// Determines whether this instance [can perform action].
+        /// Determines whether the RateLimiter can perform an action, or whether it exceeds the maximum actions
+        /// for a given time period or the minimum time between actions.
         /// </summary>
         /// <returns>
-        ///   <c>true</c> if this instance [can perform action]; otherwise, <c>false</c>.
+        ///   <c>true</c> if the RateLimiter can perform the action; otherwise, <c>false</c>.
         /// </returns>
         private bool CanPerformAction()
         {
@@ -139,15 +146,15 @@ namespace Rock.Web.Cache
         /// <summary>
         /// Gets the rate limiter.
         /// </summary>
-        /// <param name="pageId">The page identifier.</param>
+        /// <param name="key">The key that identifies the object to be rate limited.</param>
         /// <param name="clientIpAddress">The client ip address.</param>
         /// <param name="period">The period.</param>
         /// <param name="maxActionsInPeriod">The maximum actions in period.</param>
         /// <param name="minTimeBetweenActions">The minimum time between actions.</param>
         /// <returns></returns>
-        private static RateLimiterCache GetRateLimiter( int pageId, string clientIpAddress, TimeSpan period, int maxActionsInPeriod, TimeSpan? minTimeBetweenActions = null )
+        private static RateLimiterCache GetRateLimiter( string key, string clientIpAddress, TimeSpan period, int maxActionsInPeriod, TimeSpan? minTimeBetweenActions = null )
         {
-            var cacheKey = GetRateLimiterCacheKey( pageId, clientIpAddress );
+            var cacheKey = GetClientRateLimiterCacheKey( key, clientIpAddress );
             return GetOrAddExisting( cacheKey, () => InitializeNewRateLimiterCache( period, maxActionsInPeriod, minTimeBetweenActions ) );
         }
 
@@ -166,12 +173,12 @@ namespace Rock.Web.Cache
         /// <summary>
         /// Gets the rate limiter cache key.
         /// </summary>
-        /// <param name="pageId">The page identifier.</param>
+        /// <param name="key">The key that identifies the object to be rate limited.</param>
         /// <param name="clientIpAddress">The client ip address.</param>
         /// <returns></returns>
-        private static string GetRateLimiterCacheKey( int pageId, string clientIpAddress )
+        private static string GetClientRateLimiterCacheKey( string key, string clientIpAddress )
         {
-            return $"{pageId}.{clientIpAddress}";
+            return $"{key}-{clientIpAddress}";
         }
     }
 }

@@ -1,0 +1,261 @@
+﻿<!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
+<template>
+    <div class="registrationentry-intro">
+        <NotificationBox v-if="isFull && numberToAddToWaitlist !== numberOfRegistrants" class="text-left" alertType="warning">
+            <!-- LPC MODIFIED CODE -->
+            <strong>{{ registrationTermTitleCase }} {{ getLang() == "es" ? "Lleno" : "Full" }}</strong>
+            <p v-if="getLang() == 'es'">
+                No hay más {{ registrationsTermLowerCase }} disponibles para {{ config.instanceName }}.
+            </p>
+            <p v-else>
+                There are not any more {{ registrationsTermLowerCase }} available for {{ config.instanceName }}.
+            </p>
+            <!-- END LPC MODIFIED CODE -->
+        </NotificationBox>
+        <NotificationBox v-if="showRemainingCapacity" class="text-left" alertType="warning">
+            <!-- LPC MODIFIED CODE -->
+            <strong>{{ registrationTermTitleCase }} {{ getLang() == "es" ? "Lleno" : "Full" }}</strong>
+            <p v-if="getLang() == 'es'">
+                Este {{ registrationTermLowerCase }} solo tiene capacidad para {{ remainingCapacityPhrase }}.
+            </p>
+            <p v-else>
+                This {{ registrationTermLowerCase }} only has capacity for {{ remainingCapacityPhrase }}.
+            </p>
+            <!-- END LPC MODIFIED CODE -->
+        </NotificationBox>
+        <div class="text-left" v-html="config.instructionsHtml">
+        </div>
+        <div v-if="config.maxRegistrants > 1" class="registrationentry-intro mb-3">
+            <!-- LPC MODIFIED CODE -->
+            <h1 v-if="getLang() == 'es'">¿Cuántas {{ registrantsTermLowerCase }} estarás registrando?</h1>
+            <h1 v-else>How many {{ registrantsTermLowerCase }} will you be registering?</h1>
+            <!-- END LPC MODIFIED CODE -->
+            <NumberUpDown v-model="numberOfRegistrants" class="margin-t-sm" numberIncrementClasses="input-lg" :max="config.maxRegistrants" />
+        </div>
+        <NotificationBox v-if="config.timeoutMinutes" alertType="info" class="text-left">
+            Due to a high-volume of expected interest, your {{ registrationTermLowerCase }} session will expire after
+            {{ pluralConditional(config.timeoutMinutes, 'a minute', config.timeoutMinutes + ' minutes') }}
+            of inactivity.
+        </NotificationBox>
+        <NotificationBox v-if="numberToAddToWaitlist === numberOfRegistrants" class="text-left" alertType="warning">
+            <!-- LPC MODIFIED CODE -->
+            <p v-if="getLang() == 'es'">Este {{ registrationTermLowerCase }} ha llegado a su capacidad. Si lo deseas, puedes completar el {{ registrationTermLowerCase }} para agregarte a una lista de espera.</p>
+            <p v-else>This {{ registrationTermLowerCase }} has reached its capacity. Complete the {{ registrationTermLowerCase }} to be added to the waitlist.</p>
+            <!-- END LPC MODIFIED CODE -->
+        </NotificationBox>
+        <NotificationBox v-else-if="numberToAddToWaitlist" class="text-left" alertType="warning">
+            <!-- LPC MODIFIED CODE -->
+            <p v-if="getLang() == 'es'">
+                Este {{ registrationTermLowerCase }} solo tiene capacidad para {{ remainingCapacityPhrase }}.
+                La primera {{ pluralConditional(config.spotsRemaining ?? 0, registrantTermLowerCase, config.spotsRemaining + ' ' + registrantsTermLowerCase) }} que agregue se registrará para {{ config.instanceName }}.
+                El resto se agregarán a la lista de espera.
+            </p>
+            <p v-else>
+                This {{ registrationTermLowerCase }} only has capacity for {{ remainingCapacityPhrase }}.
+                The first {{ pluralConditional(config.spotsRemaining ?? 0, registrantTermLowerCase, config.spotsRemaining + ' ' + registrantsTermLowerCase) }} you add will be registered for {{ config.instanceName }}.
+                The remaining {{ pluralConditional(numberToAddToWaitlist, registrantTermLowerCase, numberToAddToWaitlist + ' ' + registrantsTermLowerCase) }} will be added to the waitlist.
+            </p>
+            <!-- END LPC MODIFIED CODE -->
+        </NotificationBox>
+
+        <div v-if="canContinue" class="actions text-right">
+            <RockButton btnType="primary" @click="onNext">
+                <!-- LPC MODIFIED CODE -->
+                {{ getLang() == "es" ? "Siguiente" : "Next" }}
+                <!-- END LPC MODIFIED CODE -->
+            </RockButton>
+        </div>
+    </div>
+</template>
+<script setup lang="ts">
+    import { computed, nextTick, ref, watch } from "vue";
+    import { CurrentRegistrationEntryState, getDefaultRegistrantInfo, getForcedFamilyGuid, use } from "./utils.partial";
+    import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
+    import NumberUpDown from "@Obsidian/Controls/numberUpDown.obs";
+    import RockButton from "@Obsidian/Controls/rockButton.obs";
+    import { useStore } from "@Obsidian/PageState";
+    import { CurrentPersonBag } from "@Obsidian/ViewModels/Crm/currentPersonBag";
+    import { toTitleCase, pluralConditional } from "@Obsidian/Utility/stringUtils";
+    import { RegistrationEntryInitializationBox } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrationEntryInitializationBox";
+
+    const emit = defineEmits<{
+        (e: "next"): void
+    }>();
+
+    const store = useStore();
+
+    /** The shared state among all the components that make up this block */
+    const registrationEntryState = use(CurrentRegistrationEntryState);
+
+    // #region Values
+
+    /** Should the remaining capacity warning be shown? */
+    const showRemainingCapacity = ref<boolean>(false);
+
+    /** The number of registrants that this registrar is going to input */
+    const numberOfRegistrants = ref<number>(registrationEntryState.registrants.length);
+
+    // #endregion
+
+    // #region Computed Values
+
+    /** The currently authenticated person */
+    const currentPerson = computed<CurrentPersonBag | null>(() => {
+        return store.state.currentPerson;
+    });
+
+    /** The view model sent by the C# code behind. This is just a convenient shortcut to the shared object. */
+    const config = computed<RegistrationEntryInitializationBox>(() => {
+        return registrationEntryState.viewModel;
+    });
+
+    const spotsRemaining = computed<number | null>(() => {
+        return config.value.spotsRemaining ?? null;
+    });
+
+    /** The number of these registrants that will be placed on a waitlist because of capacity rules */
+    const numberToAddToWaitlist = computed<number>(() => {
+        if (spotsRemaining.value === null || !config.value.waitListEnabled) {
+            // There is no waitlist or no cap on number of attendees
+            return 0;
+        }
+
+        if (spotsRemaining.value >= numberOfRegistrants.value) {
+            // There is enough capacity left for all of these registrants
+            return 0;
+        }
+
+        // Some or all need to go on the waitlist
+        return numberOfRegistrants.value - spotsRemaining.value;
+    });
+
+    /** The capacity left phrase: Ex: 1 more camper */
+    const remainingCapacityPhrase = computed<string>(() => {
+        if (spotsRemaining.value === null) {
+            return "";
+        }
+
+        // LPC CODE
+        if (getLang() == "es") {
+            return pluralConditional(spotsRemaining.value, `1 ${registrantTermLowerCase.value} más`, `${spotsRemaining.value} ${registrantsTermLowerCase.value} más`);
+        }
+        // END LPC CODE
+
+        return pluralConditional(spotsRemaining.value, `1 more ${registrantTermLowerCase.value}`, `${spotsRemaining.value} more ${registrantsTermLowerCase.value}`);
+    });
+
+    /** Is this instance full and no one else can register? */
+    const isFull = computed<boolean>(() => {
+        if (spotsRemaining.value === null) {
+            return false;
+        }
+
+        return spotsRemaining.value < 1;
+    });
+
+    /** True if the user is allowed to move on to the next screen. */
+    const canContinue = computed<boolean>(() => {
+        return !(isFull.value && numberToAddToWaitlist.value !== numberOfRegistrants.value);
+    });
+
+    /** The registrant term (singular) (lower case). */
+    const registrantTermLowerCase = computed<string>(() => {
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "persona" : (registrationEntryState.viewModel.registrantTerm?.toLowerCase() || "registrant");
+        // END LPC MODIFIED CODE
+    });
+
+    /** The registrants term (plural) (lower case). */
+    const registrantsTermLowerCase = computed<string>(() => {
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "personas" : (registrationEntryState.viewModel.pluralRegistrantTerm?.toLowerCase() || "registrants");
+        // END LPC MODIFIED CODE
+    });
+
+    /** The registration term (singular) (lower case). */
+    const registrationTermLowerCase = computed<string>(() => {
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "registro" : (registrationEntryState.viewModel.registrationTerm?.toLowerCase() || "registration");
+        // END LPC MODIFIED CODE
+    });
+
+    /** The registrations term (plural) (lower case). */
+    const registrationsTermLowerCase = computed<string>(() => {
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "registros" : (registrationEntryState.viewModel.pluralRegistrationTerm?.toLowerCase() || "registrations");
+        // END LPC MODIFIED CODE
+    });
+
+    /** The registration term (singular) (title case). */
+    const registrationTermTitleCase = computed<string>(() => {
+        // LPC MODIFIED CODE
+        return getLang() == "es" ? "Registro" : (toTitleCase(registrationEntryState.viewModel.registrationTerm ?? null) || "Registration");
+        // END LPC MODIFIED CODE
+    });
+
+    // #endregion
+
+    // #region Functions
+
+    function onNext(): void {
+        // If the person is authenticated and the setting is to put registrants in the same family, then we force that family guid
+        const forcedFamilyGuid = getForcedFamilyGuid(currentPerson.value, config.value);
+
+        // TODO Evaluate if there was an intention behind this commented code.
+        // const usedFamilyMemberGuids = registrationEntryState.registrants
+        //     .filter(r => r.personGuid)
+        //     .map(r => r.personGuid);
+        //
+        // const availableFamilyMembers = viewModel.value.familyMembers
+        //     .filter(fm =>
+        //         areEqual(fm.familyGuid, forcedFamilyGuid) &&
+        //         !usedFamilyMemberGuids.includes(fm.guid));
+
+        // Resize the registrant array to match the selected number
+        while (numberOfRegistrants.value > registrationEntryState.registrants.length) {
+            const registrant = getDefaultRegistrantInfo(currentPerson.value, config.value, forcedFamilyGuid);
+            registrationEntryState.registrants.push(registrant);
+        }
+
+        registrationEntryState.registrants.length = numberOfRegistrants.value;
+
+        // Set people beyond the capacity to be on the waitlist
+        const firstWaitListIndex = numberOfRegistrants.value - numberToAddToWaitlist.value;
+
+        for (let i = firstWaitListIndex; i < numberOfRegistrants.value; i++) {
+            registrationEntryState.registrants[i].isOnWaitList = true;
+        }
+
+        emit("next");
+    }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
+
+    // #endregion
+
+    // #region Watchers
+
+    watch(numberOfRegistrants, () => {
+        const spots = spotsRemaining.value;
+
+        if (!config.value.waitListEnabled && spots !== null && spots < numberOfRegistrants.value) {
+            showRemainingCapacity.value = true;
+
+            // Do this on the next tick to allow the events to finish. Otherwise the component tree doesn't have time
+            // to respond to this, since the watch was triggered by the numberOfRegistrants change
+            nextTick(() => numberOfRegistrants.value = spots);
+        }
+    });
+
+    // #endregion
+</script>

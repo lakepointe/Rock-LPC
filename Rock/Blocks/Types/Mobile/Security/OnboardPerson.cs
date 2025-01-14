@@ -37,12 +37,13 @@ namespace Rock.Blocks.Types.Mobile.Security
     /// <summary>
     /// Provides an interface for the user to safely identify themselves and create a login.
     /// </summary>
-    /// <seealso cref="Rock.Blocks.RockMobileBlockType" />
+    /// <seealso cref="Rock.Blocks.RockBlockType" />
 
     [DisplayName( "Onboard Person" )]
     [Category( "Mobile > Security" )]
     [Description( "Provides an interface for the user to safely identify themselves and create a login." )]
     [IconCssClass( "fa fa-plane-departure" )]
+    [SupportedSiteTypes( Model.SiteType.Mobile )]
 
     #region Block Attributes
 
@@ -111,6 +112,7 @@ namespace Rock.Blocks.Types.Mobile.Security
         DefinedTypeGuid = SystemGuid.DefinedType.CAMPUS_TYPE,
         IsRequired = true,
         DefaultValue = SystemGuid.DefinedValue.CAMPUS_TYPE_PHYSICAL,
+        AllowMultiple = true,
         Category = AttributeCategories.Campus,
         Key = AttributeKeys.DisplayCampusTypes,
         Order = 0 )]
@@ -120,6 +122,7 @@ namespace Rock.Blocks.Types.Mobile.Security
         DefinedTypeGuid = SystemGuid.DefinedType.CAMPUS_STATUS,
         IsRequired = true,
         DefaultValue = SystemGuid.DefinedValue.CAMPUS_STATUS_OPEN,
+        AllowMultiple = true,
         Category = AttributeCategories.Campus,
         Key = AttributeKeys.DisplayCampusStatuses,
         Order = 1 )]
@@ -191,7 +194,7 @@ namespace Rock.Blocks.Types.Mobile.Security
     [TextField( "Code Sent Screen Subtitle",
         Description = "The text to display at the top of the Code Sent screen underneath the title. <span class='tip tip-lava'></span>",
         IsRequired = true,
-        DefaultValue = "You should be recieving a verification code from us shortly. When it arrives type or paste it below.",
+        DefaultValue = "You should be receiving a verification code from us shortly. When it arrives type or paste it below.",
         Category = AttributeCategories.Titles,
         Key = AttributeKeys.CodeSentScreenSubtitle,
         Order = 3 )]
@@ -410,8 +413,8 @@ namespace Rock.Blocks.Types.Mobile.Security
     #endregion
 
     [Rock.SystemGuid.EntityTypeGuid( Rock.SystemGuid.EntityType.MOBILE_SECURITY_ONBOARD_PERSON )]
-    [Rock.SystemGuid.BlockTypeGuid( "9544EE9E-07C2-4F14-9C93-3B16EBF0CC47")]
-    public class OnboardPerson : RockMobileBlockType
+    [Rock.SystemGuid.BlockTypeGuid( "9544EE9E-07C2-4F14-9C93-3B16EBF0CC47" )]
+    public class OnboardPerson : RockBlockType
     {
         #region Block Attributes
 
@@ -1016,21 +1019,8 @@ namespace Rock.Blocks.Types.Mobile.Security
 
         #region IRockMobileBlockType Implementation
 
-        /// <summary>
-        /// Gets the required mobile application binary interface version required to render this block.
-        /// </summary>
-        /// <value>
-        /// The required mobile application binary interface version required to render this block.
-        /// </value>
-        public override int RequiredMobileAbiVersion => 2;
-
-        /// <summary>
-        /// Gets the class name of the mobile block to use during rendering on the device.
-        /// </summary>
-        /// <value>
-        /// The class name of the mobile block to use during rendering on the device
-        /// </value>
-        public override string MobileBlockType => "Rock.Mobile.Blocks.Security.OnboardPerson";
+        /// <inheritdoc/>
+        public override Version RequiredMobileVersion => new Version( 1, 2 );
 
         /// <summary>
         /// Gets the property values that will be sent to the device in the application bundle.
@@ -1251,9 +1241,23 @@ namespace Rock.Blocks.Types.Mobile.Security
         {
             int mobileNumberValueId = DefinedValueCache.Get( SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE ).Id;
 
+            string providedName = null;
+
+            if( person != null )
+            {
+                if( person.NickName.IsNotNullOrWhiteSpace() )
+                {
+                    providedName = person.NickName;
+                }
+                else if( person.FirstName.IsNotNullOrWhiteSpace() )
+                {
+                    providedName = person.FirstName;
+                }
+            }
+
             return new OnboardDetails
             {
-                FirstName = person?.FirstName,
+                FirstName = providedName,
                 LastName = person?.LastName,
                 BirthDate = person?.BirthDate,
                 CampusGuid = person?.GetCampus()?.Guid,
@@ -1307,7 +1311,7 @@ namespace Rock.Blocks.Types.Mobile.Security
                 Email = details.Email,
                 Gender = ToWeb( details.Gender ) ?? Rock.Model.Gender.Unknown,
                 IsEmailActive = true,
-                EmailPreference = EmailPreference.EmailAllowed,
+                EmailPreference = Rock.Model.EmailPreference.EmailAllowed,
                 RecordTypeValueId = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.PERSON_RECORD_TYPE_PERSON.AsGuid() ).Id,
                 ConnectionStatusValueId = dvcConnectionStatus?.Id,
                 RecordStatusValueId = dvcRecordStatus?.Id
@@ -1359,6 +1363,10 @@ namespace Rock.Blocks.Types.Mobile.Security
         /// <param name="rockContext">The rock context.</param>
         private void UpdateExistingPerson( Person person, OnboardDetails details, RockContext rockContext )
         {
+            // This method purposefully does not update the person's name.
+            // The OnboardDetails object could either contain the NickName
+            // or the FirstName in the FirstName property.
+
             // Update the BirthDate value if they provided one. The user
             // will always provide a year to this method.
             if ( details.BirthDate.HasValue )
@@ -1411,7 +1419,7 @@ namespace Rock.Blocks.Types.Mobile.Security
             person.Email = details.Email;
 
             var familyGroup = person.GetFamily( rockContext );
-            if ( familyGroup != null && details.CampusGuid.HasValue )
+            if ( familyGroup != null && details.CampusGuid.HasValue && details.CampusGuid != Guid.Empty )
             {
                 familyGroup.CampusId = CampusCache.Get( details.CampusGuid.Value ).Id;
             }
@@ -1796,6 +1804,11 @@ namespace Rock.Blocks.Types.Mobile.Security
                 // values now before we start creating the person.
                 if ( request.Details.UserName.IsNotNullOrWhiteSpace() )
                 {
+                    if ( !UserLoginService.IsUsernameValid( request.Details.UserName ) )
+                    {
+                        return ActionBadRequest( UserLoginService.FriendlyUsernameRules() );
+                    }
+
                     if ( !UserLoginService.IsPasswordValid( request.Details.Password ) )
                     {
                         return ActionBadRequest( UserLoginService.FriendlyPasswordRules() );
@@ -1819,9 +1832,21 @@ namespace Rock.Blocks.Types.Mobile.Security
                 // been changed then the record is no longer the same.
                 bool isSamePerson = person != null;
 
-                if ( isSamePerson && ( person.FirstName != request.Details.FirstName || person.LastName != request.Details.LastName ) )
+                if ( isSamePerson )
                 {
-                    isSamePerson = false;
+                    // We want to catch the edge case where the provided value
+                    // matches either the first name or the nickname. If it
+                    // doesn't match either then we can assume it's a different
+                    // person.
+                    if ( person.FirstName != request.Details.FirstName && person.NickName != request.Details.FirstName )
+                    {
+                        isSamePerson = false;
+                    }
+
+                    if( person.LastName != request.Details.LastName )
+                    {
+                        isSamePerson = false;
+                    }
                 }
 
                 if ( isSamePerson && person.Gender != Rock.Model.Gender.Unknown && person.Gender != ToWeb( request.Details.Gender ) )

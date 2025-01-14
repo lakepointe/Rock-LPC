@@ -8,12 +8,13 @@
 
 <script setup lang="ts">
     import { computed, PropType, ref, watch } from "vue";
-    import BaseAsyncPicker from "@Obsidian/Controls/baseAsyncPicker";
+    import BaseAsyncPicker from "@Obsidian/Controls/baseAsyncPicker.obs";
     import { Guid } from "@Obsidian/Types";
     import { useInvokeBlockAction } from "@Obsidian/Utility/block";
     import { standardAsyncPickerProps, useStandardAsyncPickerProps, useVModelPassthrough } from "@Obsidian/Utility/component";
     import { GroupAttendanceDetailGetGroupLocationSchedulesRequestBag } from "@Obsidian/ViewModels/Blocks/Group/GroupAttendanceDetail/groupAttendanceDetailGetGroupLocationSchedulesRequestBag";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+    import { toGuidOrNull } from "@Obsidian/Utility/guid";
 
     const invokeBlockAction = useInvokeBlockAction();
 
@@ -89,8 +90,8 @@
      */
     const loadOptions = async (): Promise<ListItemBag[]> => {
         const bag: GroupAttendanceDetailGetGroupLocationSchedulesRequestBag = {
-            groupGuid: props.groupGuid,
-            locationGuid: props.locationGuid,
+            groupGuid: toGuidOrNull(props.groupGuid),
+            locationGuid: toGuidOrNull(props.locationGuid),
             date: props.isoDateString
         };
 

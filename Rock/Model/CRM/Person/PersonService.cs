@@ -29,6 +29,8 @@ using Rock.Attribute;
 using Rock.BulkExport;
 using Rock.Data;
 using Rock.Security;
+using Rock.SystemKey;
+using Rock.Utility;
 using Rock.Utility.Enums;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
@@ -189,19 +191,19 @@ namespace Rock.Model
         }
 
         /// <summary>
-        /// Returns a queryable collection of <see cref="Rock.Model.Person"/> entities 
-        /// using the options specified the <see cref="PersonQueryOptions"/> (default is to exclude deceased people and nameless person records)
+        /// Returns a queryable collection of <see cref="Rock.Model.Person"/> entities
+        /// using the options specified in the <see cref="PersonQueryOptions"/> (default is to exclude deceased people, nameless person records and the anonymous visitor).
         /// </summary>
         /// <param name="personQueryOptions">The person query options.</param>
         /// <returns></returns>
         public IQueryable<Person> Queryable( PersonQueryOptions personQueryOptions )
         {
-            return this.Queryable( null, personQueryOptions );
+            return this.Queryable( ( string ) null, personQueryOptions );
         }
 
         /// <summary>
-        /// Returns a queryable collection of <see cref="Rock.Model.Person"/> entities with eager loading of properties that are included in the includes parameter.
-        /// using the option specified the <see cref="PersonQueryOptions"/> (default is to exclude deceased people, nameless person records and the anonymous visitor. )
+        /// Returns a queryable collection of <see cref="Rock.Model.Person"/> entities with eager loading of properties that are included in the includes parameter
+        /// using the options specified in the <see cref="PersonQueryOptions"/> (default is to exclude deceased people, nameless person records and the anonymous visitor).
         /// </summary>
         /// <param name="includes">The includes.</param>
         /// <param name="personQueryOptions">The person query options.</param>
@@ -209,6 +211,20 @@ namespace Rock.Model
         private IQueryable<Person> Queryable( string includes, PersonQueryOptions personQueryOptions )
         {
             var qry = base.Queryable( includes );
+
+            return AmendQueryable( qry, personQueryOptions );
+        }
+
+        /// <summary>
+        /// Returns a queryable collection of <see cref="Rock.Model.Person"/> entities, building on the provided queryable (or defaulting to the base queryable if not provided)
+        /// using the options specified in the <see cref="PersonQueryOptions"/> (default is to exclude deceased people, nameless person records and the anonymous visitor.)
+        /// </summary>
+        /// <param name="qry"></param>
+        /// <param name="personQueryOptions"></param>
+        /// <returns></returns>
+        internal IQueryable<Person> AmendQueryable( IQueryable<Person> qry, PersonQueryOptions personQueryOptions )
+        {
+            qry = qry ?? base.Queryable();
             List<int> excludedPersonRecordTypeIds = new List<int>();
 
             personQueryOptions = personQueryOptions ?? new PersonQueryOptions();
@@ -237,6 +253,15 @@ namespace Rock.Model
                 if ( recordTypeNamelessId.HasValue )
                 {
                     excludedPersonRecordTypeIds.Add( recordTypeNamelessId.Value );
+                }
+            }
+
+            if ( !personQueryOptions.IncludeRestUsers )
+            {
+                int? recordTypeRestUserId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.PERSON_RECORD_TYPE_RESTUSER.AsGuid() );
+                if ( recordTypeRestUserId.HasValue )
+                {
+                    excludedPersonRecordTypeIds.Add( recordTypeRestUserId.Value );
                 }
             }
 
@@ -1681,7 +1706,7 @@ namespace Rock.Model
 
             if ( !string.IsNullOrWhiteSpace( firstName ) && !string.IsNullOrWhiteSpace( lastName ) )
             {
-                var metaphones = ( ( RockContext ) this.Context ).Metaphones;
+                var metaphones = this.Context.Set<Metaphone>();
 
                 string ln1 = string.Empty;
                 string ln2 = string.Empty;
@@ -2934,11 +2959,13 @@ namespace Rock.Model
         /// </returns>
         public TResult GetSpouse<TResult>( Person person, System.Linq.Expressions.Expression<Func<GroupMember, TResult>> selector )
         {
+            // Note this logic is duplicated in SpouseNameSelect and SpouseTransform.
             //// Spouse is determined if all these conditions are met
             //// 1) Both Persons are adults in the same family (GroupType = Family, GroupRole = Adult, and in same Group)
-            //// 2) Opposite Gender as Person, if Gender of both Persons is known
+            //// 2) Opposite Gender as Person, if Gender of both Persons is known. This condition won't hold true if the church sets the Bible Strict Spouse setting to false.
             //// 3) Both Persons are Married
             int marriedDefinedValueId = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.PERSON_MARITAL_STATUS_MARRIED.AsGuid() ).Id;
+            var isBibleStrictSpouse = Rock.Web.SystemSettings.GetValue( SystemSetting.BIBLE_STRICT_SPOUSE ).AsBoolean( true );
 
             if ( person.MaritalStatusValueId != marriedDefinedValueId )
             {
@@ -2959,12 +2986,10 @@ namespace Rock.Model
 
             return GetFamilyMembers( person.Id )
                 .Where( m => m.GroupRoleId == adultRoleId )
-
-                // In the future, we may need to implement and check a GLOBAL Attribute "BibleStrict" with this logic: 
-                .Where( m => m.Person.Gender != person.Gender || m.Person.Gender == Gender.Unknown || person.Gender == Gender.Unknown )
+                .Where( m => !isBibleStrictSpouse || m.Person.Gender != person.Gender || m.Person.Gender == Gender.Unknown || person.Gender == Gender.Unknown )
                 .Where( m => m.Person.MaritalStatusValueId == marriedDefinedValueId )
                 .OrderBy( m => groupOrderQuery.FirstOrDefault( x => x.GroupId == m.GroupId && x.PersonId == person.Id ).GroupOrder ?? int.MaxValue )
-                .ThenBy( m => DbFunctions.DiffDays( m.Person.BirthDate ?? new DateTime( 1, 1, 1 ), person.BirthDate ?? new DateTime( 1, 1, 1 ) ) )
+                .ThenBy( m => Math.Abs( DbFunctions.DiffDays( m.Person.BirthDate ?? new DateTime( 1, 1, 1 ), person.BirthDate ?? new DateTime( 1, 1, 1 ) ) ?? 0 ) )
                 .ThenBy( m => m.PersonId )
                 .Select( selector )
                 .FirstOrDefault();
@@ -3457,10 +3482,12 @@ namespace Rock.Model
         }
 
         /// <summary>
-        /// Removes duplicate and empty number phone numbers from a person
+        /// Removes duplicate and empty number phone numbers from a person.
+        /// NOTE: This method deletes the all the Person's phone numbers which have a phone number type not present in the provided
+        /// phoneNumberTypeIds list of phone number types.
         /// </summary>
         /// <param name="person">The Person.</param>
-        /// <param name="phoneNumberTypeIds">The list of phone number type ids.</param>
+        /// <param name="phoneNumberTypeIds">The list of phone number type ids. The phone numbers with a phone number type not in this list would be deleted.</param>
         /// <param name="rockContext">The rock context.</param>
         public void RemoveEmptyAndDuplicatePhoneNumbers( Person person, List<int> phoneNumberTypeIds, RockContext rockContext )
         {
@@ -3657,6 +3684,7 @@ namespace Rock.Model
                     var groupMember = new GroupMember();
                     groupMember.Person = person;
                     groupMember.GroupRoleId = ownerRole.Id;
+                    groupMember.GroupTypeId = knownRelationshipGroupType.Id;
 
                     var group = new Group();
                     group.Name = knownRelationshipGroupType.Name;
@@ -3680,6 +3708,7 @@ namespace Rock.Model
                     var groupMember = new GroupMember();
                     groupMember.Person = person;
                     groupMember.GroupRoleId = ownerRole.Id;
+                    groupMember.GroupTypeId = impliedRelationshipGroupType.Id;
 
                     var group = new Group();
                     group.Name = impliedRelationshipGroupType.Name;
@@ -3712,6 +3741,7 @@ namespace Rock.Model
                     var groupMember = new GroupMember();
                     groupMember.Person = person;
                     groupMember.GroupRoleId = familyRole.Id;
+                    groupMember.GroupTypeId = familyGroupType.Id;
 
                     var groupMembers = new List<GroupMember>();
                     groupMembers.Add( groupMember );
@@ -4061,6 +4091,8 @@ namespace Rock.Model
         /// </summary>
         /// <param name="blockId">The block identifier.</param>
         /// <returns></returns>
+        [RockObsolete( "1.16" )]
+        [Obsolete( "Use PersonPreferenceCache to access preferences instead." )]
         public static string GetBlockUserPreferenceKeyPrefix( int blockId )
         {
             return $"block-{blockId}-";
@@ -4072,65 +4104,22 @@ namespace Rock.Model
         /// <param name="person">The <see cref="Rock.Model.Person"/> who the preference value belongs to.</param>
         /// <param name="key">A <see cref="System.String"/> representing the key (name) of the preference setting.</param>
         /// <param name="value">The value.</param>
+        [RockObsolete( "1.16" )]
+        [Obsolete( "Use PersonPreferenceCache to access preferences instead." )]
         public static void SaveUserPreference( Person person, string key, string value )
         {
-            int? personEntityTypeId = EntityTypeCache.Get( Person.USER_VALUE_ENTITY ).Id;
+            var anonymousVisitorGuid = new Guid( SystemGuid.Person.ANONYMOUS_VISITOR );
+            PersonPreferenceCollection preferences;
 
-            using ( var rockContext = new RockContext() )
+            if ( person == null || !person.PrimaryAliasId.HasValue || person.Guid == anonymousVisitorGuid )
             {
-                var attributeService = new Model.AttributeService( rockContext );
-                var attribute = attributeService.Get( personEntityTypeId, string.Empty, string.Empty, key );
-
-                if ( attribute == null )
-                {
-                    var fieldTypeService = new Model.FieldTypeService( rockContext );
-                    var fieldType = FieldTypeCache.Get( Rock.SystemGuid.FieldType.TEXT.AsGuid() );
-
-                    attribute = new Model.Attribute();
-                    attribute.IsSystem = false;
-                    attribute.EntityTypeId = personEntityTypeId;
-                    attribute.EntityTypeQualifierColumn = string.Empty;
-                    attribute.EntityTypeQualifierValue = string.Empty;
-                    attribute.Key = key;
-                    attribute.Name = key;
-                    attribute.IconCssClass = string.Empty;
-                    attribute.DefaultValue = string.Empty;
-                    attribute.IsMultiValue = false;
-                    attribute.IsRequired = false;
-                    attribute.Description = string.Empty;
-                    attribute.FieldTypeId = fieldType.Id;
-                    attribute.Order = 0;
-
-                    attributeService.Add( attribute );
-                    rockContext.SaveChanges();
-                }
-
-                var attributeValueService = new Model.AttributeValueService( rockContext );
-                var attributeValue = attributeValueService.GetByAttributeIdAndEntityId( attribute.Id, person.Id );
-
-                if ( string.IsNullOrWhiteSpace( value ) )
-                {
-                    // Delete existing value if no existing value
-                    if ( attributeValue != null )
-                    {
-                        attributeValueService.Delete( attributeValue );
-                    }
-                }
-                else
-                {
-                    if ( attributeValue == null )
-                    {
-                        attributeValue = new Model.AttributeValue();
-                        attributeValue.AttributeId = attribute.Id;
-                        attributeValue.EntityId = person.Id;
-                        attributeValueService.Add( attributeValue );
-                    }
-
-                    attributeValue.Value = value;
-                }
-
-                rockContext.SaveChanges();
+                return;
             }
+
+            preferences = PersonPreferenceCache.GetPersonPreferenceCollection( person );
+
+            preferences.SetValue( key, value );
+            preferences.Save();
         }
 
         /// <summary>
@@ -4138,122 +4127,26 @@ namespace Rock.Model
         /// </summary>
         /// <param name="person">The person.</param>
         /// <param name="preferences">The preferences.</param>
+        [RockObsolete( "1.16" )]
+        [Obsolete( "Use PersonPreferenceCache to access preferences instead." )]
         public static void SaveUserPreferences( Person person, Dictionary<string, string> preferences )
         {
-            if ( preferences != null )
+            var anonymousVisitorGuid = new Guid( SystemGuid.Person.ANONYMOUS_VISITOR );
+            PersonPreferenceCollection preferenceCollection;
+
+            if ( person == null || preferences == null || !person.PrimaryAliasId.HasValue || person.Guid == anonymousVisitorGuid )
             {
-                int? personEntityTypeId = EntityTypeCache.Get( Person.USER_VALUE_ENTITY ).Id;
-
-                using ( var rockContext = new RockContext() )
-                {
-                    var attributeService = new Model.AttributeService( rockContext );
-                    var attributes = attributeService
-                        .GetByEntityTypeQualifier( personEntityTypeId, string.Empty, string.Empty, true )
-                        .Where( a => preferences.Keys.Contains( a.Key ) )
-                        .ToList();
-
-                    bool wasUpdated = false;
-                    foreach ( var attributeKeyValue in preferences )
-                    {
-                        var attribute = attributes.FirstOrDefault( a => a.Key == attributeKeyValue.Key );
-
-                        if ( attribute == null )
-                        {
-                            var fieldTypeService = new Model.FieldTypeService( rockContext );
-                            var fieldType = FieldTypeCache.Get( Rock.SystemGuid.FieldType.TEXT.AsGuid() );
-
-                            attribute = new Model.Attribute();
-                            attribute.IsSystem = false;
-                            attribute.EntityTypeId = personEntityTypeId;
-                            attribute.EntityTypeQualifierColumn = string.Empty;
-                            attribute.EntityTypeQualifierValue = string.Empty;
-                            attribute.Key = attributeKeyValue.Key;
-                            attribute.Name = attributeKeyValue.Key;
-                            attribute.IconCssClass = string.Empty;
-                            attribute.DefaultValue = string.Empty;
-                            attribute.IsMultiValue = false;
-                            attribute.IsRequired = false;
-                            attribute.Description = string.Empty;
-                            attribute.FieldTypeId = fieldType.Id;
-                            attribute.Order = 0;
-
-                            attributeService.Add( attribute );
-
-                            wasUpdated = true;
-                        }
-                    }
-
-                    if ( wasUpdated )
-                    {
-                        // Save any new attributes
-                        rockContext.SaveChanges();
-
-                        // Requery attributes ( so they all have ids )
-                        attributes = attributeService
-                            .GetByEntityTypeQualifier( personEntityTypeId, string.Empty, string.Empty, true )
-                            .Where( a => preferences.Keys.Contains( a.Key ) )
-                            .ToList();
-                    }
-
-                    var attributeIds = attributes.Select( a => a.Id ).ToList();
-
-                    var attributeValueService = new Model.AttributeValueService( rockContext );
-                    var attributeValues = attributeValueService.Queryable( "Attribute" )
-                        .Where( v =>
-                            attributeIds.Contains( v.AttributeId ) &&
-                            v.EntityId.HasValue &&
-                            v.EntityId.Value == person.Id )
-                        .ToList();
-
-                    wasUpdated = false;
-                    foreach ( var attributeKeyValue in preferences )
-                    {
-                        if ( string.IsNullOrWhiteSpace( attributeKeyValue.Value ) )
-                        {
-                            foreach ( var attributeValue in attributeValues
-                                .Where( v =>
-                                    v.Attribute != null &&
-                                    v.Attribute.Key == attributeKeyValue.Key )
-                                .ToList() )
-                            {
-                                attributeValueService.Delete( attributeValue );
-                                attributeValues.Remove( attributeValue );
-                                wasUpdated = true;
-                            }
-                        }
-                        else
-                        {
-                            var attributeValue = attributeValues
-                                .Where( v =>
-                                    v.Attribute != null &&
-                                    v.Attribute.Key == attributeKeyValue.Key )
-                                .FirstOrDefault();
-
-                            if ( attributeValue == null )
-                            {
-                                var attribute = attributes
-                                    .Where( a => a.Key == attributeKeyValue.Key )
-                                    .FirstOrDefault();
-                                if ( attribute != null )
-                                {
-                                    attributeValue = new Model.AttributeValue();
-                                    attributeValue.AttributeId = attribute.Id;
-                                    attributeValue.EntityId = person.Id;
-                                    attributeValueService.Add( attributeValue );
-                                }
-                            }
-
-                            wasUpdated = wasUpdated || ( attributeValue.Value != attributeKeyValue.Value );
-                            attributeValue.Value = attributeKeyValue.Value;
-                        }
-                    }
-
-                    if ( wasUpdated )
-                    {
-                        rockContext.SaveChanges();
-                    }
-                }
+                return;
             }
+
+            preferenceCollection = PersonPreferenceCache.GetPersonPreferenceCollection( person );
+
+            foreach ( var kvp in preferences )
+            {
+                preferenceCollection.SetValue( kvp.Key, kvp.Value );
+            }
+
+            preferenceCollection.Save();
         }
 
         /// <summary>
@@ -4262,27 +4155,21 @@ namespace Rock.Model
         /// <param name="person">The <see cref="Rock.Model.Person"/> to retrieve the preference value for.</param>
         /// <param name="key">A <see cref="System.String"/> representing the key name of the preference setting.</param>
         /// <returns>A list of <see cref="System.String"/> containing the values associated with the user's preference setting.</returns>
+        [RockObsolete( "1.16" )]
+        [Obsolete( "Use PersonPreferenceCache to access preferences instead." )]
         public static string GetUserPreference( Person person, string key )
         {
-            int? personEntityTypeId = EntityTypeCache.Get( Person.USER_VALUE_ENTITY ).Id;
+            var anonymousVisitorGuid = new Guid( SystemGuid.Person.ANONYMOUS_VISITOR );
+            PersonPreferenceCollection preferences;
 
-            using ( var rockContext = new Rock.Data.RockContext() )
+            if ( person == null || !person.PrimaryAliasId.HasValue || person.Guid == anonymousVisitorGuid )
             {
-                var attributeService = new Model.AttributeService( rockContext );
-                var attribute = attributeService.Get( personEntityTypeId, string.Empty, string.Empty, key );
-
-                if ( attribute != null )
-                {
-                    var attributeValueService = new Model.AttributeValueService( rockContext );
-                    var attributeValue = attributeValueService.GetByAttributeIdAndEntityId( attribute.Id, person.Id );
-                    if ( attributeValue != null )
-                    {
-                        return attributeValue.Value;
-                    }
-                }
+                return string.Empty;
             }
 
-            return null;
+            preferences = PersonPreferenceCache.GetPersonPreferenceCollection( person );
+
+            return preferences.GetValue( key );
         }
 
         /// <summary>
@@ -4290,28 +4177,21 @@ namespace Rock.Model
         /// </summary>
         /// <param name="person">The <see cref="Rock.Model.Person"/> who the preference value belongs to.</param>
         /// <param name="key">A <see cref="System.String"/> representing the key (name) of the preference setting.</param>
+        [RockObsolete( "1.16" )]
+        [Obsolete( "Use PersonPreferenceCache to access preferences instead." )]
         public static void DeleteUserPreference( Person person, string key )
         {
-            int? personEntityTypeId = EntityTypeCache.Get( Person.USER_VALUE_ENTITY ).Id;
+            var anonymousVisitorGuid = new Guid( SystemGuid.Person.ANONYMOUS_VISITOR );
+            PersonPreferenceCollection preferences;
 
-            using ( var rockContext = new RockContext() )
+            if ( person == null || !person.PrimaryAliasId.HasValue || person.Guid == anonymousVisitorGuid )
             {
-                var attributeService = new Model.AttributeService( rockContext );
-                var attribute = attributeService.Get( personEntityTypeId, string.Empty, string.Empty, key );
-
-                if ( attribute != null )
-                {
-                    var attributeValueService = new Model.AttributeValueService( rockContext );
-                    var attributeValue = attributeValueService.GetByAttributeIdAndEntityId( attribute.Id, person.Id );
-                    if ( attributeValue != null )
-                    {
-                        attributeValueService.Delete( attributeValue );
-                    }
-
-                    attributeService.Delete( attribute );
-                    rockContext.SaveChanges();
-                }
+                return;
             }
+
+            preferences = PersonPreferenceCache.GetPersonPreferenceCollection( person );
+
+            preferences.SetValue( key, string.Empty );
         }
 
         /// <summary>
@@ -4319,32 +4199,32 @@ namespace Rock.Model
         /// </summary>
         /// <param name="person">The <see cref="Rock.Model.Person"/> to retrieve the user preference settings for.</param>
         /// <returns>A dictionary containing all of the <see cref="Rock.Model.Person">Person's</see> user preference settings.</returns>
+        [RockObsolete( "1.16" )]
+        [Obsolete( "Use PersonPreferenceCache to access preferences instead." )]
         public static Dictionary<string, string> GetUserPreferences( Person person )
         {
-            int? personEntityTypeId = EntityTypeCache.Get( Person.USER_VALUE_ENTITY ).Id;
+            var anonymousVisitorGuid = new Guid( SystemGuid.Person.ANONYMOUS_VISITOR );
+            var prefs = new Dictionary<string, string>();
+            PersonPreferenceCollection preferences;
 
-            var values = new Dictionary<string, string>();
-
-            using ( var rockContext = new Rock.Data.RockContext() )
+            if ( person == null || !person.PrimaryAliasId.HasValue || person.Guid == anonymousVisitorGuid )
             {
-                foreach ( var attributeValue in new Model.AttributeValueService( rockContext ).Queryable()
-                    .Where( v => v.Attribute.EntityTypeId.HasValue && v.EntityId.HasValue &&
-                        v.Attribute.EntityTypeId == personEntityTypeId &&
-                        ( v.Attribute.EntityTypeQualifierColumn == null || v.Attribute.EntityTypeQualifierColumn == string.Empty ) &&
-                        ( v.Attribute.EntityTypeQualifierValue == null || v.Attribute.EntityTypeQualifierValue == string.Empty ) &&
-                        v.EntityId.Value == person.Id )
-                    .Select( a => new { a.AttributeId, a.Value } ) )
-                {
-                    var attributeKey = AttributeCache.Get( attributeValue.AttributeId )?.Key;
-                    if ( attributeKey.IsNotNullOrWhiteSpace() )
-                    {
-                        values.AddOrReplace( attributeKey, attributeValue.Value );
-                    }
-                }
+                return prefs;
             }
 
-            return values;
+            preferences = PersonPreferenceCache.GetPersonPreferenceCollection( person );
+
+            foreach ( var key in preferences.GetKeys() )
+            {
+                prefs.TryAdd( key, preferences.GetValue( key ) );
+            }
+
+            return prefs;
         }
+
+        #endregion
+
+        #region Update Calculated Person Details
 
         /// <summary>
         /// Ensures the person age classification is correct for the specified person
@@ -4553,7 +4433,7 @@ FROM (
                 if ( recordsChanged > 0 )
                 {
                     // Since PrimaryFamily is populated in straight SQL, we'll need to tell EF what the Person's new PrimaryFamilyId is
-                    var affectedPerson = rockContext.People.FirstOrDefault( a => a.Id == personId );
+                    var affectedPerson = rockContext.Set<Person>().FirstOrDefault( a => a.Id == personId );
                     if ( affectedPerson != null )
                     {
                         var primaryFamilyId = rockContext.Database.SqlQuery<int?>( $"SELECT TOP 1 [PrimaryFamilyId] FROM [Person] WHERE [Id] = @personId", new System.Data.SqlClient.SqlParameter( "@personId", personId.Value ) ).FirstOrDefault();
@@ -4609,12 +4489,12 @@ FROM (
         public static void UpdateGivingId( int personId, RockContext rockContext )
         {
             var person = new PersonService( rockContext ).Get( personId );
-            var correctGivingId = person.GivingGroupId.HasValue ? $"G{ person.GivingGroupId.Value }" : $"P{ person.Id }";
+            var correctGivingId = person.GivingGroupId.HasValue ? $"G{person.GivingGroupId.Value}" : $"P{person.Id}";
 
             // Make sure the GivingId is correct.
             if ( person.GivingId != correctGivingId )
             {
-                rockContext.Database.ExecuteSqlCommand( $"UPDATE [Person] SET [GivingId] = '{ correctGivingId }' WHERE [Id] = { personId }" );
+                rockContext.Database.ExecuteSqlCommand( $"UPDATE [Person] SET [GivingId] = '{correctGivingId}' WHERE [Id] = {personId}" );
             }
         }
 
@@ -4652,6 +4532,13 @@ WHERE GivingId IS NULL OR GivingId != (
         private static int UpdatePersonGivingLeaderId( int? personId, RockContext rockContext )
         {
             var sqlUpdateBuilder = new StringBuilder();
+
+            /* 
+                JME 9/25/2023
+                Updated this logic to not filter out deceased, but to sort by IsDeceased (living before deceased).
+                So that if both adults are deceased the Giving Leader goes back to being the adult male vs it
+                becoming different for both individuals. (Issue #2848).
+            */
             sqlUpdateBuilder.Append( @"
 UPDATE x
 SET x.GivingLeaderId = x.CalculatedGivingLeaderId
@@ -4668,9 +4555,10 @@ FROM (
 		INNER JOIN [GroupTypeRole] r ON r.[Id] = gm.[GroupRoleId]
 		INNER JOIN [Person] p2 ON p2.[Id] = gm.[PersonId]
 		WHERE gm.[GroupId] = p.GivingGroupId
-			AND p2.[IsDeceased] = 0
 			AND p2.[GivingGroupId] = p.GivingGroupId
-		ORDER BY r.[Order]
+		ORDER BY
+            p2.[IsDeceased]
+            , r.[Order]
 			,p2.[Gender]
 			,p2.[BirthYear]
 			,p2.[BirthMonth]
@@ -4774,16 +4662,16 @@ FROM (
             bool includeDeceased = true;
             bool includeArchived = false;
 
-            /* Determine people in security role groups with ElevatedSecurityLevel.High */
+            /* Determine people in security role groups with ElevatedSecurityLevel.Extreme */
             var groupMemberService = new GroupMemberService( rockContext );
-            var personIdsInGroupsWithHighSecurityLevelQuery = groupMemberService
+            var personIdsInGroupsWithExtremeSecurityLevelQuery = groupMemberService
                 .Queryable( includeDeceased, includeArchived )
                 .IsInSecurityRoleGroupOrSecurityRoleGroupType()
                 .Where( gm => gm.Group.IsActive && gm.Group.ElevatedSecurityLevel == ElevatedSecurityLevel.Extreme )
                 .Select( gm => gm.PersonId );
 
-            /* Determine people in security role groups with ElevatedSecurityLevel.Low */
-            var personIdsInGroupsWithLowSecurityLevelQuery = groupMemberService
+            /* Determine people in security role groups with ElevatedSecurityLevel.High */
+            var personIdsInGroupsWithHighSecurityLevelQuery = groupMemberService
                 .Queryable( includeDeceased, includeArchived )
                 .IsInSecurityRoleGroupOrSecurityRoleGroupType()
                 .Where( gm => gm.Group.IsActive && gm.Group.ElevatedSecurityLevel == ElevatedSecurityLevel.High )
@@ -4842,16 +4730,18 @@ FROM (
                   - No Risk Items
 
                 Medium
-                  - Individual Has Login
+                  - one or more of the following -
+                    + Individual Has Login
 
                 High
                   - one or more of the following -
                     + Active Scheduled Financial Transaction (inactive are not viewable)
                     + Saved Payment Account
-                    + in a Security Role Marked w/ Low Elevated Security 
+                    + in a Security Role Marked w/ High Elevated Security
 
                 Extreme
-                  - in a Security Role marked w/ High Elevated Security Level 
+                  - one or more of the following -
+                    + in a Security Role marked w/ Extreme Elevated Security Level
              */
 
             // set up query as all person records regardless of Deceased, record type, etc
@@ -4866,9 +4756,9 @@ FROM (
             //  -- No Risk Items
             var personToSetAsAccountProtectionProfileLowQuery = personQuery.Where( p =>
                     !personIdsWithLoginsQuery.Contains( p.Id )
-                    && !personIdsInGroupsWithLowSecurityLevelQuery.Contains( p.Id )
-                    && !personAliasIdsWithFinancialDataQuery.Any( fdPersonAliasId => p.Aliases.Any( pa => pa.Id == fdPersonAliasId ) )
                     && !personIdsInGroupsWithHighSecurityLevelQuery.Contains( p.Id )
+                    && !personAliasIdsWithFinancialDataQuery.Any( fdPersonAliasId => p.Aliases.Any( pa => pa.Id == fdPersonAliasId ) )
+                    && !personIdsInGroupsWithExtremeSecurityLevelQuery.Contains( p.Id )
                     && p.AccountProtectionProfile != AccountProtectionProfile.Low );
 
             rowsUpdated += rockContext.BulkUpdate( personToSetAsAccountProtectionProfileLowQuery, p => new Person { AccountProtectionProfile = AccountProtectionProfile.Low } );
@@ -4878,32 +4768,84 @@ FROM (
             //  -- No other Risk items
             var personToSetAsAccountProtectionProfileMediumQuery = personQuery.Where( p =>
                     personIdsWithLoginsQuery.Contains( p.Id )
-                    && !personIdsInGroupsWithLowSecurityLevelQuery.Contains( p.Id )
-                    && !personAliasIdsWithFinancialDataQuery.Any( fdPersonAliasId => p.Aliases.Any( pa => pa.Id == fdPersonAliasId ) )
                     && !personIdsInGroupsWithHighSecurityLevelQuery.Contains( p.Id )
+                    && !personAliasIdsWithFinancialDataQuery.Any( fdPersonAliasId => p.Aliases.Any( pa => pa.Id == fdPersonAliasId ) )
+                    && !personIdsInGroupsWithExtremeSecurityLevelQuery.Contains( p.Id )
                     && p.AccountProtectionProfile != AccountProtectionProfile.Medium );
 
             rowsUpdated += rockContext.BulkUpdate( personToSetAsAccountProtectionProfileMediumQuery, p => new Person { AccountProtectionProfile = AccountProtectionProfile.Medium } );
 
-            // update the people that meet the AccountProtectionProfile.Medium criteria:
-            //   -- In a Low Security Role Group or Has Financial Data
-            //   -- Not in a High security role group
+            // update the people that meet the AccountProtectionProfile.High criteria:
+            //   -- In a High Security Role Group or Has Financial Data
+            //   -- Not in an Extreme security role group
             var personToSetAsAccountProtectionProfileHighQuery = personQuery.Where( p =>
-                    ( personIdsInGroupsWithLowSecurityLevelQuery.Contains( p.Id ) || personAliasIdsWithFinancialDataQuery.Any( fdPersonAliasId => p.Aliases.Any( pa => pa.Id == fdPersonAliasId ) ) )
-                    && !personIdsInGroupsWithHighSecurityLevelQuery.Contains( p.Id )
+                    ( personIdsInGroupsWithHighSecurityLevelQuery.Contains( p.Id ) || personAliasIdsWithFinancialDataQuery.Any( fdPersonAliasId => p.Aliases.Any( pa => pa.Id == fdPersonAliasId ) ) )
+                    && !personIdsInGroupsWithExtremeSecurityLevelQuery.Contains( p.Id )
                     && p.AccountProtectionProfile != AccountProtectionProfile.High );
 
             rowsUpdated += rockContext.BulkUpdate( personToSetAsAccountProtectionProfileHighQuery, p => new Person { AccountProtectionProfile = AccountProtectionProfile.High } );
 
             // update the people that meet the AccountProtectionProfile.Extreme criteria:
-            //   -- In a High security role group
+            //   -- In an Extreme security role group
             var personToSetAsAccountProtectionProfileExtremeQuery = personQuery.Where( p =>
-                personIdsInGroupsWithHighSecurityLevelQuery.Contains( p.Id )
+                personIdsInGroupsWithExtremeSecurityLevelQuery.Contains( p.Id )
                 && p.AccountProtectionProfile != AccountProtectionProfile.Extreme );
 
             rowsUpdated += rockContext.BulkUpdate( personToSetAsAccountProtectionProfileExtremeQuery, p => new Person { AccountProtectionProfile = AccountProtectionProfile.Extreme } );
 
             return rowsUpdated;
+        }
+
+        /// <summary>
+        /// Sets the PrimaryAliasId for the specified person
+        /// </summary>
+        /// <param name="personId">The person identifier.</param>
+        /// <param name="primaryAliasId">The PrimaryAlias identifier.</param>
+        /// <param name="rockContext">The rock context.</param>
+        /// <returns></returns>
+        public static int UpdatePrimaryAlias( int personId, int primaryAliasId, RockContext rockContext )
+        {
+            return rockContext.Database.ExecuteSqlCommand( @"
+UPDATE Person
+SET PrimaryAliasId = @primaryAliasId
+WHERE Id = @personId",
+        new System.Data.SqlClient.SqlParameter( "@personId", personId ), new System.Data.SqlClient.SqlParameter( "@primaryAliasId", primaryAliasId ) );
+        }
+
+        /// <summary>
+        /// Updates the person's group member role (whether Adult/Child) for the specified person.
+        /// </summary>
+        /// <param name="personId">The person identifier.</param>
+        /// <param name="age">The age.</param>
+        /// <param name="rockContext">The rock context.</param>
+        /// <returns></returns>
+        public static int UpdateFamilyMemberRoleByAge( int personId, int age, RockContext rockContext )
+        {
+            var familyGroupType = GroupTypeCache.GetFamilyGroupType();
+
+            int? roleId;
+            int result = 0;
+
+            if ( age >= 18 )
+            {
+                roleId = familyGroupType.Roles?.Find( a => a.Guid == Rock.SystemGuid.GroupRole.GROUPROLE_FAMILY_MEMBER_ADULT.AsGuid() )?.Id;
+            }
+            else
+            {
+                roleId = familyGroupType.Roles?.Find( a => a.Guid == Rock.SystemGuid.GroupRole.GROUPROLE_FAMILY_MEMBER_CHILD.AsGuid() )?.Id;
+            }
+
+            if ( roleId.HasValue )
+            {
+                result = rockContext.Database.ExecuteSqlCommand( $@"
+UPDATE GroupMember
+SET GroupRoleId = {roleId}
+WHERE PersonId = ${personId}
+AND GroupTypeId = ${familyGroupType.Id}
+" );
+            }
+
+            return result;
         }
 
         #endregion
@@ -5072,35 +5014,6 @@ FROM (
                 .Where( es => es.ExpireDateTime == null || es.ExpireDateTime > expirationDate );
 
             return mergeRequestQry;
-        }
-
-        /// <summary>
-        /// This function will take a person, and if they're a child return a queryable of all
-        /// of the adults in their primary family. The term 'Parents' is iffy, we know.
-        /// </summary>
-        /// <param name="people">The people.</param>
-        /// <param name="filterByGender">The filter by gender.</param>
-        /// <returns>IQueryable&lt;Person&gt;.</returns>
-        [RockInternal( "1.15" )]
-        internal IQueryable<Person> GetParentsForChildren( List<Person> people, Gender? filterByGender = null )
-        {
-            var personFamilyIds = people.Where( p => p.AgeClassification == AgeClassification.Child )
-                .Select( p => p.PrimaryFamilyId );
-
-            var groupMemberService = new GroupMemberService( Context as RockContext );
-
-            var parentsQry = groupMemberService
-                .Queryable()
-                .Where( gm => personFamilyIds.Contains( gm.GroupId )
-                    && gm.Person.AgeClassification == AgeClassification.Adult
-                    && gm.GroupMemberStatus == GroupMemberStatus.Active );
-
-            if ( filterByGender != null )
-            {
-                parentsQry = parentsQry.Where( x => x.Person.Gender == filterByGender );
-            }
-
-            return parentsQry.Select( gm => gm.Person );
         }
 
         #region Configuration Settings

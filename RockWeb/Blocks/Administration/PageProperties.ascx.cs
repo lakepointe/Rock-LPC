@@ -125,6 +125,11 @@ namespace RockWeb.Blocks.Administration
             }
         }
 
+        /// <summary>
+        /// Gets the interaction intent defined type cache.
+        /// </summary>
+        protected DefinedTypeCache InteractionIntentDefinedTypeCache => DefinedTypeCache.Get( new Guid( Rock.SystemGuid.DefinedType.INTERACTION_INTENT ) );
+
         #endregion
 
         #region Base Control Methods
@@ -163,28 +168,22 @@ namespace RockWeb.Blocks.Administration
                     var blockContexts = new List<BlockContextsInfo>();
                     foreach ( var block in pageCache.Blocks )
                     {
-                        try
+                        foreach ( var context in block.ContextTypesRequired )
                         {
-                            var blockControl = TemplateControl.LoadControl( block.BlockType.Path ) as RockBlock;
-                            if ( blockControl != null )
+                            var blockContextsInfo = blockContexts.FirstOrDefault( t => t.EntityTypeName == context.Name );
+                            if ( blockContextsInfo == null )
                             {
-                                blockControl.SetBlock( pageCache, block );
-                                foreach ( var context in blockControl.ContextTypesRequired )
+                                blockContextsInfo = new BlockContextsInfo
                                 {
-                                    var blockContextsInfo = blockContexts.FirstOrDefault( t => t.EntityTypeName == context.Name );
-                                    if ( blockContextsInfo == null )
-                                    {
-                                        blockContextsInfo = new BlockContextsInfo { EntityTypeName = context.Name, EntityTypeFriendlyName = context.FriendlyName, BlockList = new List<BlockCache>() };
-                                        blockContexts.Add( blockContextsInfo );
-                                    }
+                                    EntityTypeName = context.Name,
+                                    EntityTypeFriendlyName = context.FriendlyName,
+                                    BlockList = new List<BlockCache>()
+                                };
 
-                                    blockContextsInfo.BlockList.Add( block );
-                                }
+                                blockContexts.Add( blockContextsInfo );
                             }
-                        }
-                        catch
-                        {
-                            // if the blocktype can't compile, just ignore it since we are just trying to find out if it had a blockContext
+
+                            blockContextsInfo.BlockList.Add( block );
                         }
                     }
 
@@ -208,6 +207,16 @@ namespace RockWeb.Blocks.Administration
 
                         phContext.Controls.Add( tbContext );
                     }
+                }
+
+                if ( InteractionIntentDefinedTypeCache != null )
+                {
+                    dvpPageIntents.DefinedTypeId = InteractionIntentDefinedTypeCache.Id;
+                    dvpPageIntents.Visible = true;
+                }
+                else
+                {
+                    dvpPageIntents.Visible = false;
                 }
             }
             else
@@ -586,6 +595,19 @@ namespace RockWeb.Blocks.Administration
             ceHeaderContent.Text = page.HeaderContent;
             tbPageRoute.Text = string.Join( ",", page.PageRoutes.Select( route => route.Route ).ToArray() );
 
+            if ( InteractionIntentDefinedTypeCache != null )
+            {
+                var intentSettings = page.GetAdditionalSettings<PageService.IntentSettings>();
+                if ( intentSettings.InteractionIntentValueIds?.Any() == true )
+                {
+                    dvpPageIntents.SetValues( intentSettings.InteractionIntentValueIds );
+                }
+                else
+                {
+                    dvpPageIntents.ClearSelection();
+                }
+            }
+
             // Add enctype attribute to page's <form> tag to allow file upload control to function
             Page.Form.Attributes.Add( "enctype", "multipart/form-data" );
         }
@@ -812,6 +834,17 @@ namespace RockWeb.Blocks.Administration
                         page.PageContexts.Add( pageContext );
                     }
                 }
+            }
+
+            // Intent Settings
+            if ( InteractionIntentDefinedTypeCache != null )
+            {
+                var intentSettings = page.GetAdditionalSettings<PageService.IntentSettings>();
+
+                var selectedIntentValueIds = dvpPageIntents.SelectedValuesAsInt;
+                intentSettings.InteractionIntentValueIds = selectedIntentValueIds;
+
+                page.SetAdditionalSettings( intentSettings );
             }
 
             // Page Attributes

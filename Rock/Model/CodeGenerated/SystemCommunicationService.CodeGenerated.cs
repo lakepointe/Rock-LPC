@@ -23,11 +23,7 @@
 using System;
 using System.Linq;
 
-using Rock.Attribute;
 using Rock.Data;
-using Rock.ViewModels;
-using Rock.ViewModels.Entities;
-using Rock.Web.Cache;
 
 namespace Rock.Model
 {
@@ -100,6 +96,18 @@ namespace Rock.Model
                 return false;
             }
 
+            if ( new Service<LearningActivityCompletion>( Context ).Queryable().Any( a => a.NotificationCommunicationId == item.Id ) )
+            {
+                errorMessage = string.Format( "This {0} is assigned to a {1}.", SystemCommunication.FriendlyTypeName, LearningActivityCompletion.FriendlyTypeName );
+                return false;
+            }
+
+            if ( new Service<LearningProgram>( Context ).Queryable().Any( a => a.SystemCommunicationId == item.Id ) )
+            {
+                errorMessage = string.Format( "This {0} is assigned to a {1}.", SystemCommunication.FriendlyTypeName, LearningProgram.FriendlyTypeName );
+                return false;
+            }
+
             if ( new Service<SignatureDocumentTemplate>( Context ).Queryable().Any( a => a.CompletionSystemCommunicationId == item.Id ) )
             {
                 errorMessage = string.Format( "This {0} is assigned to a {1}.", SystemCommunication.FriendlyTypeName, SignatureDocumentTemplate.FriendlyTypeName );
@@ -120,64 +128,6 @@ namespace Rock.Model
             return true;
         }
     }
-
-    /// <summary>
-    /// SystemCommunication View Model Helper
-    /// </summary>
-    [DefaultViewModelHelper( typeof( SystemCommunication ) )]
-    public partial class SystemCommunicationViewModelHelper : ViewModelHelper<SystemCommunication, SystemCommunicationBag>
-    {
-        /// <summary>
-        /// Converts the model to a view model.
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson">The current person.</param>
-        /// <param name="loadAttributes">if set to <c>true</c> [load attributes].</param>
-        /// <returns></returns>
-        public override SystemCommunicationBag CreateViewModel( SystemCommunication model, Person currentPerson = null, bool loadAttributes = true )
-        {
-            if ( model == null )
-            {
-                return default;
-            }
-
-            var viewModel = new SystemCommunicationBag
-            {
-                IdKey = model.IdKey,
-                Bcc = model.Bcc,
-                Body = model.Body,
-                CategoryId = model.CategoryId,
-                Cc = model.Cc,
-                CssInliningEnabled = model.CssInliningEnabled,
-                From = model.From,
-                FromName = model.FromName,
-                IsActive = model.IsActive,
-                IsSystem = model.IsSystem,
-                LavaFieldsJson = model.LavaFieldsJson,
-                PushData = model.PushData,
-                PushImageBinaryFileId = model.PushImageBinaryFileId,
-                PushMessage = model.PushMessage,
-                PushOpenAction = ( int? ) model.PushOpenAction,
-                PushOpenMessage = model.PushOpenMessage,
-                PushSound = model.PushSound,
-                PushTitle = model.PushTitle,
-                SmsFromSystemPhoneNumberId = model.SmsFromSystemPhoneNumberId,
-                SMSMessage = model.SMSMessage,
-                Subject = model.Subject,
-                Title = model.Title,
-                To = model.To,
-                CreatedDateTime = model.CreatedDateTime,
-                ModifiedDateTime = model.ModifiedDateTime,
-                CreatedByPersonAliasId = model.CreatedByPersonAliasId,
-                ModifiedByPersonAliasId = model.ModifiedByPersonAliasId,
-            };
-
-            AddAttributesToViewModel( model, viewModel, currentPerson, loadAttributes );
-            ApplyAdditionalPropertiesAndSecurityToViewModel( model, viewModel, currentPerson, loadAttributes );
-            return viewModel;
-        }
-    }
-
 
     /// <summary>
     /// Generated Extension Methods
@@ -270,20 +220,5 @@ namespace Rock.Model
             target.ForeignId = source.ForeignId;
 
         }
-
-        /// <summary>
-        /// Creates a view model from this entity
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson" >The currentPerson.</param>
-        /// <param name="loadAttributes" >Load attributes?</param>
-        public static SystemCommunicationBag ToViewModel( this SystemCommunication model, Person currentPerson = null, bool loadAttributes = false )
-        {
-            var helper = new SystemCommunicationViewModelHelper();
-            var viewModel = helper.CreateViewModel( model, currentPerson, loadAttributes );
-            return viewModel;
-        }
-
     }
-
 }

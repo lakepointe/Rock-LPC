@@ -20,9 +20,12 @@ using System.Collections.Specialized;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Web;
 using System.Xml.Linq;
 
+using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
 using Rock.Security;
@@ -36,7 +39,7 @@ namespace Rock.Web.Cache
     /// </summary>
     [Serializable]
     [DataContract]
-    public class PageCache : ModelCache<PageCache, Page>
+    public class PageCache : ModelCache<PageCache, Page>, IHasReadOnlyAdditionalSettings
     {
         #region Properties
 
@@ -326,8 +329,16 @@ namespace Rock.Web.Cache
         /// <value>
         /// The additional settings.
         /// </value>
+        [Obsolete( "Use AdditionalSettingsJson instead." )]
+        [RockObsolete( "1.16" )]
         [DataMember]
         public string AdditionalSettings { get; private set; }
+
+
+        /// <inheritdoc/>
+        [RockInternal( "1.16.4" )]
+        [DataMember]
+        public string AdditionalSettingsJson { get; private set; }
 
         /// <summary>
         /// Gets or sets the median page load time in seconds. Typically calculated from a set of
@@ -567,6 +578,8 @@ namespace Rock.Web.Cache
         [DataContract]
         public class PageRouteInfo
         {
+            private string _route;
+
             /// <summary>
             /// The id
             /// </summary>
@@ -580,10 +593,26 @@ namespace Rock.Web.Cache
             public Guid Guid { get; internal set; }
 
             /// <summary>
+            /// Gets the page identifier.
+            /// </summary>
+            /// <value>The page identifier.</value>
+            [DataMember]
+            public int PageId { get; internal set; }
+
+            /// <summary>
             /// The route
             /// </summary>
             [DataMember]
-            public string Route { get; internal set; }
+            public string Route
+            {
+                get => _route;
+                internal set
+                {
+                    _route = value;
+
+                    UpdateRouteParameters();
+                }
+            }
 
             /// <summary>
             /// If true then the route should work on all sites regardless of the site exclusive setting.
@@ -593,6 +622,34 @@ namespace Rock.Web.Cache
             /// </value>
             [DataMember]
             public bool IsGlobal { get; internal set; }
+
+            /// <summary>
+            /// Gets a copy of <see cref="Route"/> with parameters replaced with
+            /// empty <c>{}</c> instead of the full parameter name. This can be
+            /// used for comparison purposes.
+            /// </summary>
+            /// <value>The route with empty parameter placeholders.</value>
+            internal string RouteWithEmptyParameters { get; private set; }
+
+            /// <summary>
+            /// Gets the route parameter names. The set is configured to be
+            /// case-insensitive.
+            /// </summary>
+            /// <value>The route parameter names.</value>
+            internal HashSet<string> Parameters { get; private set; } = new HashSet<string>();
+
+            /// <summary>
+            /// Updates parameters related to the route. This should be called
+            /// whenever the <see cref="Route"/> property changes.
+            /// </summary>
+            private void UpdateRouteParameters()
+            {
+                var parameterRegex = new Regex( @"(?<={)[A-Za-z0-9\-]+(?=})" );
+                var matches = parameterRegex.Matches( Route ?? string.Empty ).OfType<Match>().ToList();
+
+                Parameters = new HashSet<string>( matches.Select( m => m.Value ), StringComparer.OrdinalIgnoreCase );
+                RouteWithEmptyParameters = parameterRegex.Replace( Route ?? string.Empty, m => string.Empty );
+            }
         }
 
         /// <summary>
@@ -648,6 +705,36 @@ namespace Rock.Web.Cache
                 return bcName;
             }
         }
+
+        /// <summary>
+        /// Gets the interaction intent defined value identifiers.
+        /// </summary>
+        /// <remarks>
+        ///     <para>
+        ///         <strong>This is an internal API</strong> that supports the Rock
+        ///         infrastructure and not subject to the same compatibility standards
+        ///         as public APIs. It may be changed or removed without notice in any
+        ///         release and should therefore not be directly used in any plug-ins.
+        ///     </para>
+        /// </remarks>
+        [RockInternal( "1.16.4" )]
+        [DataMember]
+        public List<int> InteractionIntentValueIds
+        {
+            get
+            {
+                if ( _interactionIntentValueIds == null )
+                {
+                    var intentSettings = this.GetAdditionalSettings<PageService.IntentSettings>();
+
+                    _interactionIntentValueIds = intentSettings.InteractionIntentValueIds ?? new List<int>();
+                }
+
+                return _interactionIntentValueIds;
+            }
+        }
+
+        private List<int> _interactionIntentValueIds;
 
         #endregion
 
@@ -726,7 +813,10 @@ namespace Rock.Web.Cache
             AllowIndexing = page.AllowIndexing;
             BodyCssClass = page.BodyCssClass;
             IconBinaryFileId = page.IconBinaryFileId;
+#pragma warning disable CS0618
             AdditionalSettings = page.AdditionalSettings;
+#pragma warning restore CS0618
+            AdditionalSettingsJson = page.AdditionalSettingsJson;
             MedianPageLoadTimeDurationSeconds = page.MedianPageLoadTimeDurationSeconds;
             RateLimitPeriod = page.RateLimitPeriod;
             RateLimitRequestPerPeriod = page.RateLimitRequestPerPeriod;
@@ -735,7 +825,7 @@ namespace Rock.Web.Cache
             page.PageContexts?.ToList().ForEach( c => PageContexts.Add( c.Entity, c.IdParameter ) );
 
             PageRoutes = new List<PageRouteInfo>();
-            page.PageRoutes?.ToList().ForEach( r => PageRoutes.Add( new PageRouteInfo { Id = r.Id, Guid = r.Guid, Route = r.Route, IsGlobal = r.IsGlobal } ) );
+            page.PageRoutes?.ToList().ForEach( r => PageRoutes.Add( new PageRouteInfo { Id = r.Id, Guid = r.Guid, PageId = page.Id, Route = r.Route, IsGlobal = r.IsGlobal } ) );
         }
 
         /// <summary>
@@ -788,6 +878,57 @@ namespace Rock.Web.Cache
         public void RemoveChildPages()
         {
             _pageIds = null;
+        }
+
+        /// <summary>
+        /// Gets all routes that match the given parameters. A route is considered
+        /// matching if the parameters contains all the parameter names of the route.
+        /// If there are extra parameters the route is still considered a match.
+        /// </summary>
+        /// <param name="parameters">The parameters that contain the route and query string data.</param>
+        /// <returns>A collection of matching page routes.</returns>
+        internal List<PageRouteInfo> GetAllMatchingRoutes( Dictionary<string, string> parameters )
+        {
+            var matchingRoutes = new List<PageRouteInfo>();
+
+            foreach ( var route in PageRoutes )
+            {
+                // If the route has no parameters, we take it.
+                if ( route.Parameters.Count == 0 )
+                {
+                    matchingRoutes.Add( route );
+                    continue;
+                }
+
+                // See how many parameters we have that match route parameter names.
+                var foundParameterCount = route.Parameters
+                    .Where( p => parameters.ContainsKey( p ) )
+                    .Count();
+
+                // If we have values for all the route parameters, take it.
+                if ( route.Parameters.Count == foundParameterCount )
+                {
+                    matchingRoutes.Add( route );
+                    continue;
+                }
+            }
+
+            return matchingRoutes;
+        }
+
+        /// <summary>
+        /// Gets the best matching route to the given set of parameters. If no
+        /// matching route is found then <c>null</c> is returned.
+        /// </summary>
+        /// <param name="parameters">The parameters that contain the route and query string data.</param>
+        /// <returns>A single matching route.</returns>
+        internal PageRouteInfo GetBestMatchingRoute( Dictionary<string, string> parameters )
+        {
+            // Takes all the matching routes and orders them in descending order
+            // by parameter count. This is our best guess as the best match.
+            return GetAllMatchingRoutes( parameters )
+                .OrderByDescending( r => r.Parameters.Count )
+                .FirstOrDefault();
         }
 
         /// <summary>
@@ -850,7 +991,7 @@ namespace Rock.Web.Cache
             var iconUrl = string.Empty;
             if ( IconFileId.HasValue )
             {
-                iconUrl = $"{HttpContext.Current.Request.ApplicationPath}/GetImage.ashx?{IconFileId.Value}";
+                iconUrl = FileUrlHelper.GetImageUrl( IconFileId.Value );
             }
 
             var isCurrentPage = currentPage != null && currentPage.Id == Id;
@@ -924,7 +1065,7 @@ namespace Rock.Web.Cache
             var iconUrl = string.Empty;
             if ( IconFileId.HasValue )
             {
-                iconUrl = $"{HttpContext.Current.Request.ApplicationPath}/GetImage.ashx?{IconFileId.Value}";
+                iconUrl = FileUrlHelper.GetImageUrl( IconFileId.Value );
             }
 
             var isCurrentPage = false;
@@ -975,6 +1116,51 @@ namespace Rock.Web.Cache
             properties.Add( "Pages", childPages );
 
             return properties;
+        }
+
+        /// <summary>
+        /// Gets the URL of the Page along with the BreadCrumbs
+        /// This method does not honor the page routes.
+        /// </summary>
+        /// <returns></returns>
+        [RockInternal( "1.16.3" )]
+        public string GetHyperLinkedPageBreadCrumbs()
+        {
+            var pageHyperLinkFormat = "<a href='{0}'>{1}</a>";
+            var result = new StringBuilder( string.Format( pageHyperLinkFormat, $"/page/{this.Id}", HttpUtility.HtmlEncode( this.InternalName ) ) );
+
+            var parentPageId = this.ParentPageId;
+            while ( parentPageId.HasValue )
+            {
+                var parentPage = Get( parentPageId.Value );
+                result.Insert( 0, " / " );
+                result.Insert( 0, string.Format( pageHyperLinkFormat, $"/page/{parentPage.Id}", HttpUtility.HtmlEncode( parentPage.InternalName ) ) );
+                parentPageId = parentPage.ParentPageId;
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Gets the name of the fully qualified page.
+        /// </summary>
+        /// <returns>A string which would have the bread crumbs of the page with the routes hyper-linked</returns>
+        [RockInternal( "1.16.3" )]
+        public string GetFullyQualifiedPageName()
+        {
+            var pageHyperLinkFormat = "<a href='{0}'>{1}</a>";
+            var result = new StringBuilder( string.Format( pageHyperLinkFormat, new PageReference( this.Id ).BuildUrl(), HttpUtility.HtmlEncode( this.InternalName ) ) );
+
+            var parentPageId = this.ParentPageId;
+            while ( parentPageId.HasValue )
+            {
+                var parentPage = Get( parentPageId.Value );
+                result.Insert( 0, " / " );
+                result.Insert( 0, string.Format( pageHyperLinkFormat, new PageReference( parentPage.Id ).BuildUrl(), HttpUtility.HtmlEncode( parentPage.InternalName ) ) );
+                parentPageId = parentPage.ParentPageId;
+            }
+
+            return string.Format( "<li>{0}</li>", result );
         }
 
         #endregion

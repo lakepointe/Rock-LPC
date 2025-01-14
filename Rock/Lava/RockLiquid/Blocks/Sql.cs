@@ -16,6 +16,7 @@
 //
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -24,6 +25,9 @@ using DotLiquid;
 
 using Rock.Data;
 using Rock.Lava.Blocks;
+using Rock.Lava.DotLiquid;
+using Rock.Observability;
+using Rock.Web.Cache.NonEntities;
 
 namespace Rock.Lava.RockLiquid.Blocks
 {
@@ -80,7 +84,8 @@ namespace Rock.Lava.RockLiquid.Blocks
             {
                 base.Render( context, sql );
 
-                var parms = ParseMarkup( _markup, context );
+                var settings = SqlBlock.GetAttributesFromMarkup( _markup, new RockLiquidRenderContext( context ) );
+                var parms = settings.Attributes;
 
                 var sqlTimeout = ( int? ) null;
                 if ( parms.ContainsKey( "timeout" ) )
@@ -88,93 +93,43 @@ namespace Rock.Lava.RockLiquid.Blocks
                     sqlTimeout = parms["timeout"].AsIntegerOrNull();
                 }
 
-                switch ( parms["statement"] )
+                var sqlText = sql.ToString();
+
+                using ( var activity = ObservabilityHelper.StartActivity( "Database Command", ActivityKind.Client ) )
                 {
-                    case "select":
-                        var results = DbService.GetDataSet( sql.ToString(), CommandType.Text, parms.ToDictionary( i => i.Key, i => ( object ) i.Value ), sqlTimeout );
+                    DbCommandObservabilityCache.UpdateActivity( activity, sqlText, parms, p => p );
 
-                        context.Scopes.Last()[parms["return"]] = results.Tables[0].ToDynamicTypeCollection();
-                        break;
-                    case "command":
-                        var sqlParameters = new List<System.Data.SqlClient.SqlParameter>();
-
-                        foreach ( var p in parms )
-                        {
-                            sqlParameters.Add( new System.Data.SqlClient.SqlParameter( p.Key, p.Value ) );
-                        }
-
-                        using ( var rockContext = new RockContext() )
-                        {
-                            if ( sqlTimeout != null )
-                            {
-                                rockContext.Database.CommandTimeout = sqlTimeout;
-                            }
-                            int numOfRowEffected = rockContext.Database.ExecuteSqlCommand( sql.ToString(), sqlParameters.ToArray() );
-
-                            context.Scopes.Last()[parms["return"]] = numOfRowEffected;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Parses the markup.
-        /// </summary>
-        /// <param name="markup">The markup.</param>
-        /// <param name="context">The context.</param>
-        /// <returns></returns>
-        private Dictionary<string, string> ParseMarkup( string markup, Context context )
-        {
-            // first run lava across the inputted markup
-            var internalMergeFields = new Dictionary<string, object>();
-
-            // get variables defined in the lava source
-            foreach ( var scope in context.Scopes )
-            {
-                foreach ( var item in scope )
-                {
-                    internalMergeFields.AddOrReplace( item.Key, item.Value );
-                }
-            }
-
-            // get merge fields loaded by the block or container
-            if ( context.Environments.Count > 0 )
-            {
-                foreach ( var item in context.Environments[0] )
-                {
-                    internalMergeFields.AddOrReplace( item.Key, item.Value );
-                }
-            }
-
-            var parms = new Dictionary<string, string>();
-            parms.Add( "return", "results" );
-            parms.Add( "statement", "select" );
-
-            var markupItems = Regex.Matches( markup, @"(\S*?:'[^']+')" )
-                .Cast<Match>()
-                .Select( m => m.Value )
-                .ToList();
-
-            foreach ( var item in markupItems )
-            {
-                var itemParts = item.ToString().Split( new char[] { ':' }, 2 );
-                if ( itemParts.Length > 1 )
-                {
-                    var value = itemParts[1];
-
-                    if ( value.IsLavaTemplate() )
+                    switch ( parms["statement"] )
                     {
-                        value = value.ResolveMergeFields( internalMergeFields );
-                    }
+                        case "select":
+                            var results = DbService.GetDataSet( sqlText, CommandType.Text, parms.ToDictionary( i => i.Key, i => ( object ) i.Value ), sqlTimeout );
 
-                    parms.AddOrReplace( itemParts[0].Trim().ToLower(), value.Substring( 1, value.Length - 2 ).Trim() );
+                            context.Scopes.Last()[parms["return"]] = results.Tables[0].ToDynamicTypeCollection();
+                            break;
+                        case "command":
+                            var sqlParameters = new List<System.Data.SqlClient.SqlParameter>();
+
+                            foreach ( var p in parms )
+                            {
+                                sqlParameters.Add( new System.Data.SqlClient.SqlParameter( p.Key, p.Value ) );
+                            }
+
+                            using ( var rockContext = new RockContext() )
+                            {
+                                if ( sqlTimeout != null )
+                                {
+                                    rockContext.Database.CommandTimeout = sqlTimeout;
+                                }
+                                int numOfRowEffected = rockContext.Database.ExecuteSqlCommand( sqlText, sqlParameters.ToArray() );
+
+                                context.Scopes.Last()[parms["return"]] = numOfRowEffected;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
-            return parms;
         }
-
     }
 }

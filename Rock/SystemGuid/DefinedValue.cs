@@ -28,6 +28,11 @@ namespace Rock.SystemGuid
         /// <summary>
         /// The block template for the mobile notes block.
         /// </summary>
+        public const string BLOCK_TEMPLATE_MOBILE_GROUP_MEMBERS = "89322C87-CA36-4169-9361-FDA4EFEF07C1";
+
+        /// <summary>
+        /// The block template for the mobile notes block.
+        /// </summary>
         public const string BLOCK_TEMPLATE_MOBILE_NOTES = "37F44005-C4D8-4527-BA86-B6F8B72BF243";
 
         /// <summary>
@@ -301,6 +306,30 @@ namespace Rock.SystemGuid
 
         #endregion
 
+        #region External Link Types
+
+        /// <summary>
+        /// Barnes and Noble External Link Type
+        /// </summary>
+        public const string EXTERNAL_LINK_TYPE_BARNES_AND_NOBLE = "ACAC304A-A760-4313-BD7D-F272C2A8BC5B";
+
+        /// <summary>
+        /// Amazon External Link Type
+        /// </summary>
+        public const string EXTERNAL_LINK_TYPE_AMAZON = "BB3E2119-3CF1-4B20-958E-304BFFF120B1";
+
+        /// <summary>
+        /// ChristianBook External Link Type
+        /// </summary>
+        public const string EXTERNAL_LINK_TYPE_CHRISTIAN_BOOK = "EE74B3D2-1B5A-4436-9908-ABC63FF59309";
+
+        /// <summary>
+        /// YouTube Video External Link Type
+        /// </summary>
+        public const string EXTERNAL_LINK_TYPE_YOUTUBE_VIDEO = "FE7A6DE2-206C-420F-B67E-7139BB9B8B6D";
+
+        #endregion
+
         #region Financial Currency Type
 
         /// <summary>
@@ -532,6 +561,34 @@ namespace Rock.SystemGuid
         /// Group RSVP Decline Reason - Other.
         /// </summary>
         public const string GROUP_RSVP_DECLINE_REASON_OTHER = "1634AC71-0054-4F3C-A76D-A75A48E6BA56";
+
+        #endregion
+
+        #region Library Content Types
+
+        /// <summary>
+        /// Article Library Content Type
+        /// </summary>
+        public const string LIBRARY_CONTENT_TYPE_ARTICLE = "8B66EBAA-9BE4-42C8-A106-655A2EFD6109";
+
+        #endregion
+
+        #region Library License Types
+
+        /// <summary>
+        /// Author Attribution Library License Type
+        /// </summary>
+        public const string LIBRARY_LICENSE_TYPE_AUTHOR_ATTRIBUTION = "9AED8DEE-F74D-4F38-AD45-2423170D31D2";
+
+        /// <summary>
+        /// Open Library License Type
+        /// </summary>
+        public const string LIBRARY_LICENSE_TYPE_OPEN = "54D8921D-A9E9-46DA-8B7C-433C163FD41A";
+
+        /// <summary>
+        /// Organization Attribution Library License Type
+        /// </summary>
+        public const string LIBRARY_LICENSE_TYPE_ORGANIZATION_ATTRIBUTION = "577F2BD5-BFDF-41B7-96A8-32C0F1E44905";
 
         #endregion
 
@@ -891,7 +948,7 @@ namespace Rock.SystemGuid
 
         /// <summary>
         /// Interaction Channel Type: UrlShortener
-        /// </summary>        
+        /// </summary>
         public const string INTERACTIONCHANNELTYPE_URLSHORTENER = "371066D5-C5F9-4783-88C8-D9AC8DC67468";
 
         /// <summary>
@@ -923,6 +980,11 @@ namespace Rock.SystemGuid
         /// Interaction Channel Type: Challenge Progress
         /// </summary>
         public const string INTERACTIONCHANNELTYPE_CHALLENGE_PROGRESS = "6AA529BD-9FA5-43AD-A98E-B8DF5F997146";
+
+        /// <summary>
+        /// Interaction Channel Type: Interaction Intents
+        /// </summary>
+        public const string INTERACTIONCHANNELTYPE_INTERACTION_INTENTS = "A64DA89B-F634-4D58-ADC7-32243F84224B";
 
         /// <summary>
         /// The PBX CDR medium value
@@ -1411,6 +1473,25 @@ namespace Rock.SystemGuid
         /// Project Type = Project Due
         /// </summary>
         public const string PROJECT_TYPE_PROJECT_DUE = "C999D489-5B8F-4892-BCC3-90DFFBC524F5";
+
+        #endregion
+
+        #region Theme Purpose
+
+        /// <summary>
+        /// Check-in
+        /// </summary>
+        public const string THEME_PURPOSE_CHECKIN = "2BBB1A44-708E-4469-80DE-4AAE6227BEF8";
+
+        /// <summary>
+        /// Website Legacy
+        /// </summary>
+        public const string THEME_PURPOSE_WEBSITE_LEGACY = "4E1477FD-B105-4E4B-99BB-E5F1B964DC94";
+
+        /// <summary>
+        /// Website Nextgen
+        /// </summary>
+        public const string THEME_PURPOSE_WEBSITE_NEXTGEN = "B177E07F-7E07-4D7B-AFA7-9DE163797659";
 
         #endregion
     }

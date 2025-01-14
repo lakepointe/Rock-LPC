@@ -212,13 +212,13 @@ namespace RockWeb.Blocks.Event
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void fRegistrations_ApplyFilterClick( object sender, EventArgs e )
         {
-            fRegistrations.SaveUserPreference( "Registrations Date Range", "Registration Date Range", sdrpRegistrationDateRange.DelimitedValues );
-            fRegistrations.SaveUserPreference( "Payment Status", ddlRegistrationPaymentStatus.SelectedValue );
-            fRegistrations.SaveUserPreference( "RegisteredBy First Name", tbRegistrationRegisteredByFirstName.Text );
-            fRegistrations.SaveUserPreference( "RegisteredBy Last Name", tbRegistrationRegisteredByLastName.Text );
-            fRegistrations.SaveUserPreference( "Registrant First Name", tbRegistrationRegistrantFirstName.Text );
-            fRegistrations.SaveUserPreference( "Registrant Last Name", tbRegistrationRegistrantLastName.Text );
-            fRegistrations.SaveUserPreference( UserPreferenceKeyBase.GridFilter_RegistrationCampus, cblCampus.SelectedValues.AsDelimited( ";" ) );
+            fRegistrations.SetFilterPreference( "Registrations Date Range", "Registration Date Range", sdrpRegistrationDateRange.DelimitedValues );
+            fRegistrations.SetFilterPreference( "Payment Status", ddlRegistrationPaymentStatus.SelectedValue );
+            fRegistrations.SetFilterPreference( "RegisteredBy First Name", tbRegistrationRegisteredByFirstName.Text );
+            fRegistrations.SetFilterPreference( "RegisteredBy Last Name", tbRegistrationRegisteredByLastName.Text );
+            fRegistrations.SetFilterPreference( "Registrant First Name", tbRegistrationRegistrantFirstName.Text );
+            fRegistrations.SetFilterPreference( "Registrant Last Name", tbRegistrationRegistrantLastName.Text );
+            fRegistrations.SetFilterPreference( UserPreferenceKeyBase.GridFilter_RegistrationCampus, cblCampus.SelectedValues.AsDelimited( ";" ) );
 
             // Store the selected date range in the page context so it can be used to synchronise the data displayed by other blocks, such as the RegistrationInstanceGroupPlacement block.
             RockPage.SaveSharedItem( RegistrationInstanceBlock.SharedItemKey.RegistrationDateRange, DateRange.FromDelimitedValues( sdrpRegistrationDateRange.DelimitedValues ) );
@@ -233,13 +233,13 @@ namespace RockWeb.Blocks.Event
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void fRegistrations_ClearFilterClick( object sender, EventArgs e )
         {
-            fRegistrations.SaveUserPreference( "Registrations Date Range", "Registration Date Range", string.Empty );
-            fRegistrations.SaveUserPreference( "Payment Status", string.Empty );
-            fRegistrations.SaveUserPreference( "RegisteredBy First Name", string.Empty );
-            fRegistrations.SaveUserPreference( "RegisteredBy Last Name", string.Empty );
-            fRegistrations.SaveUserPreference( "Registrant First Name", string.Empty );
-            fRegistrations.SaveUserPreference( "Registrant Last Name", string.Empty );
-            fRegistrations.SaveUserPreference( UserPreferenceKeyBase.GridFilter_RegistrationCampus, string.Empty );
+            fRegistrations.SetFilterPreference( "Registrations Date Range", "Registration Date Range", string.Empty );
+            fRegistrations.SetFilterPreference( "Payment Status", string.Empty );
+            fRegistrations.SetFilterPreference( "RegisteredBy First Name", string.Empty );
+            fRegistrations.SetFilterPreference( "RegisteredBy Last Name", string.Empty );
+            fRegistrations.SetFilterPreference( "Registrant First Name", string.Empty );
+            fRegistrations.SetFilterPreference( "Registrant Last Name", string.Empty );
+            fRegistrations.SetFilterPreference( UserPreferenceKeyBase.GridFilter_RegistrationCampus, string.Empty );
 
             BindRegistrationsFilter();
         }
@@ -383,12 +383,22 @@ namespace RockWeb.Blocks.Event
                 var lBalance = e.Row.FindControl( "lBalance" ) as Literal;
                 if ( lBalance != null )
                 {
-                    decimal balanceDue = registration.DiscountedCost - totalPaid;
+                    var balanceDue = registration.DiscountedCost - totalPaid;
                     lBalance.Visible = _instanceHasCost || discountedCost > 0.0M;
+
+                    var isPaymentPlanActive = registration.IsPaymentPlanActive;
+
                     string balanceCssClass;
                     if ( balanceDue > 0.0m )
                     {
-                        balanceCssClass = "label-danger";
+                        if ( !isPaymentPlanActive )
+                        {
+                            balanceCssClass = "label-danger";
+                        }
+                        else
+                        {
+                            balanceCssClass = "label-warning";
+                        }
                     }
                     else if ( balanceDue < 0.0m )
                     {
@@ -399,10 +409,13 @@ namespace RockWeb.Blocks.Event
                         balanceCssClass = "label-success";
                     }
 
-                    lBalance.Text = string.Format(@"<span class='label {0}'>{1}</span><input type='hidden' class='js-has-payments' value='{2}' />",
-                        balanceCssClass,
-                        balanceDue.FormatAsCurrency(),
-                        hasPayments.ToTrueFalse() );
+                    var paymentPlanIcon = string.Empty;
+                    if ( isPaymentPlanActive )
+                    {
+                        paymentPlanIcon = "<i class='fa fa-calendar-day'></i>";
+                    }
+
+                    lBalance.Text = $"<span class='label {balanceCssClass}'>{balanceDue.FormatAsCurrency()}{paymentPlanIcon}</span><input type='hidden' class='js-has-payments' value='{hasPayments.ToTrueFalse()}' />";
                 }
             }
         }
@@ -537,7 +550,7 @@ namespace RockWeb.Blocks.Event
         /// </summary>
         private void SetUserPreferencePrefix( int registrationTemplateId )
         {
-            fRegistrations.UserPreferenceKeyPrefix = string.Format( "{0}-", registrationTemplateId );
+            fRegistrations.PreferenceKeyPrefix = string.Format( "{0}-", registrationTemplateId );
         }
 
         /// <summary>
@@ -545,17 +558,17 @@ namespace RockWeb.Blocks.Event
         /// </summary>
         private void BindRegistrationsFilter()
         {
-            sdrpRegistrationDateRange.DelimitedValues = fRegistrations.GetUserPreference( UserPreferenceKeyBase.GridFilter_RegistrationsDateRange );
-            ddlRegistrationPaymentStatus.SetValue( fRegistrations.GetUserPreference( UserPreferenceKeyBase.GridFilter_PaymentStatus ) );
-            tbRegistrationRegisteredByFirstName.Text = fRegistrations.GetUserPreference( UserPreferenceKeyBase.GridFilter_RegisteredByFirstName );
-            tbRegistrationRegisteredByLastName.Text = fRegistrations.GetUserPreference( UserPreferenceKeyBase.GridFilter_RegisteredByLastName );
-            tbRegistrationRegistrantFirstName.Text = fRegistrations.GetUserPreference( UserPreferenceKeyBase.GridFilter_RegistrantFirstName );
-            tbRegistrationRegistrantLastName.Text = fRegistrations.GetUserPreference( UserPreferenceKeyBase.GridFilter_RegistrantLastName );
+            sdrpRegistrationDateRange.DelimitedValues = fRegistrations.GetFilterPreference( UserPreferenceKeyBase.GridFilter_RegistrationsDateRange );
+            ddlRegistrationPaymentStatus.SetValue( fRegistrations.GetFilterPreference( UserPreferenceKeyBase.GridFilter_PaymentStatus ) );
+            tbRegistrationRegisteredByFirstName.Text = fRegistrations.GetFilterPreference( UserPreferenceKeyBase.GridFilter_RegisteredByFirstName );
+            tbRegistrationRegisteredByLastName.Text = fRegistrations.GetFilterPreference( UserPreferenceKeyBase.GridFilter_RegisteredByLastName );
+            tbRegistrationRegistrantFirstName.Text = fRegistrations.GetFilterPreference( UserPreferenceKeyBase.GridFilter_RegistrantFirstName );
+            tbRegistrationRegistrantLastName.Text = fRegistrations.GetFilterPreference( UserPreferenceKeyBase.GridFilter_RegistrantLastName );
 
             cblCampus.DataSource = CampusCache.All();
             cblCampus.DataBind();
 
-            string campusValue = fRegistrations.GetUserPreference( UserPreferenceKeyBase.GridFilter_RegistrationCampus );
+            string campusValue = fRegistrations.GetFilterPreference( UserPreferenceKeyBase.GridFilter_RegistrationCampus );
 
             if ( !string.IsNullOrWhiteSpace( campusValue ) )
             {
@@ -589,7 +602,7 @@ namespace RockWeb.Blocks.Event
                     }
 
                     var qry = new RegistrationService( rockContext )
-                        .Queryable( "PersonAlias.Person,Registrants.PersonAlias.Person,Registrants.Fees.RegistrationTemplateFee,Campus" )
+                        .Queryable( "PersonAlias.Person,Registrants.PersonAlias.Person,Registrants.Fees.RegistrationTemplateFee,Campus,PaymentPlanFinancialScheduledTransaction" )
                         .AsNoTracking()
                         .Where( r =>
                             r.RegistrationInstanceId == instanceId.Value &&

@@ -21,7 +21,7 @@ using System.IO;
 using System.Web;
 
 using DotLiquid;
-
+using Rock.Lava.DotLiquid;
 using Rock.Model;
 
 namespace Rock.Lava.Shortcodes
@@ -66,21 +66,27 @@ namespace Rock.Lava.Shortcodes
         /// <param name="result">The result.</param>
         public override void Render( Context context, TextWriter result )
         {
+            int? visitorAliasId = null;
             var currentPerson = GetCurrentPerson( context );
-            var parms = ParseMarkup( Markup, context );
-            Guid? sessionGuid;
+            var settings = MediaPlayerShortcode.GetAttributesFromMarkup( this.Markup, new RockLiquidRenderContext( context ) );
 
             // Attempt to get the session guid
+            Guid? sessionGuid;
             try
             {
-                sessionGuid = ( HttpContext.Current.Handler as Web.UI.RockPage )?.Session["RockSessionId"]?.ToString().AsGuidOrNull();
+                sessionGuid = ( HttpContext.Current?.Handler as Web.UI.RockPage )?.Session["RockSessionId"]?.ToString().AsGuidOrNull();
             }
             catch
             {
                 sessionGuid = null;
             }
 
-            MediaPlayerShortcode.RenderToWriter( parms, currentPerson, sessionGuid, result );
+            if ( currentPerson == null )
+            {
+                visitorAliasId = GetVisitorAliasId( context );
+            }
+
+            MediaPlayerShortcode.RenderToWriter( settings.Attributes, currentPerson, visitorAliasId, sessionGuid, result );
         }
 
         /// <summary>
@@ -109,7 +115,9 @@ namespace Rock.Lava.Shortcodes
             {
                 var httpContext = HttpContext.Current;
 
-                if ( context != null && httpContext.Items.Contains( "CurrentPerson" ) )
+                if ( context != null
+                    && httpContext != null
+                    && httpContext.Items.Contains( "CurrentPerson" ) )
                 {
                     currentPerson = httpContext.Items["CurrentPerson"] as Person;
                 }
@@ -119,37 +127,27 @@ namespace Rock.Lava.Shortcodes
         }
 
         /// <summary>
-        /// Parses the markup.
+        /// Gets the visitor person alias identifier.
         /// </summary>
-        /// <param name="markup">The markup.</param>
         /// <param name="context">The context.</param>
         /// <returns></returns>
-        private Dictionary<string, string> ParseMarkup( string markup, Context context )
+        private static int? GetVisitorAliasId( Context context )
         {
-            // first run lava across the inputted markup
-            var internalMergeFields = new Dictionary<string, object>();
+            PersonAlias visitorAlias = null;
 
-            // get variables defined in the lava source
-            foreach ( var scope in context.Scopes )
+            // Check for a visitor value included in lava context
+            if ( context.Scopes != null )
             {
-                foreach ( var item in scope )
+                foreach ( var scopeHash in context.Scopes )
                 {
-                    internalMergeFields.AddOrReplace( item.Key, item.Value );
+                    if ( scopeHash.ContainsKey( "CurrentVisitor" ) )
+                    {
+                        visitorAlias = scopeHash["CurrentVisitor"] as PersonAlias;
+                    }
                 }
             }
 
-            // get merge fields loaded by the block or container
-            if ( context.Environments.Count > 0 )
-            {
-                foreach ( var item in context.Environments[0] )
-                {
-                    internalMergeFields.AddOrReplace( item.Key, item.Value );
-                }
-            }
-
-            var resolvedMarkup = markup.ResolveMergeFields( internalMergeFields );
-
-            return Rock.Lava.Shortcodes.MediaPlayerShortcode.ParseResolvedMarkup( resolvedMarkup );
+            return visitorAlias?.Id;
         }
 
         #endregion

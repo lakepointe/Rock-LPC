@@ -58,9 +58,19 @@
             <!-- END LPC MODIFIED CODE -->
         </div>
     </div>
-    <!-- LPC MODIFIED CODE -->
     <div class="row clearfix">
+        <div v-if="config.childGenderField?.isShown" class="col-sm-6">
+            <!-- LPC MODIFIED CODE -->
+            <GenderDropDownList
+                v-model="child.genderStringValue"
+                :disabled="disabled"
+                :label="getLang() == 'es' ? 'Género' : 'Gender'"
+                :rules="config.childGenderField.isRequired ? requiredGenderRules : ''" />
+            <!-- END LPC MODIFIED CODE -->
+        </div>
+
         <div v-if="config.childSuffixField?.isShown" class="col-sm-6">
+            <!-- LPC MODIFIED CODE -->
             <DefinedValuePicker
                 v-model="child.suffixListItemBag"
                 :definedTypeGuid="DefinedType.PersonSuffix"
@@ -68,27 +78,22 @@
                 :label="getLang() == 'es' ? 'Sufijo' : 'Suffix'"
                 lazyMode="lazy"
                 :showBlankItem="true" />
+            <!-- END LPC MODIFIED CODE -->
         </div>
     </div>
     <div class="row clearfix">
-        <div v-if="config.childGenderField?.isShown" class="col-sm-6">
-            <GenderDropDownList
-                v-model="child.genderStringValue"
-                :disabled="disabled"
-                :label="getLang() == 'es' ? 'Género' : 'Gender'"
-                :rules="config.childGenderField.isRequired ? requiredGenderRules : ''" />
-        </div>
-
         <div v-if="config.childBirthDateField?.isShown" class="col-sm-6">
+            <!-- LPC MODIFIED CODE -->
             <BirthdayPicker
                 v-model="child.birthDate"
                 :disabled="disabled"
                 :label="getLang() == 'es' ? 'Fecha de Nacimiento' : 'Birth Date'"
                 :rules="config.childBirthDateField.isRequired ? requiredBirthdayRules : ''" />
+            <!-- END LPC MODIFIED CODE -->
         </div>
-    </div>
-    <div class="row clearfix">
+
         <div v-if="config.childGradeField?.isShown" class="col-sm-6">
+            <!-- LPC MODIFIED CODE -->
             <GradePicker
                 v-model="child.gradeListItemBag"
                 :disabled="disabled"
@@ -97,10 +102,11 @@
                 :useGuidAsValue="true"
                 :rules="config.childGradeField.isRequired ? requiredRules : ''"
                 :showBlankItem="true"
-                :useAbbreviation="true"
                 @update:modelValue="handleSelfReleaseVisiblity" />
+            <!-- END LPC MODIFIED CODE -->
         </div>
 
+        <!-- LPC CODE -->
         <div v-if="config.childGradeField?.isShown && config.childSelfReleaseField?.isShown && showSelfRelease" class="col-sm-6">
             <Toggle
                 v-model="child.isSelfRelease"
@@ -109,8 +115,8 @@
                 :trueText="getLang() == 'es' ? 'Sí' : 'Yes'"
                 falseText="No" />
         </div>
+        <!-- END LPC CODE -->
     </div>
-    <!-- END LPC MODIFIED CODE -->
     <div class="row clearfix">
         <div v-if="config.childMobilePhoneField?.isShown" class="col-sm-6">
             <!-- LPC MODIFIED CODE -->
@@ -240,23 +246,22 @@
     import { computed, PropType, ref, watch } from "vue";
     import { ChildRequestBag } from "./types.partial";
     import { createNotEqualRule, createPersonViewModel, createRuleWithReplacement, createRuleWithSuffix, getNumberAsOrdinalString, monthAndDayAndYearRequiredRule, required } from "./utils.partial";
-    import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
-    import BirthdayPicker from "@Obsidian/Controls/birthdayPicker";
-    import CheckBox from "@Obsidian/Controls/checkBox";
+    import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer.obs";
+    import BirthdayPicker from "@Obsidian/Controls/birthdayPicker.obs";
+    import CheckBox from "@Obsidian/Controls/checkBox.obs";
     import DefinedValuePicker from "@Obsidian/Controls/definedValuePicker.obs";
-    import DropDownList from "@Obsidian/Controls/dropDownList";
-    import EmailBox from "@Obsidian/Controls/emailBox";
+    import DropDownList from "@Obsidian/Controls/dropDownList.obs";
+    import EmailBox from "@Obsidian/Controls/emailBox.obs";
     import EthnicityPicker from "@Obsidian/Controls/ethnicityPicker.obs";
-    import GenderDropDownList from "@Obsidian/Controls/genderDropDownList";
-    import GradePicker from "@Obsidian/Controls/gradePicker";
+    import GenderDropDownList from "@Obsidian/Controls/genderDropDownList.obs";
+    import GradePicker from "@Obsidian/Controls/gradePicker.obs";
     import ImageEditor from "@Obsidian/Controls/imageEditor.obs";
-    import ImageTaker from "@Obsidian/Controls/imageTaker.obs";
     import PhoneNumberBox from "@Obsidian/Controls/phoneNumberBox.obs";
     import RacePicker from "@Obsidian/Controls/racePicker.obs";
-    import RadioButtonList from "@Obsidian/Controls/radioButtonList";
-    import RockButton from "@Obsidian/Controls/rockButton";
-    import StaticFormControl from "@Obsidian/Controls/staticFormControl";
-    import TextBox from "@Obsidian/Controls/textBox";
+    import RadioButtonList from "@Obsidian/Controls/radioButtonList.obs";
+    import RockButton from "@Obsidian/Controls/rockButton.obs";
+    import StaticFormControl from "@Obsidian/Controls/staticFormControl.obs";
+    import TextBox from "@Obsidian/Controls/textBox.obs";
     import { CommunicationPreference } from "@Obsidian/Enums/Blocks/Crm/FamilyPreRegistration/communicationPreference";
     import { Gender } from "@Obsidian/Enums/Crm/gender";
     import { BinaryFiletype } from "@Obsidian/SystemGuids/binaryFiletype";
@@ -266,7 +271,8 @@
     import { ValidationRule } from "@Obsidian/ValidationRules";
     import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
     // LPC CODE
-    import Toggle from "@Obsidian/Controls/toggle";
+    import ImageTaker from "@Obsidian/Controls/imageTaker.obs";
+    import Toggle from "@Obsidian/Controls/toggle.obs";
     import { useStore } from "@Obsidian/PageState";
     import { onMounted } from "vue";
 

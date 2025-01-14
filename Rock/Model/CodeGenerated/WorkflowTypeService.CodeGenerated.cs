@@ -23,11 +23,7 @@
 using System;
 using System.Linq;
 
-using Rock.Attribute;
 using Rock.Data;
-using Rock.ViewModels;
-using Rock.ViewModels.Entities;
-using Rock.Web.Cache;
 
 namespace Rock.Model
 {
@@ -98,6 +94,24 @@ namespace Rock.Model
                 return false;
             }
 
+            if ( new Service<LearningActivity>( Context ).Queryable().Any( a => a.CompletionWorkflowTypeId == item.Id ) )
+            {
+                errorMessage = string.Format( "This {0} is assigned to a {1}.", WorkflowType.FriendlyTypeName, LearningActivity.FriendlyTypeName );
+                return false;
+            }
+
+            if ( new Service<LearningCourse>( Context ).Queryable().Any( a => a.CompletionWorkflowTypeId == item.Id ) )
+            {
+                errorMessage = string.Format( "This {0} is assigned to a {1}.", WorkflowType.FriendlyTypeName, LearningCourse.FriendlyTypeName );
+                return false;
+            }
+
+            if ( new Service<LearningProgram>( Context ).Queryable().Any( a => a.CompletionWorkflowTypeId == item.Id ) )
+            {
+                errorMessage = string.Format( "This {0} is assigned to a {1}.", WorkflowType.FriendlyTypeName, LearningProgram.FriendlyTypeName );
+                return false;
+            }
+
             if ( new Service<MediaFolder>( Context ).Queryable().Any( a => a.WorkflowTypeId == item.Id ) )
             {
                 errorMessage = string.Format( "This {0} is assigned to a {1}.", WorkflowType.FriendlyTypeName, MediaFolder.FriendlyTypeName );
@@ -136,66 +150,6 @@ namespace Rock.Model
             return true;
         }
     }
-
-    /// <summary>
-    /// WorkflowType View Model Helper
-    /// </summary>
-    [DefaultViewModelHelper( typeof( WorkflowType ) )]
-    public partial class WorkflowTypeViewModelHelper : ViewModelHelper<WorkflowType, WorkflowTypeBag>
-    {
-        /// <summary>
-        /// Converts the model to a view model.
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson">The current person.</param>
-        /// <param name="loadAttributes">if set to <c>true</c> [load attributes].</param>
-        /// <returns></returns>
-        public override WorkflowTypeBag CreateViewModel( WorkflowType model, Person currentPerson = null, bool loadAttributes = true )
-        {
-            if ( model == null )
-            {
-                return default;
-            }
-
-            var viewModel = new WorkflowTypeBag
-            {
-                IdKey = model.IdKey,
-                CategoryId = model.CategoryId,
-                CompletedWorkflowRetentionPeriod = model.CompletedWorkflowRetentionPeriod,
-                Description = model.Description,
-                FormBuilderSettingsJson = model.FormBuilderSettingsJson,
-                FormBuilderTemplateId = model.FormBuilderTemplateId,
-                FormEndDateTime = model.FormEndDateTime,
-                FormStartDateTime = model.FormStartDateTime,
-                IconCssClass = model.IconCssClass,
-                IsActive = model.IsActive,
-                IsFormBuilder = model.IsFormBuilder,
-                IsLoginRequired = model.IsLoginRequired,
-                IsPersisted = model.IsPersisted,
-                IsSystem = model.IsSystem,
-                LoggingLevel = ( int ) model.LoggingLevel,
-                LogRetentionPeriod = model.LogRetentionPeriod,
-                MaxWorkflowAgeDays = model.MaxWorkflowAgeDays,
-                Name = model.Name,
-                NoActionMessage = model.NoActionMessage,
-                Order = model.Order,
-                ProcessingIntervalSeconds = model.ProcessingIntervalSeconds,
-                SummaryViewText = model.SummaryViewText,
-                WorkflowExpireDateTime = model.WorkflowExpireDateTime,
-                WorkflowIdPrefix = model.WorkflowIdPrefix,
-                WorkTerm = model.WorkTerm,
-                CreatedDateTime = model.CreatedDateTime,
-                ModifiedDateTime = model.ModifiedDateTime,
-                CreatedByPersonAliasId = model.CreatedByPersonAliasId,
-                ModifiedByPersonAliasId = model.ModifiedByPersonAliasId,
-            };
-
-            AddAttributesToViewModel( model, viewModel, currentPerson, loadAttributes );
-            ApplyAdditionalPropertiesAndSecurityToViewModel( model, viewModel, currentPerson, loadAttributes );
-            return viewModel;
-        }
-    }
-
 
     /// <summary>
     /// Generated Extension Methods
@@ -287,20 +241,5 @@ namespace Rock.Model
             target.ForeignId = source.ForeignId;
 
         }
-
-        /// <summary>
-        /// Creates a view model from this entity
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson" >The currentPerson.</param>
-        /// <param name="loadAttributes" >Load attributes?</param>
-        public static WorkflowTypeBag ToViewModel( this WorkflowType model, Person currentPerson = null, bool loadAttributes = false )
-        {
-            var helper = new WorkflowTypeViewModelHelper();
-            var viewModel = helper.CreateViewModel( model, currentPerson, loadAttributes );
-            return viewModel;
-        }
-
     }
-
 }

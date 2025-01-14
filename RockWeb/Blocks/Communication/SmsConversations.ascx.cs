@@ -30,6 +30,7 @@ using Rock.Enums.Communication;
 using Rock.Model;
 using Rock.Reporting;
 using Rock.Security;
+using Rock.Utility;
 using Rock.Web.Cache;
 using Rock.Web.UI;
 using Rock.Web.UI.Controls;
@@ -55,7 +56,7 @@ namespace RockWeb.Blocks.Communication
 
     [BooleanField( "Hide personal SMS numbers",
         Key = AttributeKey.HidePersonalSmsNumbers,
-        Description = "Only SMS Numbers that are not associated with a person. The numbers without a 'ResponseRecipient' attribute value.",
+        Description = "When enabled, only SMS Numbers that are not 'Assigned to a person' will be shown.",
         DefaultBooleanValue = false,
         Order = 3
          )]
@@ -146,6 +147,7 @@ namespace RockWeb.Blocks.Communication
                 Content = "telephone=no"
             };
 
+            RockPage.AddCSSLink( "~/Styles/Blocks/Communication/SmsConversations.css" );
             RockPage.AddMetaTag( this.Page, preventPhoneMetaTag );
 
             this.BlockUpdated += Block_BlockUpdated;
@@ -222,7 +224,7 @@ namespace RockWeb.Blocks.Communication
             // filter personal numbers (any that have a response recipient) if the hide personal option is enabled
             if ( GetAttributeValue( AttributeKey.HidePersonalSmsNumbers ).AsBoolean() )
             {
-                smsNumbers = smsNumbers.Where( spn => spn.AssignedToPersonAliasId.HasValue ).ToList();
+                smsNumbers = smsNumbers.Where( spn => !spn.AssignedToPersonAliasId.HasValue ).ToList();
             }
 
             // Show only numbers 'tied to the current' individual...unless they have 'Admin rights'.
@@ -247,9 +249,9 @@ namespace RockWeb.Blocks.Communication
 
                 ddlMessageFilter.BindToEnum<CommunicationMessageFilter>();
 
-                string keyPrefix = string.Format( "sms-conversations-{0}-", this.BlockId );
+                var preferences = GetBlockPersonPreferences();
 
-                string smsNumberUserPref = this.GetUserPreference( keyPrefix + "smsNumber" ) ?? string.Empty;
+                string smsNumberUserPref = preferences.GetValue( "smsNumber" );
 
                 if ( smsNumberUserPref.IsNotNullOrWhiteSpace() )
                 {
@@ -264,7 +266,7 @@ namespace RockWeb.Blocks.Communication
                 hlSmsNumber.Text = smsDetails.Select( v => v.Description ).FirstOrDefault();
                 hfSmsNumber.SetValue( smsNumbers.Count() > 1 ? ddlSmsNumbers.SelectedValue.AsInteger() : smsDetails.Select( v => v.Id ).FirstOrDefault() );
 
-                ddlMessageFilter.SelectedValue = this.GetUserPreference( keyPrefix + "messageFilter" ) ?? CommunicationMessageFilter.ShowUnreadReplies.ToString();
+                ddlMessageFilter.SelectedValue = preferences.GetValue( "messageFilter" ).IfEmpty( CommunicationMessageFilter.ShowUnreadReplies.ToString() );
             }
             else
             {
@@ -465,19 +467,21 @@ namespace RockWeb.Blocks.Communication
         /// </summary>
         private void SaveSettings()
         {
-            string keyPrefix = string.Format( "sms-conversations-{0}-", this.BlockId );
+            var preferences = GetBlockPersonPreferences();
 
             if ( ddlSmsNumbers.Visible )
             {
-                this.SetUserPreference( keyPrefix + "smsNumber", ddlSmsNumbers.SelectedValue.ToString() );
+                preferences.SetValue( "smsNumber", ddlSmsNumbers.SelectedValue.ToString() );
                 hfSmsNumber.SetValue( ddlSmsNumbers.SelectedValue.AsInteger() );
             }
             else
             {
-                this.SetUserPreference( keyPrefix + "smsNumber", hfSmsNumber.Value.ToString() );
+                preferences.SetValue( "smsNumber", hfSmsNumber.Value.ToString() );
             }
 
-            this.SetUserPreference( keyPrefix + "messageFilter", ddlMessageFilter.SelectedValue );
+            preferences.SetValue( "messageFilter", ddlMessageFilter.SelectedValue );
+
+            preferences.Save();
         }
 
         /// <summary>
@@ -702,19 +706,22 @@ namespace RockWeb.Blocks.Communication
         protected void ppRecipient_SelectPerson( object sender, EventArgs e )
         {
             nbNoSms.Visible = false;
-            var senderClearButton = ( HtmlAnchor ) sender;
+            var senderClearButton = ( HtmlButton ) sender;
             if (senderClearButton != null && senderClearButton.ID == "btnSelectNone" )
             {
                 // The PersonPicker clear button was clicked so no need to check for SMS numbers
                 return;
             }
 
-            int toPersonAliasId = ppRecipient.PersonAliasId.Value;
-            var personAliasService = new PersonAliasService( new RockContext() );
-            var toPerson = personAliasService.GetPerson( toPersonAliasId );
-            if ( !toPerson.PhoneNumbers.Where( p => p.IsMessagingEnabled ).Any() )
+            if ( ppRecipient.PersonAliasId.HasValue )
             {
-                nbNoSms.Visible = true;
+                int toPersonAliasId = ppRecipient.PersonAliasId.Value;
+                var personAliasService = new PersonAliasService( new RockContext() );
+                var toPerson = personAliasService.GetPerson( toPersonAliasId );
+                if ( !toPerson.PhoneNumbers.Where( p => p.IsMessagingEnabled ).Any() )
+                {
+                    nbNoSms.Visible = true;
+                }
             }
         }
 
@@ -895,7 +902,8 @@ namespace RockWeb.Blocks.Communication
                     foreach ( var binaryFileGuid in communicationRecipientResponse.GetBinaryFileGuids( rockContext ) )
                     {
                         // Show the image thumbnail by appending the html to lSMSMessage.Text
-                        string imageElement = $"<a href='{applicationRoot}GetImage.ashx?guid={binaryFileGuid}' target='_blank' rel='noopener noreferrer'><img src='{applicationRoot}GetImage.ashx?guid={binaryFileGuid}&width=200' class='img-responsive sms-image'></a>";
+                        string imageUrl = FileUrlHelper.GetImageUrl( binaryFileGuid, new GetImageUrlOptions{ Width = 200 } );
+                        string imageElement = $"<a href='{imageUrl}' target='_blank' rel='noopener noreferrer'><img src='{imageUrl}' class='img-responsive sms-image'></a>";
 
                         // If there is a text portion or previous image then drop down a line before appending the image element
                         lSMSAttachments.Text += imageElement;

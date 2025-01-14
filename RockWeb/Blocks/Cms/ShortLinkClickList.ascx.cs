@@ -29,6 +29,8 @@ using Rock.Web.UI.Controls;
 using System.ComponentModel;
 using Rock.Security;
 using System.Data.Entity;
+using System.Web.UI.WebControls;
+using Rock.Cms.Utm;
 
 namespace RockWeb.Blocks.Cms
 {
@@ -54,6 +56,7 @@ namespace RockWeb.Blocks.Cms
             gShortLinkClicks.DataKeyNames = new string[] { "Id" };
             gShortLinkClicks.Actions.ShowAdd = false;
             gShortLinkClicks.GridRebind += gShortLinkClicks_GridRebind;
+            gShortLinkClicks.RowDataBound += gShortLinkClicks_RowDataBound;
         }
 
         /// <summary>
@@ -85,6 +88,31 @@ namespace RockWeb.Blocks.Cms
             BindShortLinkClicksGrid();
         }
 
+        private void gShortLinkClicks_RowDataBound( object sender, System.Web.UI.WebControls.GridViewRowEventArgs e )
+        {
+            if ( e.Row.RowType != DataControlRowType.DataRow )
+            {
+                return;
+            }
+
+            var sourceValueId = e.Row.DataItem.GetPropertyValue( "SourceValueId" ).ToStringSafe().AsIntegerOrNull();
+            if ( sourceValueId == null )
+            {
+                return;
+            }
+
+            var colSource = gShortLinkClicks.GetColumnByHeaderText( "UTM Source" );
+            if ( colSource == null )
+            {
+                return;
+            }
+
+            var colIndex = gShortLinkClicks.GetColumnIndex( colSource );
+            var cell = e.Row.Cells[colIndex];
+
+            cell.Text = UtmHelper.GetUtmSourceNameFromDefinedValueOrText( sourceValueId, string.Empty );
+        }
+
         /// <summary>
         /// Binds the group members grid.
         /// </summary>
@@ -99,14 +127,30 @@ namespace RockWeb.Blocks.Cms
 
             using ( var rockContext = new RockContext() )
             {
+                rockContext.Database.CommandTimeout = 180;
                 var dv = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.INTERACTIONCHANNELTYPE_URLSHORTENER );
                 if ( dv != null )
                 {
                     var qry = new InteractionService( rockContext )
                         .Queryable().AsNoTracking()
+                        // eagerly load the required entities to avoid multiple calls to the database
+                        .Include( i => i.InteractionSession.DeviceType )
+                        .Include( i => i.PersonAlias.Person )
                         .Where( i =>
                             i.InteractionComponent.InteractionChannel.ChannelTypeMediumValueId == dv.Id &&
-                            i.InteractionComponent.EntityId == shortLinkId );
+                            i.InteractionComponent.EntityId == shortLinkId )
+                        // filter out only the required data from the entity
+                        .Select( i => new
+                        {
+                            i.Id,
+                            i.InteractionDateTime,
+                            i.PersonAlias.Person,
+                            i.InteractionSession.DeviceType.Application,
+                            i.InteractionSession.DeviceType.OperatingSystem,
+                            i.InteractionSession.DeviceType.ClientType,
+                            i.Source,
+                            i.SourceValueId
+                        } );
 
                     SortProperty sortProperty = gShortLinkClicks.SortProperty;
                     if ( sortProperty != null )

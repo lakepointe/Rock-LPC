@@ -1,5 +1,7 @@
 ﻿<%@ Control Language="C#" AutoEventWireup="true" CodeFile="GroupTypeChanger.ascx.cs" Inherits="RockWeb.Plugins.org_secc.Administration.GroupTypeChanger" %>
 
+<!-- LPC MODIFIED CODE - Made major changes to this block to support v14 of Rock, to improve performance, to delete orphaned attribute values, and to improve the ease of usability of this block -->
+
 <asp:UpdatePanel ID="upReport" runat="server">
     <ContentTemplate>
         <Rock:NotificationBox runat="server" ID="nbSuccess" Visible="false" NotificationBoxType="Success" Heading="<span style='font-size: 20px'>GroupType successfully changed.</span>"></Rock:NotificationBox>

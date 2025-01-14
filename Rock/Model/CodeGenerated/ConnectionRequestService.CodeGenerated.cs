@@ -23,11 +23,7 @@
 using System;
 using System.Linq;
 
-using Rock.Attribute;
 using Rock.Data;
-using Rock.ViewModels;
-using Rock.ViewModels.Entities;
-using Rock.Web.Cache;
 
 namespace Rock.Model
 {
@@ -56,60 +52,16 @@ namespace Rock.Model
         {
             errorMessage = string.Empty;
 
+            if ( new Service<BackgroundCheck>( Context ).Queryable().Any( a => a.ConnectionRequestId == item.Id ) )
+            {
+                errorMessage = string.Format( "This {0} is assigned to a {1}.", ConnectionRequest.FriendlyTypeName, BackgroundCheck.FriendlyTypeName );
+                return false;
+            }
+
             // ignoring ConnectionRequestActivity,ConnectionRequestId
             return true;
         }
     }
-
-    /// <summary>
-    /// ConnectionRequest View Model Helper
-    /// </summary>
-    [DefaultViewModelHelper( typeof( ConnectionRequest ) )]
-    public partial class ConnectionRequestViewModelHelper : ViewModelHelper<ConnectionRequest, ConnectionRequestBag>
-    {
-        /// <summary>
-        /// Converts the model to a view model.
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson">The current person.</param>
-        /// <param name="loadAttributes">if set to <c>true</c> [load attributes].</param>
-        /// <returns></returns>
-        public override ConnectionRequestBag CreateViewModel( ConnectionRequest model, Person currentPerson = null, bool loadAttributes = true )
-        {
-            if ( model == null )
-            {
-                return default;
-            }
-
-            var viewModel = new ConnectionRequestBag
-            {
-                IdKey = model.IdKey,
-                AssignedGroupId = model.AssignedGroupId,
-                AssignedGroupMemberAttributeValues = model.AssignedGroupMemberAttributeValues,
-                AssignedGroupMemberRoleId = model.AssignedGroupMemberRoleId,
-                AssignedGroupMemberStatus = ( int? ) model.AssignedGroupMemberStatus,
-                CampusId = model.CampusId,
-                Comments = model.Comments,
-                ConnectionOpportunityId = model.ConnectionOpportunityId,
-                ConnectionState = ( int ) model.ConnectionState,
-                ConnectionStatusId = model.ConnectionStatusId,
-                ConnectionTypeId = model.ConnectionTypeId,
-                ConnectorPersonAliasId = model.ConnectorPersonAliasId,
-                FollowupDate = model.FollowupDate,
-                Order = model.Order,
-                PersonAliasId = model.PersonAliasId,
-                CreatedDateTime = model.CreatedDateTime,
-                ModifiedDateTime = model.ModifiedDateTime,
-                CreatedByPersonAliasId = model.CreatedByPersonAliasId,
-                ModifiedByPersonAliasId = model.ModifiedByPersonAliasId,
-            };
-
-            AddAttributesToViewModel( model, viewModel, currentPerson, loadAttributes );
-            ApplyAdditionalPropertiesAndSecurityToViewModel( model, viewModel, currentPerson, loadAttributes );
-            return viewModel;
-        }
-    }
-
 
     /// <summary>
     /// Generated Extension Methods
@@ -191,20 +143,5 @@ namespace Rock.Model
             target.ForeignId = source.ForeignId;
 
         }
-
-        /// <summary>
-        /// Creates a view model from this entity
-        /// </summary>
-        /// <param name="model">The entity.</param>
-        /// <param name="currentPerson" >The currentPerson.</param>
-        /// <param name="loadAttributes" >Load attributes?</param>
-        public static ConnectionRequestBag ToViewModel( this ConnectionRequest model, Person currentPerson = null, bool loadAttributes = false )
-        {
-            var helper = new ConnectionRequestViewModelHelper();
-            var viewModel = helper.CreateViewModel( model, currentPerson, loadAttributes );
-            return viewModel;
-        }
-
     }
-
 }

@@ -23,6 +23,15 @@ namespace Rock.SystemGuid
     /// </summary>
     public class Category
     {
+        #region CMS Categories
+
+        /// <summary>
+        /// Marketing Category Guid
+        /// </summary>
+        public const string MARKETING = "FE0AE3EB-B648-4264-A222-96CEA3A25E20";
+
+        #endregion
+
         #region Dataview Categories
 
         /// <summary>
@@ -156,6 +165,11 @@ namespace Rock.SystemGuid
         /// Gets the DataView Persisted Schedule category guid
         /// </summary>
         public const string SCHEDULE_PERSISTED_DATAVIEWS = "EEC7A935-BEF2-4450-9CBF-B85CEC6F7FEA";
+
+        /// <summary>
+        /// Gets the DataView Persisted Schedule category guid
+        /// </summary>
+        public const string SCHEDULE_PERSISTED_DATASETS = "7D152006-C47D-47E6-BF0B-09C3C2D0AE84";
 
         #endregion
 
@@ -319,5 +333,14 @@ namespace Rock.SystemGuid
         public const string WORKFLOW_TYPE_STAFF_FORMS = "25E6844F-59BA-4C0D-9284-ED2A558E18EC";
 
         #endregion FormBuilder Categories
+
+        #region Lava Shortcode Categories
+
+        /// <summary>
+        /// Lava Shortcode Category Guid
+        /// </summary>
+        public const string LAVA_SHORTCODE_AI = "125FB37E-5540-48A6-4A74-A49D1C1324F8";
+
+        #endregion
     }
 }

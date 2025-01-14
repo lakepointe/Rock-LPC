@@ -1,0 +1,113 @@
+﻿<!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
+<template>
+    <div class="registrationentry-registration-attributes">
+        <RockForm @submit="onNext">
+            <AttributeValuesContainer v-model="attributeValues" :attributes="attributes" isEditMode :showCategoryLabel="false" />
+
+            <div class="actions row">
+                <div class="col-xs-6">
+                    <RockButton v-if="showPrevious" btnType="default" @click="onPrevious">
+                        <!-- LPC MODIFIED CODE -->
+                        {{ getLang() == "es" ? "Anterior" : "Previous" }}
+                        <!-- END LPC MODIFIED CODE -->
+                    </RockButton>
+                </div>
+                <div class="col-xs-6 text-right">
+                    <RockButton btnType="primary" type="submit">
+                        <!-- LPC MODIFIED CODE -->
+                        {{ getLang() == "es" ? "Siguiente" : "Next" }}
+                        <!-- END LPC MODIFIED CODE -->
+                    </RockButton>
+                </div>
+            </div>
+        </RockForm>
+    </div>
+</template>
+<script setup lang="ts">
+    import { computed, ref, watch } from "vue";
+    import { CurrentRegistrationEntryState, use } from "./utils.partial";
+    import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer.obs";
+    import RockButton from "@Obsidian/Controls/rockButton.obs";
+    import RockForm from "@Obsidian/Controls/rockForm.obs";
+    import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
+
+    const emit = defineEmits<{
+        (e: "next"): void,
+        (e: "previous"): void
+    }>();
+
+    const registrationEntryState = use(CurrentRegistrationEntryState);
+
+    // #region Values
+
+    const attributeValues = ref<Record<string, string>>({});
+
+    if (registrationEntryState.viewModel.registrationAttributesEnd) {
+        for (const a of registrationEntryState.viewModel.registrationAttributesEnd) {
+            attributeValues.value[a.key ?? ""] = (registrationEntryState.registrationFieldValues[a.attributeGuid ?? ""] as string) || "";
+        }
+    }
+
+    // #endregion
+
+    // #region Computed Values
+
+    const showPrevious = computed((): boolean => {
+        return registrationEntryState.firstStep === registrationEntryState.steps.intro;
+    });
+
+    const attributes = computed((): Record<string, PublicAttributeBag> => {
+        const attrs: Record<string, PublicAttributeBag> = {};
+
+        if (registrationEntryState.viewModel.registrationAttributesEnd) {
+            for (const a of registrationEntryState.viewModel.registrationAttributesEnd) {
+                attrs[a.key ?? ""] = a;
+            }
+        }
+
+        return attrs;
+    });
+
+    // #endregion
+
+    // #region Functions
+
+    function onPrevious(): void {
+        emit("previous");
+    }
+
+    function onNext(): void {
+        emit("next");
+    }
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
+
+    // #endregion
+
+    // #region Watchers
+
+    watch(attributeValues, () => {
+        if (registrationEntryState.viewModel.registrationAttributesEnd) {
+            for (const a of registrationEntryState.viewModel.registrationAttributesEnd) {
+                registrationEntryState.registrationFieldValues[a.attributeGuid ?? ""] = attributeValues.value[a.key ?? ""];
+            }
+        }
+    });
+
+    // #endregion
+</script>

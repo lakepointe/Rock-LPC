@@ -21,8 +21,10 @@
 // </copyright>
 //
 
+import { BlockReloadMode } from "@Obsidian/Enums/Cms/blockReloadMode";
 import { Guid } from "@Obsidian/Types";
 import { BlockCustomActionBag } from "@Obsidian/ViewModels/Cms/blockCustomActionBag";
+import { ObsidianBlockPreferencesBag } from "@Obsidian/ViewModels/Cms/obsidianBlockPreferencesBag";
 
 /**
  * Contains the configuration required to initialize an Obsidian block in
@@ -36,7 +38,13 @@ export type ObsidianBlockConfigBag = {
      * Gets or sets the unique identifier of the block that is being
      * represented by this configuration.
      */
-    blockGuid?: Guid | null;
+    blockGuid: Guid;
+
+    /**
+     * Gets or sets the unique identifier of the block type that is being
+     * represented by this configuration.
+     */
+    blockTypeGuid: Guid;
 
     /**
      * Gets or sets the custom configuration values for the block. This
@@ -49,6 +57,19 @@ export type ObsidianBlockConfigBag = {
      * to the block's configuration bar.
      */
     customConfigurationActions?: BlockCustomActionBag[] | null;
+
+    /**
+     * Gets or sets the initial content to be rendered for the block
+     * until the component loads. This is only valid when refreshing
+     * the block initialization for a block reload operation.
+     */
+    initialContent?: string | null;
+
+    /** Gets or sets the person preferences associated with this block. */
+    preferences?: ObsidianBlockPreferencesBag | null;
+
+    /** Gets or sets the reload mode when the block configuration changes. */
+    reloadMode: BlockReloadMode;
 
     /**
      * Gets or sets the HTML element identifier that the block will be

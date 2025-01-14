@@ -35,6 +35,7 @@ namespace Rock.Blocks.Types.Mobile.Reminders
     [Category( "Reminders" )]
     [Description( "Allows adding/editing of reminders." )]
     [IconCssClass( "fa fa-edit" )]
+    [SupportedSiteTypes( Model.SiteType.Mobile )]
 
     #region Block Attributes
 
@@ -53,11 +54,18 @@ namespace Rock.Blocks.Types.Mobile.Reminders
         Key = AttributeKey.SaveNavigationAction,
         Order = 1 )]
 
+    [BooleanField( "Show Assigned To",
+        Description = "Whether to show the assigned to field. Otherwise defaults to the Current Person.",
+        IsRequired = false,
+        DefaultBooleanValue = false,
+        Key = AttributeKey.ShowAssignedTo,
+        Order = 2 )]
+
     #endregion
 
     [SystemGuid.EntityTypeGuid( SystemGuid.EntityType.MOBILE_REMINDERS_REMINDER_EDIT )]
     [SystemGuid.BlockTypeGuid( SystemGuid.BlockType.MOBILE_REMINDERS_REMINDER_EDIT )]
-    public class ReminderEdit : RockMobileBlockType
+    public class ReminderEdit : RockBlockType
     {
         #region Keys
 
@@ -75,6 +83,11 @@ namespace Rock.Blocks.Types.Mobile.Reminders
             /// The save navigation action.
             /// </summary>
             public const string SaveNavigationAction = "SaveNavigationAction";
+
+            /// <summary>
+            /// Whether to show the assigned to field.
+            /// </summary>
+            public const string ShowAssignedTo = "ShowAssignedTo";
         }
 
         #endregion
@@ -160,11 +173,8 @@ namespace Rock.Blocks.Types.Mobile.Reminders
 
         #region IRockMobileBlockType Implementation
 
-        /// <inheritdoc />
-        public override int RequiredMobileAbiVersion => 5;
-
-        /// <inheritdoc />
-        public override string MobileBlockType => "Rock.Mobile.Blocks.Reminders.ReminderEdit";
+        /// <inheritdoc/>
+        public override Version RequiredMobileVersion => new Version( 1, 5 );
 
         /// <summary>
         /// Gets the mobile configuration values.
@@ -175,7 +185,8 @@ namespace Rock.Blocks.Types.Mobile.Reminders
             return new Rock.Common.Mobile.Blocks.Reminders.ReminderEdit.Configuration
             {
                 HeaderTemplate = GetAttributeValue( AttributeKey.HeaderTemplate ),
-                SaveNavigationAction = GetAttributeValue( AttributeKey.SaveNavigationAction ).FromJsonOrNull<MobileNavigationActionViewModel>() ?? new MobileNavigationActionViewModel()
+                SaveNavigationAction = GetAttributeValue( AttributeKey.SaveNavigationAction ).FromJsonOrNull<MobileNavigationActionViewModel>() ?? new MobileNavigationActionViewModel(),
+                ShowAssignTo = GetAttributeValue( AttributeKey.ShowAssignedTo ).AsBoolean()
             };
         }
 
@@ -192,20 +203,21 @@ namespace Rock.Blocks.Types.Mobile.Reminders
         /// <param name="note">The note.</param>
         /// <param name="renewPeriodDays">The renew period days.</param>
         /// <param name="renewMaxCount">The renew maximum count.</param>
+        /// <param name="assignedToPrimaryAliasGuid">The person this reminder should be assigned to.</param>
         /// <param name="rockContext">The rock context.</param>
         /// <remarks>This method should only be called when there is a Current Person in the request.</remarks>
-        private void CreateReminder( Guid reminderTypeGuid, Guid entityGuid, DateTime reminderDate, string note, int? renewPeriodDays, int? renewMaxCount, RockContext rockContext )
+        private void CreateReminder( Guid reminderTypeGuid, Guid entityGuid, DateTime reminderDate, string note, int? renewPeriodDays, int? renewMaxCount, Guid? assignedToPrimaryAliasGuid, RockContext rockContext )
         {
             var reminderService = new ReminderService( rockContext );
             var reminderType = new ReminderTypeService( rockContext ).Get( reminderTypeGuid );
 
-            if( reminderType == null )
+            if ( reminderType == null )
             {
                 return;
             }
 
             var entityId = Reflection.GetEntityIdForEntityType( reminderType.EntityType.Id, entityGuid, rockContext );
-            if( entityId == null )
+            if ( entityId == null )
             {
                 return;
             }
@@ -225,10 +237,22 @@ namespace Rock.Blocks.Types.Mobile.Reminders
                 RenewCurrentCount = 0
             };
 
-            var person = RequestContext.CurrentPerson;
-            reminder.PersonAliasId = person.PrimaryAliasId.Value;
-            reminderService.Add( reminder );
+            if ( GetAttributeValue( AttributeKey.ShowAssignedTo ).AsBoolean() )
+            {
+                var assignedToPersonAlias = new PersonAliasService( rockContext ).GetId( assignedToPrimaryAliasGuid.Value );
 
+                if ( assignedToPersonAlias.HasValue )
+                {
+                    reminder.PersonAliasId = assignedToPersonAlias.Value;
+                }
+            }
+            else
+            {
+                var person = RequestContext.CurrentPerson;
+                reminder.PersonAliasId = person.PrimaryAliasId.Value;
+            }
+
+            reminderService.Add( reminder );
             rockContext.SaveChanges();
         }
 
@@ -241,9 +265,10 @@ namespace Rock.Blocks.Types.Mobile.Reminders
         /// <param name="note">The note.</param>
         /// <param name="renewPeriodDays">The renew period days.</param>
         /// <param name="renewMaxCount">The renew maximum count.</param>
+        /// <param name="assignedToPersonAliasGuid">The person this reminder should be assigned to.</param>
         /// <param name="rockContext">The rock context.</param>
         /// <remarks>This method should only be called when there is a Current Person in the request.</remarks>
-        private void UpdateReminder( Guid reminderGuid, Guid reminderTypeGuid, DateTime reminderDate, string note, int? renewPeriodDays, int? renewMaxCount, RockContext rockContext )
+        private void UpdateReminder( Guid reminderGuid, Guid reminderTypeGuid, DateTime reminderDate, string note, int? renewPeriodDays, int? renewMaxCount, Guid? assignedToPersonAliasGuid, RockContext rockContext )
         {
             var reminderService = new ReminderService( rockContext );
             var reminder = reminderService.Get( reminderGuid );
@@ -255,8 +280,20 @@ namespace Rock.Blocks.Types.Mobile.Reminders
             reminder.RenewPeriodDays = renewPeriodDays;
             reminder.RenewMaxCount = renewMaxCount;
 
-            var person = RequestContext.CurrentPerson;
-            reminder.PersonAliasId = person.PrimaryAliasId.Value;
+            if ( GetAttributeValue( AttributeKey.ShowAssignedTo ).AsBoolean() )
+            {
+                var assignedToPersonAlias = new PersonAliasService( rockContext ).GetId( assignedToPersonAliasGuid.Value );
+
+                if ( assignedToPersonAlias.HasValue )
+                {
+                    reminder.PersonAliasId = assignedToPersonAlias.Value;
+                }
+            }
+            else
+            {
+                var person = RequestContext.CurrentPerson;
+                reminder.PersonAliasId = person.PrimaryAliasId.Value;
+            }
 
             rockContext.SaveChanges();
         }
@@ -265,19 +302,38 @@ namespace Rock.Blocks.Types.Mobile.Reminders
         /// Populates the additional properties for reminder information bag.
         /// </summary>
         /// <param name="bag">The bag.</param>
-        /// <param name="personService">The person service.</param>
-        private void PopulateAdditionalPropertiesForReminderInfoBag( ReminderInfoBag bag, PersonService personService )
+        /// <param name="personAliasService">The person service.</param>
+        private void PopulateAdditionalPropertiesForReminderInfoBag( ReminderInfoBag bag, PersonAliasService personAliasService )
         {
+            if( bag == null )
+            {
+                return;
+            }
+
             var entityType = EntityTypeCache.Get( bag.EntityTypeGuid );
 
             string name = "";
 
             // If this is a Person, use the Person properties.
-            if ( entityType != null && entityType.Guid == Rock.SystemGuid.EntityType.PERSON.AsGuid() )
+            if ( entityType != null && entityType.Guid == Rock.SystemGuid.EntityType.PERSON_ALIAS.AsGuid() )
             {
-                var person = personService.Get( bag.EntityGuid );
-                name = person.FullName;
+                var personAlias = personAliasService.Get( bag.EntityGuid );
+                name = personAlias.Person.FullName;
             }
+            else if( entityType != null && entityType.Guid == Rock.SystemGuid.EntityType.CONNECTION_REQUEST.AsGuid() )
+            {
+                var connectionRequest = new ConnectionRequestService( new RockContext() ).Get( bag.EntityGuid );
+
+                var connectionRequestText = connectionRequest.ConnectionOpportunity?.Name ?? string.Empty;
+
+                if( connectionRequest.PersonAlias.Person.FullName.IsNotNullOrWhiteSpace() )
+                {
+                    connectionRequestText += $" - {connectionRequest.PersonAlias.Person.FullName}";
+                }
+
+                name = connectionRequestText;
+            }
+
             // Otherwise, use the first letter of the entity type.
             else
             {
@@ -291,35 +347,20 @@ namespace Rock.Blocks.Types.Mobile.Reminders
             bag.Name = name;
         }
 
-        #endregion
-
-        #region Block Actions
-
         /// <summary>
-        /// Gets the reminder edit data.
+        /// Returns a list of reminder types and (optionally) pre-existing reminder data.
         /// </summary>
-        /// <param name="reminderGuid">The reminder unique identifier.</param>
-        /// <param name="entityTypeGuid">The entity type unique identifier.</param>
-        /// <returns>BlockActionResult.</returns>
-        [BlockAction]
-        public BlockActionResult GetReminderEditData( Guid? reminderGuid, Guid? entityTypeGuid )
+        /// <param name="reminderGuid"></param>
+        /// <param name="entityTypeGuid"></param>
+        /// <param name="entityGuid"></param>
+        /// <returns></returns>
+        private ResponseBag GetReminderEditBag( Guid? reminderGuid, Guid? entityTypeGuid, Guid? entityGuid = null )
         {
-
-            // If there wasn't a provided reminder (that we're editing) or an entity type (for a new reminder)
-            // this is incorrect.
-            if ( reminderGuid == null && !( entityTypeGuid.HasValue ) )
-            {
-                return ActionBadRequest();
-            }
-
-            // We need a Person to add a reminder.
-            if ( RequestContext.CurrentPerson == null )
-            {
-                return ActionUnauthorized();
-            }
-
             using ( var rockContext = new RockContext() )
             {
+                var personAliasService = new PersonAliasService( rockContext );
+                var reminderTypeService = new ReminderTypeService( rockContext );
+
                 // If a reminder guid was provided, load our reminder data.
                 ReminderInfoBag reminderBag = null;
 
@@ -343,16 +384,22 @@ namespace Rock.Blocks.Types.Mobile.Reminders
                         EntityTypeGuid = reminderEntityType.Guid
                     };
 
-                    PopulateAdditionalPropertiesForReminderInfoBag( reminderBag, new PersonService( rockContext ) );
-
                     // We can assume the entity type guid from the reminder type at this point.
                     if ( !entityTypeGuid.HasValue )
                     {
                         entityTypeGuid = EntityTypeCache.GetGuid( reminder.ReminderType.EntityTypeId );
                     }
                 }
+                else if ( entityTypeGuid.HasValue && entityGuid.HasValue )
+                {
+                    reminderBag = new ReminderInfoBag
+                    {
+                        EntityGuid = entityGuid.Value,
+                        EntityTypeGuid = entityTypeGuid.Value
+                    };
+                }
 
-                var reminderTypeService = new ReminderTypeService( rockContext );
+                PopulateAdditionalPropertiesForReminderInfoBag( reminderBag, personAliasService );
 
                 //
                 // Load the applicable reminder types for this entity type and person.
@@ -367,12 +414,43 @@ namespace Rock.Blocks.Types.Mobile.Reminders
 
                 // Return a list of reminder types and (optionally) the reminder
                 // data of the reminder we're editing.
-                return ActionOk( new ResponseBag
+                return new ResponseBag
                 {
                     ReminderTypes = reminderTypes,
                     Reminder = reminderBag
-                } );
+                };
             }
+        }
+
+        #endregion
+
+        #region Block Actions
+
+        /// <summary>
+        /// Gets the reminder edit data.
+        /// </summary>
+        /// <param name="reminderGuid">The reminder unique identifier.</param>
+        /// <param name="entityTypeGuid">The entity type unique identifier.</param>
+        /// <param name="entityGuid">The entity unique identifier.</param>
+        /// <returns>BlockActionResult.</returns>
+        [BlockAction]
+        public BlockActionResult GetReminderEditData( Guid? reminderGuid, Guid? entityTypeGuid, Guid? entityGuid = null )
+        {
+
+            // If there wasn't a provided reminder (that we're editing) or an entity type (for a new reminder)
+            // this is incorrect.
+            if ( reminderGuid == null && !( entityTypeGuid.HasValue ) )
+            {
+                return ActionBadRequest();
+            }
+
+            // We need a Person to add a reminder.
+            if ( RequestContext.CurrentPerson == null )
+            {
+                return ActionUnauthorized();
+            }
+
+            return ActionOk( GetReminderEditBag( reminderGuid, entityTypeGuid, entityGuid ) );
         }
 
         /// <summary>
@@ -394,12 +472,12 @@ namespace Rock.Blocks.Types.Mobile.Reminders
                 // If we have an existing reminder, update that.
                 if ( reminderGuid.HasValue )
                 {
-                    UpdateReminder( reminderGuid.Value, reminderBag.ReminderTypeGuid, reminderBag.ReminderDate.DateTime, reminderBag.Note, reminderBag.RenewPeriodDays, reminderBag.RenewMaxCount, rockContext );
+                    UpdateReminder( reminderGuid.Value, reminderBag.ReminderTypeGuid, reminderBag.ReminderDate.DateTime, reminderBag.Note, reminderBag.RenewPeriodDays, reminderBag.RenewMaxCount, reminderBag.AssignedToPrimaryAliasGuid, rockContext );
                 }
                 // Otherwise, create a new reminder.
                 else
                 {
-                    CreateReminder( reminderBag.ReminderTypeGuid, reminderBag.EntityGuid, reminderBag.ReminderDate.DateTime, reminderBag.Note, reminderBag.RenewPeriodDays, reminderBag.RenewMaxCount, rockContext );
+                    CreateReminder( reminderBag.ReminderTypeGuid, reminderBag.EntityGuid, reminderBag.ReminderDate.DateTime, reminderBag.Note, reminderBag.RenewPeriodDays, reminderBag.RenewMaxCount, reminderBag.AssignedToPrimaryAliasGuid, rockContext );
                 }
 
                 return ActionOk();

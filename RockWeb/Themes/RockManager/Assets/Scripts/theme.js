@@ -69,7 +69,7 @@ var docCookies = {
 
 // Fixes an issue with the wait spinner caused by browser Back/Forward caching.
 function HandleBackForwardCache() {
-  // Forcibly hide the wait spinner, and clear the pending request if the page is being reloaded from bfcache. (Currently WebKit only)
+	// Forcibly hide the wait spinner, and clear the pending request if the page is being reloaded from bfcache. (Currently WebKit only)
 	// Browsers that implement bfcache will otherwise trigger updateprogress because the pending request is still in the PageRequestManager state.
 	// This fix is not effective for Safari browsers prior to v13, due to a known bug in the bfcache implementation.
 	// (https://bugs.webkit.org/show_bug.cgi?id=156356)

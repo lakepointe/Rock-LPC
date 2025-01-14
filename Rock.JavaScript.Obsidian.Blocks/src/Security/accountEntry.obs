@@ -1,65 +1,79 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <NotificationBox v-if="errorMessage" alertType="validation" v-html="errorMessage">
-    </NotificationBox>
+    <BreakpointObserver>
+        <NotificationBox v-if="errorMessage" alertType="validation" v-html="errorMessage" />
 
-    <RegistrationStep
-                      v-if="step.isRegistration"
-                      v-model="registrationInfo"
-                      v-model:isUsernameAvailable="isUsernameAvailable"
-                      :config="config"
-                      :disabled="isRegistering || isNavigating"
-                      @checkUsernameAvailability="onCheckUsernameAvailability"
-                      @error="showError"
-                      @register="onRegister">
-    </RegistrationStep>
+        <RegistrationStep v-if="step.isRegistration"
+                          v-model="registrationInfo"
+                          v-model:isUsernameAvailable="isUsernameAvailable"
+                          :config="config"
+                          :disabled="isRegistering || isNavigating"
+                          @checkUsernameAvailability="onCheckUsernameAvailability"
+                          @error="showError"
+                          @register="onRegister">
+            <template #captcha>
+                <Captcha v-if="!disableCaptchaSupport"
+                         ref="captchaElement" />
+            </template>
+        </RegistrationStep>
 
-    <DuplicatePersonSelectionStep
-                                  v-else-if="step.isDuplicatePersonSelection"
-                                  v-model="selectedDuplicatePerson"
-                                  :disabled="isRegistering || isNavigating"
-                                  :options="duplicatePersonSelectionStepOptions"
-                                  @movePrevious="onDuplicatePersonSelectionStepMovePrevious()"
-                                  @personSelected="onDuplicatePersonSelected"
-                                  @noPersonSelected="onNoDuplicatePersonSelected"></DuplicatePersonSelectionStep>
-
-    <PasswordlessConfirmationSentStep
-                                      v-else-if="step.isPasswordlessConfirmationSent"
-                                      v-model="passwordlessConfirmationCode"
+        <DuplicatePersonSelectionStep v-else-if="step.isDuplicatePersonSelection"
+                                      v-model="selectedDuplicatePerson"
                                       :disabled="isRegistering || isNavigating"
-                                      :options="passwordlessConfirmationSentStepOptions"
-                                      @movePrevious="onPasswordlessConfirmationSentStepMovePrevious()"
-                                      @submit="onPasswordlessConfirmationSubmitted"></PasswordlessConfirmationSentStep>
+                                      :options="duplicatePersonSelectionStepOptions"
+                                      @movePrevious="onDuplicatePersonSelectionStepMovePrevious()"
+                                      @personSelected="onDuplicatePersonSelected"
+                                      @noPersonSelected="onNoDuplicatePersonSelected">
+            <template #captcha>
+                <Captcha v-if="!disableCaptchaSupport"
+                         ref="captchaElement" />
+            </template>
+        </DuplicatePersonSelectionStep>
 
-    <ExistingAccountStep
-                         v-else-if="step.isExistingAccount"
-                         :disabled="isSendingForgotUsername || isRegistering || isNavigating"
-                         :options="existingAccountStepOptions"
-                         @movePrevious="onMovePrevious()"
-                         @emailUsername="onEmailUsername"
-                         @sendToLogin="onSendToLogin"></ExistingAccountStep>
+        <PasswordlessConfirmationSentStep v-else-if="step.isPasswordlessConfirmationSent"
+                                          v-model="passwordlessConfirmationCode"
+                                          :disabled="isRegistering || isNavigating"
+                                          :options="passwordlessConfirmationSentStepOptions"
+                                          @movePrevious="onPasswordlessConfirmationSentStepMovePrevious()"
+                                          @submit="onPasswordlessConfirmationSubmitted">
+            <template #captcha>
+                <Captcha v-if="!disableCaptchaSupport"
+                         ref="captchaElement" />
+            </template>
+        </PasswordlessConfirmationSentStep>
 
-    <ConfirmationSentStep
-                          v-else-if="step.isConfirmationSent"
-                          :options="confirmationSentStepOptions">
-    </ConfirmationSentStep>
+        <ExistingAccountStep v-else-if="step.isExistingAccount"
+                             :disabled="isSendingForgotUsername || isRegistering || isNavigating"
+                             :options="existingAccountStepOptions"
+                             @movePrevious="onMovePrevious()"
+                             @emailUsername="onEmailUsername"
+                             @sendToLogin="onSendToLogin">
+            <template #captcha>
+                <Captcha v-if="!disableCaptchaSupport"
+                         ref="captchaElement" />
+            </template>
+        </ExistingAccountStep>
 
-    <CompletedStep
-                   v-else-if="step.isCompleted"
-                   :disabled="isRegistering || isNavigating"
-                   :options="completedStepOptions"
-                   @navigate="onNavigate($event)">
-    </CompletedStep>
+        <ConfirmationSentStep v-else-if="step.isConfirmationSent"
+                              :options="confirmationSentStepOptions" />
+
+        <CompletedStep v-else-if="step.isCompleted"
+                       :disabled="isRegistering || isNavigating"
+                       :options="completedStepOptions"
+                       @navigate="onNavigate($event)" />
+    </BreakpointObserver>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from "vue";
+    import Captcha from "@Obsidian/Controls/captcha.obs";
     import CompletedStep from "./AccountEntry/completedStep.partial.obs";
     import ConfirmationSentStep from "./AccountEntry/confirmationSentStep.partial.obs";
     import DuplicatePersonSelectionStep from "./AccountEntry/duplicatePersonSelectionStep.partial.obs";
     import ExistingAccountStep from "./AccountEntry/existingAccountStep.partial.obs";
     import PasswordlessConfirmationSentStep from "./AccountEntry/passwordlessConfirmationSentStep.partial.obs";
     import RegistrationStep from "./AccountEntry/registrationStep.partial.obs";
+    import BreakpointObserver from "./breakpointObserver.partial.obs";
     import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
     import { AccountEntryStep } from "@Obsidian/Enums/Blocks/Security/AccountEntry/accountEntryStep";
     import { onConfigurationValuesChanged, useConfigurationValues, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
@@ -75,26 +89,30 @@
     import { AccountEntryPasswordlessConfirmationSentStepBag } from "@Obsidian/ViewModels/Blocks/Security/AccountEntry/accountEntryPasswordlessConfirmationSentStepBag";
     import { AccountEntryRegisterRequestBox } from "@Obsidian/ViewModels/Blocks/Security/AccountEntry/accountEntryRegisterRequestBox";
     import { AccountEntryRegisterResponseBox } from "@Obsidian/ViewModels/Blocks/Security/AccountEntry/accountEntryRegisterResponseBox";
+    import { BlockActionContextBag } from "@Obsidian/ViewModels/Blocks/blockActionContextBag";
 
     const config = useConfigurationValues<AccountEntryInitializationBox>();
     const invokeBlockAction = useInvokeBlockAction();
     const http = useHttp();
 
-    removeCurrentUrlQueryParams("State");
+    removeCurrentUrlQueryParams("State", "AreUsernameAndPasswordRequired");
 
     //#region Values
 
     const errorMessage = ref<string | null>();
 
+    const disableCaptchaSupport = ref(config.disableCaptchaSupport);
+    const captchaElement = ref<InstanceType<typeof Captcha> | undefined>();
+
     const stepStack = ref<AccountEntryStep[]>([]);
-    const accountEntryStep = computed<AccountEntryStep | null>(() => stepStack.value.length ? stepStack.value[stepStack.value.length - 1] : null);
+    const accountEntryStep = computed<AccountEntryStep | null | undefined>(() => stepStack.value.length ? stepStack.value[stepStack.value.length - 1] : config.accountEntryRegisterStepBox?.step || null);
 
     const registrationInfo = ref<AccountEntryRegisterRequestBox>({
         accountInfo: {
             password: "",
             username: ""
         },
-        personInfo: {
+        personInfo: config.accountEntryPersonInfoBag ?? {
             birthday: {
                 year: 0,
                 month: 0,
@@ -157,22 +175,16 @@
         return config.sentLoginCaption || "Your username has been emailed to you. If you've forgotten your password, the email includes a link to reset your password.";
     });
 
-    const successCaption = computed<string>(() => {
-        return config.successCaption || "{0}, Your account has been created.";
-    });
+    //#endregion
 
+    //#region Event Handlers
 
-
-        //#endregion
-
-        //#region Event Handlers
-
-        /**
-        * Event handler for the username being checked.
-        *
-        * @param username The username to check.
-        */
-        async function onCheckUsernameAvailability(username: string): Promise<void> {
+    /**
+     * Event handler for the username being checked.
+     *
+     * @param username The username to check.
+     */
+    async function onCheckUsernameAvailability(username: string): Promise<void> {
         if (config.isUsernameAvailabilityCheckDisabled) {
             isUsernameAvailable.value = null;
         }
@@ -332,40 +344,17 @@
             clearError();
             isUsernameAvailable.value = null;
 
-            const response = await invokeBlockAction<AccountEntryRegisterResponseBox>("Register", { box: registrationInfo.value });
+            const actionContext: BlockActionContextBag = {};
+
+            if (captchaElement.value) {
+                actionContext.captcha = await captchaElement.value.getToken();
+                captchaElement.value.refreshToken();
+            }
+
+            const response = await invokeBlockAction<AccountEntryRegisterResponseBox>("Register", { box: registrationInfo.value }, actionContext);
 
             if (response?.data?.step || response?.data?.step === AccountEntryStep.Registration) {
-                switch (response.data.step) {
-                    case AccountEntryStep.Completed: {
-                        showCompletedStepNext(response.data.completedStepBag);
-                        break;
-                    }
-
-                    case AccountEntryStep.ConfirmationSent: {
-                        showConfirmationSentStepNext(response.data.confirmationSentStepBag);
-                        break;
-                    }
-
-                    case AccountEntryStep.DuplicatePersonSelection: {
-                        showDuplicatePersonSelectionStepNext(response.data.duplicatePersonSelectionStepBag);
-                        break;
-                    }
-
-                    case AccountEntryStep.PasswordlessConfirmationSent: {
-                        showPasswordlessConfirmationSentStepNext(response.data.passwordlessConfirmationSentStepBag);
-                        break;
-                    }
-
-                    case AccountEntryStep.ExistingAccount: {
-                        showExistingAccountStepNext(response.data.existingAccountStepBag);
-                        break;
-                    }
-
-                    case AccountEntryStep.Registration: {
-                        showRegistrationStepNext();
-                        break;
-                    }
-                }
+                displayStep(response.data);
             }
             else {
                 showError(response?.errorMessage || "An unexpected error occurred");
@@ -459,16 +448,45 @@
         stepStack.value.push(AccountEntryStep.Registration);
     }
 
-    //#endregion
-    if (config?.step || config?.step === AccountEntryStep.Completed) {
-        showCompletedStepNext({
-                isPlainCaption: true,
-                caption: successCaption.value,
-                isRedirectAutomatic: false
-            });
-    } else {
-        showRegistrationStepNext();
+    /**
+     * Shows a registration step.
+     */
+    function displayStep(data: AccountEntryRegisterResponseBox): void {
+        switch (data.step) {
+            case AccountEntryStep.Completed: {
+                showCompletedStepNext(data.completedStepBag);
+                break;
+            }
+
+            case AccountEntryStep.ConfirmationSent: {
+                showConfirmationSentStepNext(data.confirmationSentStepBag);
+                break;
+            }
+
+            case AccountEntryStep.DuplicatePersonSelection: {
+                showDuplicatePersonSelectionStepNext(data.duplicatePersonSelectionStepBag);
+                break;
+            }
+
+            case AccountEntryStep.PasswordlessConfirmationSent: {
+                showPasswordlessConfirmationSentStepNext(data.passwordlessConfirmationSentStepBag);
+                break;
+            }
+
+            case AccountEntryStep.ExistingAccount: {
+                showExistingAccountStepNext(data.existingAccountStepBag);
+                break;
+            }
+
+            case AccountEntryStep.Registration: {
+                showRegistrationStepNext();
+                break;
+            }
+        }
     }
-    
+
+    //#endregion
+
+    displayStep(config.accountEntryRegisterStepBox || { step: AccountEntryStep.Registration });
     onConfigurationValuesChanged(useReloadBlock());
 </script>

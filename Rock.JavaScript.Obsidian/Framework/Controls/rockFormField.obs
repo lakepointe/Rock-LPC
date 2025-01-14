@@ -8,7 +8,7 @@
     import { newGuid } from "@Obsidian/Utility/guid";
     import { normalizeRules, validateValue } from "@Obsidian/ValidationRules";
     import { computed, defineComponent, onBeforeUnmount, ref, watch } from "vue";
-    import RockLabel from "./rockLabel";
+    import RockLabel from "./rockLabel.obs";
 
     export default defineComponent({
         name: "RockFormField",
@@ -34,6 +34,11 @@
             },
 
             disableLabel: {
+                type: Boolean,
+                default: false
+            },
+
+            watchDeep: {
                 type: Boolean,
                 default: false
             },
@@ -89,7 +94,8 @@
                     formState?.setError(uniqueId, fieldLabel.value, "");
                 }
             }, {
-                immediate: true
+                immediate: true,
+                deep: props.watchDeep
             });
 
             // If we are removed from the DOM completely, clear the error before we go.

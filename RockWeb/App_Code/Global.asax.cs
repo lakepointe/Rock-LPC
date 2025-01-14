@@ -26,12 +26,15 @@ using System.Web.Caching;
 using System.Web.Http;
 using System.Web.Optimization;
 using System.Web.Routing;
-
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using Rock;
 using Rock.Communication;
+using Rock.Configuration;
 using Rock.Data;
 using Rock.Logging;
 using Rock.Model;
+using Rock.Observability;
 using Rock.Transactions;
 using Rock.Utility;
 using Rock.Utility.Settings;
@@ -124,6 +127,9 @@ namespace RockWeb
             Rock.Bus.RockMessageBus.IsRockStarted = false;
             QueueInUse = false;
 
+            // Start-up the observability features
+            ObservabilityHelper.ConfigureObservability( true );
+
             /* 2020-05-20 MDP
                 * Prior to Application_Start, Rock.WebStartup has an AssemblyInitializer class that runs as a PreApplicationStartMethod.
                 *
@@ -190,7 +196,7 @@ namespace RockWeb
                 RockApplicationStartupHelper.LogStartupMessage( "Application Started Successfully" );
                 if ( System.Web.Hosting.HostingEnvironment.IsDevelopmentEnvironment )
                 {
-                    System.Diagnostics.Debug.WriteLine( string.Format( "[{0,5:#} ms] Total Startup Time", ( RockDateTime.Now - RockApplicationStartupHelper.StartDateTime ).TotalMilliseconds ) );
+                    System.Diagnostics.Debug.WriteLine( string.Format( "[{0,5:#} ms] Total Startup Time", ( RockDateTime.Now - RockApp.Current.HostingSettings.ApplicationStartDateTime ).TotalMilliseconds ) );
                 }
 
                 ExceptionLogService.AlwaysLogToFile = false;
@@ -469,6 +475,8 @@ namespace RockWeb
         protected void Application_BeginRequest( object sender, EventArgs e )
         {
             Context.AddOrReplaceItem( "Request_Start_Time", RockDateTime.Now );
+
+            WebRequestHelper.SetThreadCultureFromRequest( HttpContext.Current?.Request );
         }
 
         /// <summary>
@@ -494,10 +502,10 @@ namespace RockWeb
                 if ( context != null )
                 {
                     var ex = context.Server.GetLastError();
+                    HttpException httpEx = ex as HttpException;
 
                     try
                     {
-                        HttpException httpEx = ex as HttpException;
                         if ( httpEx != null )
                         {
                             int statusCode = httpEx.GetHttpCode();
@@ -522,7 +530,13 @@ namespace RockWeb
                     }
                     catch
                     {
-                        // ignore exception
+                        // Check again, but don't access the context.
+                        if ( httpEx != null && httpEx.Message.IsNotNullOrWhiteSpace() && httpEx.StackTrace.IsNotNullOrWhiteSpace() &&
+                        httpEx.Message.Contains( "The remote host closed the connection." ) &&
+                        httpEx.StackTrace.Contains( "Microsoft.AspNet.SignalR.Owin.ServerResponse.Write" ) )
+                        {
+                            return;
+                        }
                     }
 
                     while ( ex is HttpUnhandledException && ex.InnerException != null )
@@ -647,7 +661,7 @@ namespace RockWeb
                 foreach ( var startupType in Rock.Reflection.FindTypes( typeof( IRockStartup ) ).Select( a => a.Value ).ToList() )
                 {
                     var startup = Activator.CreateInstance( startupType ) as IRockStartup;
-                    startups.AddOrIgnore( startup.StartupOrder, new List<IRockStartup>() );
+                    startups.TryAdd( startup.StartupOrder, new List<IRockStartup>() );
                     startups[startup.StartupOrder].Add( startup );
                 }
 
@@ -921,7 +935,7 @@ namespace RockWeb
                     "IISCallBack",
                     60,
                     null,
-                    RockInstanceConfig.SystemDateTime.AddSeconds( 60 ),
+                    RockDateTime.SystemDateTime.AddSeconds( 60 ),
                     Cache.NoSlidingExpiration,
                     CacheItemPriority.NotRemovable,
                     _onCacheRemove );

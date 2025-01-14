@@ -184,7 +184,7 @@
                                 </div>
                             </div>
                             <div class="actions">
-                                <asp:LinkButton ID="lbNext_Initiate" runat="server" AccessKey="n" Text="Next" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Initiate_Click" />
+                                <asp:LinkButton ID="lbNext_Initiate" runat="server" data-shortcut-key="arrowright" Text="Next" ToolTip="Alt+🡆" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Initiate_Click" />
                             </div>
                         </fieldset>
                     </asp:Panel>
@@ -225,6 +225,14 @@
                                         Help="The minimum amount required per registrant. Leave value blank if full amount is required." />
                                 </div>
                             </asp:Panel>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <Rock:DatePicker ID="dpPaymentDeadline" runat="server" Label="Payment Deadline" Visible="false"
+                                        Help="The date that all payments must be completed by. This date will be used by the payment plan feature to calculate the payment schedule and amount." />
+                                </div>
+                            </div>
+
                             <div class="row">
                                 <div class="col-md-6">
                                     <Rock:AccountPicker ID="apAccount" runat="server" Label="Account" Required="true" />
@@ -265,8 +273,8 @@
                                 </div>
                             </div>
                             <div class="actions">
-                                <asp:LinkButton ID="lbPrev_Registration" runat="server" AccessKey="p" ToolTip="Alt+p" Text="Previous" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_Registration_Click" />
-                                <asp:LinkButton ID="lbNext_Registration" runat="server" AccessKey="n" Text="Next" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Registration_Click" />
+                                <asp:LinkButton ID="lbPrev_Registration" runat="server" data-shortcut-key="arrowleft" Text="Previous" ToolTip="Alt+🡄" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_Registration_Click" />
+                                <asp:LinkButton ID="lbNext_Registration" runat="server" data-shortcut-key="arrowright" Text="Next" ToolTip="Alt+🡆" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Registration_Click" />
                             </div>
                         </fieldset>
 
@@ -276,16 +284,28 @@
                         <asp:ValidationSummary ID="vsGroup" runat="server" HeaderText="Please correct the following:" CssClass="alert alert-validation" />
 
                         <fieldset>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <Rock:RockTextBox ID="tbGroupName" runat="server" Label="New Group Name" />
+
+                            <Rock:Toggle ID="tgExistingroup" runat="server" OnText="Existing Group" OffText="New Group" OnCheckedChanged="tgExistingroup_CheckedChanged" ButtonSizeCssClass="btn-xs" CssClass="mb-2" />
+
+                            <asp:Panel ID="pnlNewGroup" runat="server">
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <Rock:RockTextBox ID="tbGroupName" runat="server" Label="New Group Name" />
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <Rock:GroupPicker ID="gpParentGroup" runat="server" Label="Parent Group" OnSelectItem="gpParentGroup_SelectItem" />
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <Rock:GroupPicker ID="gpParentGroup" runat="server" Label="Parent Group" OnSelectItem="gpParentGroup_SelectItem" />
+                                    </div>
                                 </div>
-                            </div>
+
+                            </asp:Panel>
+                     
+                            <asp:Panel ID="pnlExistingGroup" runat="server">
+                                <Rock:GroupPicker ID="gpExistingGroup" runat="server" Label="Group" AllowMultiSelect="false" />
+                            </asp:Panel>
+
                             <asp:Panel ID="pnlCheckinOptions" runat="server" Visible="false" CssClass="row">
                                 <div class="col-md-6">
                                     <Rock:LocationPicker ID="lpGroupLocation" runat="server" AllowedPickerModes="Named" Label="Location" />
@@ -304,8 +324,8 @@
                                 </div>
                             </div>
                             <div class="actions">
-                                <asp:LinkButton ID="lbPrev_Group" runat="server" AccessKey="p" ToolTip="Alt+p" Text="Previous" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_Group_Click" />
-                                <asp:LinkButton ID="lbNext_Group" runat="server" AccessKey="n" Text="Next" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Group_Click" />
+                                <asp:LinkButton ID="lbPrev_Group" runat="server" data-shortcut-key="arrowleft" Text="Previous" ToolTip="Alt+🡄" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_Group_Click" />
+                                <asp:LinkButton ID="lbNext_Group" runat="server" data-shortcut-key="arrowright" Text="Next" ToolTip="Alt+🡆" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Group_Click" />
                             </div>
                         </fieldset>
                     </asp:Panel>
@@ -381,8 +401,8 @@
                                 </div>
                             </asp:Panel>
                             <div class="actions">
-                                <asp:LinkButton ID="lbPrev_Event" runat="server" AccessKey="p" ToolTip="Alt+p" Text="Previous" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_Event_Click" />
-                                <asp:LinkButton ID="lbNext_Event" runat="server" AccessKey="n" Text="Next" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Event_Click" />
+                                <asp:LinkButton ID="lbPrev_Event" runat="server" data-shortcut-key="arrowleft" Text="Previous" ToolTip="Alt+🡄" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_Event_Click" />
+                                <asp:LinkButton ID="lbNext_Event" runat="server" data-shortcut-key="arrowright" Text="Next" ToolTip="Alt+🡆" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Event_Click" />
                             </div>
                         </fieldset>
                     </asp:Panel>
@@ -410,8 +430,8 @@
                                 </div>
                             </div>
                             <div class="actions">
-                                <asp:LinkButton ID="lbPrev_EventOccurrence" runat="server" AccessKey="p" ToolTip="Alt+p" Text="Previous" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_EventOccurrence_Click" />
-                                <asp:LinkButton ID="lbNext_EventOccurrence" runat="server" AccessKey="n" Text="Next" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_EventOccurrence_Click" />
+                                <asp:LinkButton ID="lbPrev_EventOccurrence" runat="server" data-shortcut-key="arrowleft" Text="Previous" ToolTip="Alt+🡄" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_EventOccurrence_Click" />
+                                <asp:LinkButton ID="lbNext_EventOccurrence" runat="server" data-shortcut-key="arrowright" Text="Next" ToolTip="Alt+🡆" DataLoadingText="Next" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_EventOccurrence_Click" />
                             </div>
                         </fieldset>
                     </asp:Panel>
@@ -424,8 +444,8 @@
 
                         <fieldset>
                             <div class="actions">
-                                <asp:LinkButton ID="lbPrev_Summary" runat="server" AccessKey="p" ToolTip="Alt+p" Text="Previous" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_Summary_Click" />
-                                <asp:LinkButton ID="lbNext_Summary" runat="server" AccessKey="n" Text="Finish" DataLoadingText="Finish" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Summary_Click" />
+                                <asp:LinkButton ID="lbPrev_Summary" runat="server" data-shortcut-key="arrowleft" Text="Previous" ToolTip="Alt+🡄" CssClass="btn btn-default js-wizard-navigation" CausesValidation="false" OnClick="lbPrev_Summary_Click" />
+                                <asp:LinkButton ID="lbNext_Summary" runat="server" data-shortcut-key="arrowright" Text="Finish" ToolTip="Alt+🡆" DataLoadingText="Finish" CssClass="btn btn-primary pull-right js-wizard-navigation" OnClick="lbNext_Summary_Click" />
                             </div>
                         </fieldset>
                     </asp:Panel>

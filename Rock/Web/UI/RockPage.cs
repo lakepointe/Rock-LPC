@@ -30,23 +30,24 @@ using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
 
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+
 using Rock.Attribute;
 using Rock.Blocks;
+using Rock.Cms.Utm;
 using Rock.Data;
 using Rock.Lava;
 using Rock.Model;
 using Rock.Net;
+using Rock.Observability;
 using Rock.Security;
 using Rock.Tasks;
 using Rock.Transactions;
 using Rock.Utility;
-using Rock.Utility.Settings;
-using Rock.ViewModels;
-using Rock.ViewModels.Utility;
+using Rock.ViewModels.Crm;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
-
-using static Rock.Security.Authorization;
 
 using Page = System.Web.UI.Page;
 
@@ -56,7 +57,7 @@ namespace Rock.Web.UI
     /// RockPage is the base abstract class that all page templates in Rock should inherit from
     /// </summary>
     /// <seealso cref="System.Web.UI.Page" />
-    public abstract class RockPage : Page
+    public abstract class RockPage : Page, IHttpAsyncHandler
     {
         #region Private Variables
 
@@ -87,11 +88,6 @@ namespace Rock.Web.UI
         private Stopwatch _onLoadStopwatch = null;
 
         /// <summary>
-        /// Contains the IRockBlockType wrapper objects that need to be initialized during OnLoad.
-        /// </summary>
-        private readonly List<RockBlockTypeWrapper> _blockTypeWrappers = new List<RockBlockTypeWrapper>();
-
-        /// <summary>
         /// The fingerprint to use with obsidian files.
         /// </summary>
         private static long _obsidianFingerprint = 0;
@@ -99,7 +95,28 @@ namespace Rock.Web.UI
         /// <summary>
         /// The obsidian file watchers.
         /// </summary>
-        private static List<FileSystemWatcher> _obsidianFileWatchers = new List<FileSystemWatcher>();
+        private static readonly List<FileSystemWatcher> _obsidianFileWatchers = new List<FileSystemWatcher>();
+
+        /// <summary>
+        /// The service provider to use during requests.
+        /// </summary>
+        private static readonly Lazy<IServiceProvider> _lazyServiceProvider = new Lazy<IServiceProvider>( CreateServiceProvider );
+
+        /// <summary>
+        /// The service scopes that should be disposed.
+        /// </summary>
+        private readonly List<IServiceScope> _pageServiceScopes = new List<IServiceScope>();
+
+        /// <summary>
+        /// A list of blocks (their paths) that will force the obsidian libraries to be loaded.
+        /// This is particularly useful when a block has a settings dialog that is dependent on
+        /// obsidian, but the block itself is not.
+        /// </summary>
+        private static readonly List<string> _blocksToForceObsidianLoad = new List<string>
+        {
+            "~/Blocks/Cms/PageZoneBlocksEditor.ascx",
+            "~/Blocks/Mobile/MobilePageDetail.ascx"
+        };
 
         #endregion
 
@@ -283,6 +300,15 @@ namespace Rock.Web.UI
         /// </summary>
         /// <value>The personalization segment ids.</value>
         public int[] PersonalizationRequestFilterIds { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the request context. This contains all the details
+        /// about the network request.
+        /// </summary>
+        /// <value>
+        /// The request context.
+        /// </value>
+        public RockRequestContext RequestContext { get; private set; }
 
         /// <summary>
         /// Publicly gets and privately sets the currently logged in user.
@@ -685,6 +711,51 @@ namespace Rock.Web.UI
             }
         }
 
+        /// <summary>
+        /// Occurs when [page initialized]. This event is for registering any custom event shortkeys for the page.
+        /// </summary>
+        protected virtual void RegisterShortcutKeys()
+        {
+            // Register the shortcut keys with debouncing
+            string script = @"
+                (function() {
+                    var lastDispatchTime = 0;
+                    var lastDispatchedElement = null;
+                    var debounceDelay = 500;
+
+                    document.addEventListener('keydown', function (event) {
+                        if (event.altKey) {
+                            var shortcutKey = event.key.toLowerCase();
+
+                            // Check if a shortcut key is registered for the pressed key
+                            var element = document.querySelector('[data-shortcut-key=""' + shortcutKey + '""]');
+
+                    
+                            if (element) {
+                                var currentTime = performance.now();
+
+                                if (lastDispatchedElement === element && (currentTime - lastDispatchTime) < debounceDelay) {
+                                    return;
+                                }
+
+                                lastDispatchTime = currentTime;
+                                lastDispatchedElement = element;
+
+                                if (shortcutKey === 'arrowright' || shortcutKey === 'arrowleft') {
+                                    event.preventDefault();
+                                }
+
+                                event.preventDefault();
+                                element.click();
+                            }
+                        }
+                    });
+                })();
+            ";
+
+            ScriptManager.RegisterStartupScript( this, typeof( RockPage ), "ShortcutKeys", script, true );
+        }
+
         #endregion
 
         #region Overridden Methods
@@ -724,6 +795,61 @@ namespace Rock.Web.UI
         /// <param name="e"></param>
         protected override void OnInit( EventArgs e )
         {
+            // Add configuration specific to Rock Page to the observability activity
+            if ( Activity.Current != null )
+            {
+                Activity.Current.DisplayName = $"PAGE: {Context.Request.HttpMethod} {PageReference.Route}";
+
+                // If the route has parameters show the route slug, otherwise use the request path
+                if ( PageReference.Parameters.Count > 0 )
+                {
+                    Activity.Current.DisplayName = $"PAGE: {Context.Request.HttpMethod} {PageReference.Route}";
+                }
+                else
+                {
+                    Activity.Current.DisplayName = $"PAGE: {Context.Request.HttpMethod} {Context.Request.Path}";
+                }
+
+                // Highlight postbacks
+                if ( this.IsPostBack )
+                {
+                    Activity.Current.DisplayName = Activity.Current.DisplayName + " [Postback]";
+                }
+                else
+                {
+                    // Only add a metric if for non-postback requests
+                    var pageTags = RockMetricSource.CommonTags;
+                    pageTags.Add( "rock-page", this.PageId );
+                    pageTags.Add( "rock-site", this.Site.Name );
+                    RockMetricSource.PageRequestCounter.Add( 1, pageTags );
+                }
+
+                // Add attributes
+                Activity.Current.AddTag( "rock.otel_type", "rock-page" );
+                Activity.Current.AddTag( "rock.current_user", this.CurrentUser?.UserName );
+                Activity.Current.AddTag( "rock.current_person", this.CurrentPerson?.FullName );
+                Activity.Current.AddTag( "rock.current_visitor", this.CurrentVisitor?.AliasPersonGuid );
+                Activity.Current.AddTag( "rock.site.id", this.Site.Id );
+                Activity.Current.AddTag( "rock.page.id", this.PageId );
+                Activity.Current.AddTag( "rock.page.ispostback", this.IsPostBack );
+            }
+
+            var stopwatchInitEvents = Stopwatch.StartNew();
+
+            // Register shortcut keys
+            RegisterShortcutKeys();
+
+#pragma warning disable 618
+            ConvertLegacyContextCookiesToJSON();
+#pragma warning restore 618
+
+            RequestContext = new RockRequestContext( Request, new RockResponseContext( this ), CurrentUser );
+
+            if ( _pageCache != null )
+            {
+                RequestContext.PrepareRequestForPage( _pageCache );
+            }
+
             _showDebugTimings = this.PageParameter( "ShowDebugTimings" ).AsBoolean();
 
             if ( _showDebugTimings )
@@ -732,8 +858,6 @@ namespace Rock.Web.UI
                 _previousTiming = _tsDuration.TotalMilliseconds;
                 _pageNeedsObsidian = true;
             }
-
-            var stopwatchInitEvents = Stopwatch.StartNew();
 
             bool canAdministratePage = false;
             bool canEditPage = false;
@@ -922,6 +1046,27 @@ namespace Rock.Web.UI
                     }
                 }
 
+                // Check that they are two-factor authenticated if two-factor authentication is required for their protection profile.
+                var securitySettings = new SecuritySettingsService().SecuritySettings;
+
+                if ( securitySettings.RequireTwoFactorAuthenticationForAccountProtectionProfiles?.Contains( user.Person.AccountProtectionProfile ) == true
+                     && !user.IsTwoFactorAuthenticated )
+                {
+                    // Sign out and redirect to the login page to force two-factor authentication.
+                    Authorization.SignOut();
+
+                    var site = _pageCache.Layout.Site;
+
+                    if ( site.LoginPageId.HasValue )
+                    {
+                        site.RedirectToLoginPage( true );
+                    }
+                    else
+                    {
+                        FormsAuthentication.RedirectToLoginPage();
+                    }
+                }
+
                 // Check if there is a ROCK_PERSONALDEVICE_ADDRESS cookie, link person to device
                 HandleRockWiFiCookie( CurrentPersonAliasId );
             }
@@ -980,7 +1125,7 @@ namespace Rock.Web.UI
                     SessionStateSection sessionState = ( SessionStateSection ) ConfigurationManager.GetSection( "system.web/sessionState" );
                     string sidCookieName = sessionState.CookieName; // ASP.NET_SessionId
                     var cookie = Response.Cookies[sidCookieName];
-                    cookie.Expires = RockInstanceConfig.SystemDateTime.AddDays( -1 );
+                    cookie.Expires = RockDateTime.SystemDateTime.AddDays( -1 );
                     AddOrUpdateCookie( cookie );
 
                     Response.Redirect( redirectUrl, false );
@@ -1096,6 +1241,12 @@ namespace Rock.Web.UI
 
                     Page.Trace.Warn( "Checking if user can administer" );
                     canAdministratePage = _pageCache.IsAuthorized( Authorization.ADMINISTRATE, CurrentPerson );
+
+                    // The Short Link Modal in the System Dialogs need the page to have obsidian.
+                    if ( canAdministratePage )
+                    {
+                        _pageNeedsObsidian = true;
+                    }
                     canEditPage = _pageCache.IsAuthorized( Authorization.EDIT, CurrentPerson );
 
                     // If the current person isn't allowed to edit or administrate the page, check to see if they are being impersonated by someone who
@@ -1228,15 +1379,26 @@ Rock.settings.initialize({{
                                     {
                                         control = TemplateControl.LoadControl( block.BlockType.Path );
                                         control.ClientIDMode = ClientIDMode.AutoID;
+
+                                        // These blocks needs Obsidian for their settings dialog to display properly.
+                                        if ( _blocksToForceObsidianLoad.Any( blockTypePath => blockTypePath.Equals( block.BlockType.Path ) ) )
+                                        {
+                                            _pageNeedsObsidian = true;
+                                        }
                                     }
                                     else if ( block.BlockType.EntityTypeId.HasValue )
                                     {
-                                        var blockEntity = Activator.CreateInstance( block.BlockType.EntityType.GetEntityType() );
+                                        var scope = CreateServiceScope();
+                                        var blockEntity = ActivatorUtilities.CreateInstance( scope.ServiceProvider, block.BlockType.EntityType.GetEntityType() );
+
+                                        if ( blockEntity is RockBlockType rockBlockType )
+                                        {
+                                            rockBlockType.RockContext = scope.ServiceProvider.GetRequiredService<RockContext>();
+                                        }
 
                                         if ( blockEntity is IRockBlockType rockBlockEntity )
                                         {
-                                            rockBlockEntity.RequestContext = new RockRequestContext( Request );
-                                            rockBlockEntity.RequestContext.PrepareRequestForPage( _pageCache );
+                                            rockBlockEntity.RequestContext = RequestContext;
 
                                             var wrapper = new RockBlockTypeWrapper
                                             {
@@ -1246,8 +1408,6 @@ Rock.settings.initialize({{
 
                                             wrapper.InitializeAsUserControl( this );
                                             wrapper.AppRelativeTemplateSourceDirectory = "~";
-
-                                            _blockTypeWrappers.Add( wrapper );
 
                                             control = wrapper;
                                             control.ClientIDMode = ClientIDMode.AutoID;
@@ -1306,13 +1466,6 @@ Rock.settings.initialize({{
                                     Page.Trace.Warn( "\tSetting block properties" );
                                     blockControl.SetBlock( _pageCache, block, canEdit, canAdministrate );
                                     control = new RockBlockWrapper( blockControl );
-
-                                    // Add any breadcrumbs to current page reference that the block creates
-                                    Page.Trace.Warn( "\tAdding any breadcrumbs from block" );
-                                    if ( block.BlockLocation == BlockLocation.Page )
-                                    {
-                                        blockControl.GetBreadCrumbs( PageReference ).ForEach( c => PageReference.BreadCrumbs.Add( c ) );
-                                    }
                                 }
                             }
 
@@ -1346,6 +1499,39 @@ Rock.settings.initialize({{
 
                         if ( !ClientScript.IsStartupScriptRegistered( "rock-obsidian-init" ) )
                         {
+                            var currentPersonJson = "null";
+                            var isAnonymousVisitor = false;
+
+                            if ( CurrentPerson != null && CurrentPerson.Guid != new Guid( SystemGuid.Person.GIVER_ANONYMOUS ) )
+                            {
+                                currentPersonJson = new CurrentPersonBag
+                                {
+                                    IdKey = CurrentPerson.IdKey,
+                                    Guid = CurrentPerson.Guid,
+                                    PrimaryAliasIdKey = CurrentPerson.PrimaryAlias.IdKey,
+                                    PrimaryAliasGuid = CurrentPerson.PrimaryAlias.Guid,
+                                    FirstName = CurrentPerson.FirstName,
+                                    NickName = CurrentPerson.NickName,
+                                    LastName = CurrentPerson.LastName,
+                                    FullName = CurrentPerson.FullName,
+                                    Email = CurrentPerson.Email,
+                                }.ToCamelCaseJson( false, false );
+                            }
+                            else if ( CurrentPerson != null )
+                            {
+                                isAnonymousVisitor = true;
+                            }
+
+                            // Prevent XSS attacks in page parameters.
+                            var sanitizedPageParameters = new Dictionary<string, string>();
+                            foreach ( var pageParam in PageParameters() )
+                            {
+                                var sanitizedKey = pageParam.Key.Replace( "</", "<\\/" );
+                                var sanitizedValue = pageParam.Value.ToStringSafe().Replace( "</", "<\\/" );
+
+                                sanitizedPageParameters.AddOrReplace( sanitizedKey, sanitizedValue );
+                            }
+
                             var script = $@"
 Obsidian.onReady(() => {{
     System.import('@Obsidian/Templates/rockPage.js').then(module => {{
@@ -1353,9 +1539,9 @@ Obsidian.onReady(() => {{
             executionStartTime: new Date().getTime(),
             pageId: {_pageCache.Id},
             pageGuid: '{_pageCache.Guid}',
-            pageParameters: {PageParameters().ToJson()},
-            currentPerson: {( CurrentPerson == null ? "null" : CurrentPerson.ToViewModel( CurrentPerson ).ToCamelCaseJson( false, false ) )},
-            contextEntities: {GetContextViewModels().ToCamelCaseJson( false, false )},
+            pageParameters: {sanitizedPageParameters.ToJson()},
+            currentPerson: {currentPersonJson},
+            isAnonymousVisitor: {( isAnonymousVisitor ? "true" : "false" )},
             loginUrlWithReturnUrl: '{GetLoginUrlWithReturnUrl()}'
         }});
     }});
@@ -1368,13 +1554,6 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                         }
                     }
 
-                    // Make the last crumb for this page the active one
-                    Page.Trace.Warn( "Setting active breadcrumb" );
-                    if ( PageReference.BreadCrumbs.Any() )
-                    {
-                        PageReference.BreadCrumbs.Last().Active = true;
-                    }
-
                     /*
                      * 2020-06-17 - JH
                      *
@@ -1383,19 +1562,23 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                      * Page loads/postbacks occur. By providing a suffix for the storage key when in an iFrame modal, we can preserve the
                      * main Rock instance's PageReference history.
                      */
+                    Page.Trace.Warn( "Getting breadcrumbs" );
+
                     var pageReferencesKeySuffix = IsIFrameModal ? "_iFrameModal" : null;
+                    var pageReferences = PageReference.GetBreadCrumbPageReferences( this, _pageCache, PageReference, pageReferencesKeySuffix );
 
-                    Page.Trace.Warn( "Getting parent page references" );
-                    var pageReferences = PageReference.GetParentPageReferences( this, _pageCache, PageReference, pageReferencesKeySuffix );
-                    pageReferences.Add( PageReference );
-                    PageReference.SavePageReferences( pageReferences, pageReferencesKeySuffix );
+                    BreadCrumbs = pageReferences.SelectMany( pr => pr.BreadCrumbs ).ToList();
 
-                    // Update breadcrumbs
-                    Page.Trace.Warn( "Updating breadcrumbs" );
-                    BreadCrumbs = new List<BreadCrumb>();
-                    foreach ( var pageReference in pageReferences )
+                    // Update the current page reference to have the correct breadcrumbs.
+                    var currentPageReference = pageReferences.FirstOrDefault( pr => pr.PageId == PageReference.PageId );
+                    if ( currentPageReference != null )
                     {
-                        pageReference.BreadCrumbs.ForEach( c => BreadCrumbs.Add( c ) );
+                        PageReference.BreadCrumbs = currentPageReference.BreadCrumbs;
+
+                        if ( PageReference.BreadCrumbs.Any() )
+                        {
+                            PageReference.BreadCrumbs.Last().Active = true;
+                        }
                     }
 
                     // Add the page admin footer if the user is authorized to edit the page
@@ -1439,7 +1622,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                             //_btnRestoreImpersonatedByUser.CssClass = "btn";
                             _btnRestoreImpersonatedByUser.Visible = impersonatedByUser != null;
                             _btnRestoreImpersonatedByUser.Click += _btnRestoreImpersonatedByUser_Click;
-                            _btnRestoreImpersonatedByUser.Text = $"<i class='fa-fw fa fa-unlock'></i> " + $"Restore { impersonatedByUser?.Person?.ToString()}";
+                            _btnRestoreImpersonatedByUser.Text = $"<i class='fa-fw fa fa-unlock'></i> " + $"Restore {impersonatedByUser?.Person?.ToString()}";
                             impersonatedByUserDiv.Controls.Add( _btnRestoreImpersonatedByUser );
                             adminFooter.Controls.Add( impersonatedByUserDiv );
                         }
@@ -1527,6 +1710,26 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                             aShortLink.Controls.Add( iShortLink );
                             iShortLink.Attributes.Add( "class", "fa fa-link" );
 
+                            // Obsidian ShortLink Properties - TO BE UNCOMMENTED IN v17
+/*
+                            var administratorShortlinkScript = $@"Obsidian.onReady(() => {{
+    System.import('@Obsidian/Templates/rockPage.js').then(module => {{
+        module.showShortLink('{ResolveUrl( string.Format( "~/ShortLink/{0}?t=Shortened Link&Url={1}", _pageCache.Id, Server.UrlEncode( HttpContext.Current.Request.UrlProxySafe().AbsoluteUri.ToString() ) ) )}');
+    }});
+}});";
+                            HtmlGenericControl aObsidianShortLink = new HtmlGenericControl( "a" );
+                            buttonBar.Controls.Add( aObsidianShortLink );
+                            aObsidianShortLink.ID = "aObsidianShortLink";
+                            aObsidianShortLink.ClientIDMode = System.Web.UI.ClientIDMode.Static;
+                            aObsidianShortLink.Attributes.Add( "class", "btn properties" );
+                            aObsidianShortLink.Attributes.Add( "href", "#" );
+                            aObsidianShortLink.Attributes.Add( "onclick", $"event.preventDefault(); {administratorShortlinkScript}" );
+                            aObsidianShortLink.Attributes.Add( "Title", "Add Obsidian Short Link" );
+                            HtmlGenericControl iObsidianShortLink = new HtmlGenericControl( "i" );
+                            aObsidianShortLink.Controls.Add( iObsidianShortLink );
+                            iObsidianShortLink.Attributes.Add( "class", "fa fa-link" );
+*/
+
                             // System Info
                             HtmlGenericControl aSystemInfo = new HtmlGenericControl( "a" );
                             buttonBar.Controls.Add( aSystemInfo );
@@ -1550,13 +1753,9 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                     }
                 }
 
+                Page.Trace.Warn( "Setting meta tags" );
+
                 stopwatchInitEvents.Restart();
-
-                string pageTitle = BrowserTitle ?? string.Empty;
-                string siteTitle = _pageCache.Layout.Site.Name;
-                string seperator = pageTitle.Trim() != string.Empty && siteTitle.Trim() != string.Empty ? " | " : "";
-
-                base.Title = pageTitle + seperator + siteTitle;
 
                 if ( !string.IsNullOrWhiteSpace( _pageCache.Description ) )
                 {
@@ -1681,7 +1880,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 }
 
                 MethodInfo getMethod = contextService.GetType().GetMethod( "Get", new Type[] { typeof( int ) } );
-                if ( getMethod != null )
+                if ( getMethod == null )
                 {
                     continue;  // Couldn't find method to fetch Entity.
                 }
@@ -1747,11 +1946,22 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                     continue;
                 }
 
-                // Look for Id first.
-                int? contextId = PageParameter( type.Name + "Id" ).AsIntegerOrNull();
-                if ( contextId.HasValue )
+                // Look for Id first, this can be either integer, guid or IdKey.
+                var contextId = PageParameter( type.Name + "Id" );
+                if ( contextId.IsNotNullOrWhiteSpace() )
                 {
-                    keyEntityDictionary.AddOrReplace( modelContextName, new Data.KeyEntity( contextId.Value ) );
+                    if ( !Site.DisablePredictableIds && int.TryParse( contextId, out var id ) )
+                    {
+                        keyEntityDictionary.AddOrReplace( modelContextName, new KeyEntity( id ) );
+                    }
+                    else if ( Guid.TryParse( contextId, out var guid ) )
+                    {
+                        keyEntityDictionary.AddOrReplace( modelContextName, new KeyEntity( guid ) );
+                    }
+                    else if ( IdHasher.Instance.TryGetId( contextId, out id ) )
+                    {
+                        keyEntityDictionary.AddOrReplace( modelContextName, new KeyEntity( id ) );
+                    }
                 }
 
                 // If Guid is present, it will override Id.
@@ -1765,19 +1975,24 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
             // Check for page context that were explicitly set in Page Properties.  These will
             // override any values that were already set, either by cookies or the query string
             // (meaning an explicitly set Page Context overrides the generic Id/Guid from the
-            // code block immediately preceeding this one).
+            // code block immediately preceding this one).
             foreach ( var pageContext in _pageCache.PageContexts )
             {
-                int? contextId = PageParameter( pageContext.Value ).AsIntegerOrNull();
-                if ( contextId.HasValue )
+                var contextId = PageParameter( pageContext.Value );
+                if ( contextId.IsNotNullOrWhiteSpace() )
                 {
-                    keyEntityDictionary.AddOrReplace( pageContext.Key, new Data.KeyEntity( contextId.Value ) );
-                }
-
-                Guid? contextGuid = PageParameter( pageContext.Value ).AsGuidOrNull();
-                if ( contextGuid.HasValue )
-                {
-                    keyEntityDictionary.AddOrReplace( pageContext.Key, new Data.KeyEntity( contextGuid.Value ) );
+                    if ( !Site.DisablePredictableIds && int.TryParse( contextId, out var id ) )
+                    {
+                        keyEntityDictionary.AddOrReplace( pageContext.Key, new KeyEntity( id ) );
+                    }
+                    else if ( Guid.TryParse( contextId, out var guid ) )
+                    {
+                        keyEntityDictionary.AddOrReplace( pageContext.Key, new KeyEntity( guid ) );
+                    }
+                    else if ( IdHasher.Instance.TryGetId( contextId, out id ) )
+                    {
+                        keyEntityDictionary.AddOrReplace( pageContext.Key, new KeyEntity( id ) );
+                    }
                 }
             }
 
@@ -1828,8 +2043,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 }
                 else
                 {
-                    var visitorPersonAliasIdKey = visitorKeyCookie.Value;
-                    currentVisitorCookiePersonAlias = new PersonAliasService( rockContext ).Get( visitorPersonAliasIdKey );
+                    currentVisitorCookiePersonAlias = new PersonAliasService( rockContext ).Get( visitorKeyPersonAliasIdKey );
                     if ( currentVisitorCookiePersonAlias == null )
                     {
                         // There is a ROCK_VISITOR_KEY key with an IdKey, but that PersonAlias record
@@ -1852,29 +2066,17 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                 RockPage.AddOrUpdateCookie( rockSessionStartDatetimeCookie );
             }
 
-            PersonAlias calculatedCurrentVisitor;
+            PersonAlias calculatedCurrentVisitor = null;
 
             if ( visitorKeyCookie == null )
             {
                 if ( currentPersonAlias == null )
                 {
-                    // ROCK_VISITOR_KEY does not exist and nobody is logged in, create a new PersonAlias and new Visitor Cookie tied to the GhostPersonId.
-                    var visitorPersonAlias = new PersonAliasService( rockContext ).CreateAnonymousVisitorAlias();
-                    rockContext.SaveChanges();
+                    // ROCK_VISITOR_KEY does not exist and there is no current login, so set the ROCK_FIRSTTIME_VISITOR cookie.
+                    // This cookie does not specify an expiry, so it is automatically expired when the browser session ends.
+                    var firstTimeCookie = new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_FIRSTTIME_VISITOR, true.ToString() );
 
-                    var visitorPersonAliasIdKey = visitorPersonAlias.IdKey;
-                    visitorKeyCookie = new System.Web.HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY, visitorPersonAliasIdKey )
-                    {
-                        Expires = persistedCookieExpiration
-                    };
-
-                    RockPage.AddOrUpdateCookie( visitorKeyCookie );
-                    RockPage.AddOrUpdateCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_CREATED_DATETIME, currentUTCDateTime.ToISO8601DateString(), persistedCookieExpiration );
-
-                    // Visitor Cookie is new, and nobody is logged in. So set this a person's first visit.
-                    RockPage.AddOrUpdateCookie( new HttpCookie( Rock.Personalization.RequestCookieKey.ROCK_FIRSTTIME_VISITOR, true.ToString() ) );
-
-                    calculatedCurrentVisitor = visitorPersonAlias;
+                    RockPage.AddOrUpdateCookie( firstTimeCookie );
                 }
                 else
                 {
@@ -1939,7 +2141,7 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                         }
                         else
                         {
-                            // Our visitor person alias is for some other person that has previously logged into rock with this browser
+                            // Our visitor person alias is for some other person that has previously logged into Rock with this browser
                             // So update the cookie to the current person's PersonAlias
                             visitorKeyCookie.Value = currentPersonAlias.IdKey;
                             visitorKeyCookie.Expires = persistedCookieExpiration;
@@ -1956,13 +2158,16 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
 
             RockPage.AddOrUpdateCookie( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_LASTSEEN, currentUTCDateTime.ToISO8601DateString(), persistedCookieExpiration );
 
-            var message = new UpdatePersonAliasLastVisitDateTime.Message
+            if ( CurrentVisitor != null )
             {
-                PersonAliasId = CurrentVisitor.Id,
-                LastVisitDateTime = RockDateTime.Now,
-            };
+                var message = new UpdatePersonAliasLastVisitDateTime.Message
+                {
+                    PersonAliasId = CurrentVisitor.Id,
+                    LastVisitDateTime = RockDateTime.Now,
+                };
 
-            message.SendIfNeeded();
+                message.SendIfNeeded();
+            }
         }
 
         /// <summary>
@@ -2060,11 +2265,20 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
         {
             base.OnLoadComplete( e );
 
-            // Cause the wrapper to render it's content so the initialization
-            // logic will be part of our page load timings.
-            foreach ( var wrapper in _blockTypeWrappers )
+            // Set the title displayed in the browser on the base page.
+            string pageTitle = BrowserTitle ?? string.Empty;
+            string siteTitle = _pageCache.Layout.Site.Name;
+            string seperator = pageTitle.Trim() != string.Empty && siteTitle.Trim() != string.Empty ? " | " : "";
+
+            base.Title = pageTitle + seperator + siteTitle;
+
+            // Make the last breadcrumb on this page the only one active. This
+            // takes care of any late additions to the breadcrumbs by Lava or
+            // Obsidian blocks.
+            if ( BreadCrumbs != null && BreadCrumbs.Any() )
             {
-                wrapper.RenderAndCache();
+                BreadCrumbs.ForEach( bc => bc.Active = false );
+                BreadCrumbs.Last().Active = true;
             }
 
             // Finalize the debug settings
@@ -2082,7 +2296,7 @@ Obsidian.onReady(() => {{
     System.import('@Obsidian/Templates/rockPage.js').then(module => {{
         module.initializePageTimings({{
             elementId: '{_obsidianPageTimingControlId}',
-            debugTimingViewModels: { _debugTimingViewModels.ToCamelCaseJson( false, true ) }
+            debugTimingViewModels: {_debugTimingViewModels.ToCamelCaseJson( false, true )}
         }});
     }});
 }});";
@@ -2105,7 +2319,20 @@ Obsidian.onReady(() => {{
             {
                 Authorization.SignOut();
                 UserLoginService.UpdateLastLogin( impersonatedByUser.UserName );
-                Rock.Security.Authorization.SetAuthCookie( impersonatedByUser.UserName, false, false );
+
+                /*
+                    10/23/2023 - JMH
+
+                    Bypass two-factor authentication when restoring the "impersonated by" user's session;
+                    otherwise, they would have to use two-factor authentication again.
+
+                    Reason: Two-Factor Authentication
+                 */
+                Rock.Security.Authorization.SetAuthCookie(
+                    impersonatedByUser.UserName,
+                    isPersisted: false,
+                    isImpersonated: false,
+                    isTwoFactorAuthenticated: true );
                 Response.Redirect( PageReference.BuildUrl( true ), false );
                 Context.ApplicationInstance.CompleteRequest();
             }
@@ -2146,7 +2373,21 @@ Obsidian.onReady(() => {{
                     }
 
                     Authorization.SignOut();
-                    Rock.Security.Authorization.SetAuthCookie( "rckipid=" + impersonatedPersonKeyParam, false, true );
+
+                    /*
+                        10/19/2023 - JMH
+
+                        Bypass the two-factor authentication requirement when impersonating;
+                        otherwise, an administrator would be forced to provide username and password,
+                        as well as complete a passwordless login.
+
+                        Reason: Two-Factor Authentication
+                     */
+                    Rock.Security.Authorization.SetAuthCookie(
+                        "rckipid=" + impersonatedPersonKeyParam,
+                        isPersisted: false,
+                        isImpersonated: true,
+                        isTwoFactorAuthenticated: true );
                     CurrentUser = impersonatedPerson.GetImpersonatedUser();
                     UserLoginService.UpdateLastLogin( "rckipid=" + impersonatedPersonKeyParam );
 
@@ -2253,6 +2494,19 @@ Obsidian.onReady(() => {{
             }
         }
 
+        /// <inheritdoc/>
+        protected override void OnUnload( EventArgs e )
+        {
+            // Dispose of all the service scopes that were created during this
+            // page's lifecycle.
+            foreach ( var scope in _pageServiceScopes )
+            {
+                scope.Dispose();
+            }
+
+            base.OnUnload( e );
+        }
+
         /// <summary>
         /// Raises the <see cref="E:System.Web.UI.Page.SaveStateComplete" /> event after the page state has been saved to the persistence medium.
         /// </summary>
@@ -2263,17 +2517,7 @@ Obsidian.onReady(() => {{
 
             _tsDuration = RockDateTime.Now.Subtract( ( DateTime ) Context.Items["Request_Start_Time"] );
 
-            // Create a page view transaction if enabled
-            // Earlier it was moved to OnLoadComplete from OnLoad so we could get the updated title (if Lava or the block changed it)
-            // Then it was moved from OnLoadComplete so we could get the Page Load Time
-            if ( !Page.IsPostBack && _pageCache != null )
-            {
-                if ( _pageCache.Layout.Site.EnablePageViews )
-                {
-                    var pageViewTransaction = new InteractionTransaction( DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.INTERACTIONCHANNELTYPE_WEBSITE ), this.Site, this._pageCache, new InteractionTransactionInfo { InteractionTimeToServe = _tsDuration.TotalSeconds, InteractionChannelCustomIndexed1 = Request.UrlReferrerNormalize(), InteractionChannelCustom2 = Request.UrlReferrerSearchTerms() } );
-                    pageViewTransaction.Enqueue();
-                }
-            }
+            ProcessPageInteraction();
 
             if ( phLoadStats != null )
             {
@@ -2299,7 +2543,7 @@ Obsidian.onReady(() => {{
                     }
                 }
 
-                phLoadStats.Controls.Add( new LiteralControl( $"<span class='cms-admin-footer-property'><a href='{ showTimingsUrl }'> Page Load Time: {_tsDuration.TotalSeconds:N2}s </a></span><span class='margin-l-md js-view-state-stats cms-admin-footer-property'></span> <span class='margin-l-md js-html-size-stats cms-admin-footer-property'></span>" ) );
+                phLoadStats.Controls.Add( new LiteralControl( $"<span class='cms-admin-footer-property'><a href='{showTimingsUrl}'> Page Load Time: {_tsDuration.TotalSeconds:N2}s </a></span><span class='margin-l-md js-view-state-stats cms-admin-footer-property'></span> <span class='margin-l-md js-html-size-stats cms-admin-footer-property'></span>" ) );
 
                 if ( !ClientScript.IsStartupScriptRegistered( "rock-js-view-state-size" ) )
                 {
@@ -2316,6 +2560,109 @@ Sys.Application.add_load(function () {
                     ClientScript.RegisterStartupScript( this.Page.GetType(), "rock-js-view-state-size", script, true );
                 }
             }
+        }
+
+        /// <summary>
+        /// Process page view interactions if they are enabled for this website.
+        /// </summary>
+        private void ProcessPageInteraction()
+        {
+            // Do not process page interactions for a postback, or if not enabled for this site.
+            if ( Page.IsPostBack )
+            {
+                return;
+            }
+
+            if ( _pageCache == null
+                 || !( _pageCache?.Layout?.Site?.EnablePageViews ?? false ) )
+            {
+                return;
+            }
+
+            // If we have identified a logged-in user, record the page interaction immediately and return.
+            if ( CurrentPerson != null )
+            {
+                var interactionInfo = new InteractionTransactionInfo
+                {
+                    InteractionTimeToServe = _tsDuration.TotalSeconds,
+                    InteractionChannelCustomIndexed1 = Request.UrlReferrerNormalize(),
+                    InteractionChannelCustom2 = Request.UrlReferrerSearchTerms()
+                };
+
+                // If we have a UTM cookie, add the information to the interaction.
+                var utmInfo = UtmHelper.GetUtmCookieDataFromRequest( this.Request );
+                UtmHelper.AddUtmInfoToInteractionTransactionInfo( interactionInfo, utmInfo );
+
+                var pageViewTransaction = new InteractionTransaction( DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.INTERACTIONCHANNELTYPE_WEBSITE ),
+                    this.Site,
+                    _pageCache,
+                    interactionInfo );
+
+                pageViewTransaction.Enqueue();
+
+                var intentSettings = _pageCache.GetAdditionalSettings<PageService.IntentSettings>();
+                InteractionService.RegisterIntentInteractions( intentSettings.InteractionIntentValueIds );
+
+                return;
+            }
+
+            // Add a script to register an interaction for this page after it has been loaded by the browser.
+            // The intention of using a client callback here is to delay the creation of the Anonymous Visitor
+            // database records used to track interactions for visitors until we know that the page has been executed
+            // on a valid client with Javascript and cookies enabled.
+            if ( ClientScript.IsStartupScriptRegistered( "rock-js-register-interaction" ) )
+            {
+                return;
+            }
+
+            var rockSessionGuid = Session["RockSessionId"]?.ToString().AsGuidOrNull() ?? Guid.Empty;
+
+            // Construct the page interaction data object that will be returned to the client.
+            // This object is serialized into the page script, so we must be sure to sanitize values
+            // extracted from the request header to prevent cross-site scripting (XSS) issues.
+            var pageInteraction = new PageInteractionInfo
+            {
+                ActionName = "View",
+                BrowserSessionGuid = rockSessionGuid,
+                PageId = this.PageId,
+                PageRequestUrl = Request.UrlProxySafe().ToString(),
+                PageRequestDateTime = RockDateTime.Now,
+                PageRequestTimeToServe = _tsDuration.TotalSeconds,
+                UrlReferrerHostAddress = Request.UrlReferrerNormalize(),
+                UrlReferrerSearchTerms = Request.UrlReferrerSearchTerms(),
+                UserAgent = Request.UserAgent.SanitizeHtml(),
+                UserHostAddress = GetClientIpAddress().SanitizeHtml(),
+                UserIdKey = CurrentPersonAlias?.IdKey
+            };
+
+            // This script adds a callback to record a View interaction for this page.
+            // If the user is logged in, they are identified by the supplied UserIdKey representing their current PersonAlias.
+            // If the user is a visitor, the ROCK_VISITOR_KEY cookie is read from the client browser to obtain the
+            // UserIdKey supplied to them. For a first visit, the cookie is set in this response.
+            string script = @"
+Sys.Application.add_load(function () {
+    const getCookieValue = (name) => {
+        const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+
+        return !match ? '' : match.pop();
+    };
+    var interactionArgs = <jsonData>;
+    if (!interactionArgs.<userIdProperty>) {
+        interactionArgs.<userIdProperty> = getCookieValue('<rockVisitorCookieName>');
+    }
+    $.ajax({
+        url: '/api/Interactions/RegisterPageInteraction',
+        type: 'POST',
+        data: interactionArgs
+        });
+});
+";
+
+            script = script.Replace( "<rockVisitorCookieName>", Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY );
+            script = script.Replace( "<jsonData>", pageInteraction.ToJson() );
+            script = script.Replace( "<userIdProperty>", nameof( pageInteraction.UserIdKey ) );
+
+            ClientScript.RegisterStartupScript( this.Page.GetType(), "rock-js-register-interaction", script, true );
         }
 
         #endregion
@@ -2350,6 +2697,45 @@ Sys.Application.add_load(function () {
 
             return viewModel;
         }
+
+        /// <summary>
+        /// Creates the service provider that will provides services for all
+        /// requests during the lifetime of this application.
+        /// </summary>
+        /// <returns>A new service provider.</returns>
+        private static IServiceProvider CreateServiceProvider()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IRockRequestContextAccessor, RockRequestContextAccessor>();
+            serviceCollection.AddScoped<RockContext>();
+            serviceCollection.AddSingleton<IWebHostEnvironment>( provider => new Utility.WebHostEnvironment
+            {
+                WebRootPath = AppDomain.CurrentDomain.BaseDirectory
+            } );
+
+            return serviceCollection.BuildServiceProvider();
+        }
+
+        /// <summary>
+        /// Creates the service scope and initializes any required values.
+        /// </summary>
+        /// <returns>An new service scope.</returns>
+        private IServiceScope CreateServiceScope()
+        {
+            var scope = _lazyServiceProvider.Value.CreateScope();
+
+            _pageServiceScopes.Add( scope );
+
+            var accessor = scope.ServiceProvider.GetRequiredService<IRockRequestContextAccessor>();
+
+            if ( accessor is RockRequestContextAccessor internalAccessor )
+            {
+                internalAccessor.RockRequestContext = RequestContext;
+            }
+
+            return scope;
+        }
+
         #endregion
 
         #region Public Methods
@@ -2546,9 +2932,10 @@ Sys.Application.add_load(function () {
         {
             Literal favIcon = new Literal();
             favIcon.Mode = LiteralMode.PassThrough;
-            var url = ResolveRockUrl( $"~/GetImage.ashx?id={binaryFileId}&width={size}&height={size}&mode=crop&format=png" );
+            var baseUrl = FileUrlHelper.GetImageUrl( binaryFileId );
+            var url = ResolveRockUrl( $"{baseUrl}&width={size}&height={size}&mode=crop&format=png" );
             favIcon.Text = $"<link rel=\"{rel}\" sizes=\"{size}x{size}\" href=\"{url}\" />";
-
+             
             AddHtmlLink( favIcon );
         }
 
@@ -2694,29 +3081,6 @@ Sys.Application.add_load(function () {
         }
 
         /// <summary>
-        /// Gets the context view models.
-        /// </summary>
-        /// <returns></returns>
-        internal Dictionary<string, IViewModel> GetContextViewModels()
-        {
-            var contextEntities = GetContextEntities();
-            var viewModels = new Dictionary<string, IViewModel>();
-
-            foreach ( var kvp in contextEntities )
-            {
-                var entity = kvp.Value;
-                var viewModel = ViewModelHelper.GetDefaultViewModel( entity, CurrentPerson, false );
-
-                if ( viewModel != null )
-                {
-                    viewModels[kvp.Key] = viewModel;
-                }
-            }
-
-            return viewModels;
-        }
-
-        /// <summary>
         /// Gets the context entities.
         /// </summary>
         /// <returns></returns>
@@ -2853,6 +3217,11 @@ Sys.Application.add_load(function () {
         /// <returns>An object that implements the <see cref="Rock.Data.IEntity"/> interface referencing the context object. </returns>
         internal Rock.Data.IEntity GetCurrentContext( EntityTypeCache entity, Dictionary<string, KeyEntity> keyEntityDictionary )
         {
+            if ( entity == null || keyEntityDictionary == null )
+            {
+                return null;
+            }
+
             if ( keyEntityDictionary.ContainsKey( entity.Name ) )
             {
                 var keyModel = keyEntityDictionary[entity.Name];
@@ -2947,69 +3316,136 @@ Sys.Application.add_load(function () {
         }
 
         /// <summary>
-        /// Sets the context cookie.
+        /// Sets the provided entity within the context cookie.
         /// </summary>
-        /// <param name="entity">The entity.</param>
-        /// <param name="pageSpecific">if set to <c>true</c> [page specific].</param>
-        /// <param name="refreshPage">if set to <c>true</c> [refresh page].</param>
+        /// <param name="entity">The entity to set within the cookie.</param>
+        /// <param name="pageSpecific">Whether to set the entity within a page-specific cookie.</param>
+        /// <param name="refreshPage">Whether to refresh the page after adding/updating the cookie.</param>
         public void SetContextCookie( IEntity entity, bool pageSpecific = false, bool refreshPage = true )
         {
-            string cookieName = GetContextCookieName( pageSpecific );
-
-            var contextCookie = Request.Cookies[cookieName];
-            if ( contextCookie == null )
+            if ( entity == null )
             {
-                contextCookie = new HttpCookie( cookieName );
+                return;
             }
 
-            Type entityType = entity.GetType();
+            var entityType = entity.GetType();
             if ( entityType.IsDynamicProxyType() )
             {
                 entityType = entityType.BaseType;
             }
 
-            contextCookie.Values[entityType.FullName] = HttpUtility.UrlDecode( entity.ContextKey );
-            contextCookie.Expires = RockInstanceConfig.SystemDateTime.AddYears( 1 );
-
-            AddOrUpdateCookie( contextCookie );
-
-            if ( refreshPage )
+            if ( entity.Guid == Guid.Empty )
             {
-                Response.Redirect( Request.RawUrl, false );
-                Context.ApplicationInstance.CompleteRequest();
+                // Clear this entity type from the context cookie instead.
+                ClearContextCookie( entityType, pageSpecific, refreshPage );
+                return;
+            }
+
+            try
+            {
+                var cookieName = GetContextCookieName( pageSpecific );
+                var contextCookie = FindCookie( cookieName ) ?? new HttpCookie( cookieName );
+                var contextItems = contextCookie.Value.FromJsonOrNull<Dictionary<string, string>>() ?? new Dictionary<string, string>();
+
+                /*
+                    12/1/2023 - JPH
+
+                    Here's how this used to work:
+                        1. `entity.ContextKey` returns an encrypted, encoded string;
+                        2. We used to immediately decode the string before putting it into the cookie; not sure why;
+                        3. The `System.Web` library's handling of cookies successfully wrote AND retrieved this
+                           unencoded string; they gave it back to us exactly as we gave it to them, likely
+                           auto-encoding and auto-decoding for us behind the scenes.
+
+                    WHAT THE CODE USED TO BE:
+                    contextItems.AddOrReplace( entityType.FullName, HttpUtility.UrlDecode( entity.ContextKey ) );
+
+                    But when attempting to retrieve these `System.Web`-written cookies using our new, Obsidian request flow:
+                        1. All of the "+" characters were replaced with " " characters, breaking our decryption attempt.
+                        2. This is because the newer, `System.Net` library's retrieving of cookies seemingly double-decodes
+                           the string values, leading to the plus sign replacement behavior we're seeing.
+                           https://stackoverflow.com/a/55077150
+
+                    WHAT THE CODE IS NOW:
+                    contextItems.AddOrReplace( entityType.FullName, entity.ContextKey );
+
+                    The "fix" is to leave the string encoded on the way into the cookie, which fixes the `System.Net` lib's
+                    retrieval of the cookie. But this now means we need to manually decode the cookie on this (`System.Web`)
+                    side, within the `AddCookieContextEntities()` method.
+
+                    Reason: Context cookie compatibility between Web Forms and Obsidian.
+                    https://github.com/SparkDevNetwork/Rock/issues/5634
+                 */
+                contextItems.AddOrReplace( entityType.FullName, entity.ContextKey );
+
+                contextCookie.Value = contextItems.ToJson();
+                contextCookie.Expires = RockDateTime.Now.AddYears( 1 );
+
+                AddOrUpdateCookie( contextCookie );
+
+                if ( refreshPage )
+                {
+                    Response.Redirect( Request.RawUrl, false );
+                    Context.ApplicationInstance.CompleteRequest();
+                }
+            }
+            catch
+            {
+                // Intentionally ignore exception in case JSON [de]serialization fails.
             }
         }
 
         /// <summary>
-        /// Clears the context cookie.
+        /// Clears the specified entity type from the context cookie and deletes the cookie itself if
+        /// no more entity types remain within its value.
         /// </summary>
-        /// <param name="entityType">Type of the entity.</param>
-        /// <param name="pageSpecific">if set to <c>true</c> [page specific].</param>
-        /// <param name="refreshPage">if set to <c>true</c> [refresh page].</param>
+        /// <param name="entityType">Type of the entity to clear from the cookie.</param>
+        /// <param name="pageSpecific">Whether to clear the entity type from a page-specific cookie.</param>
+        /// <param name="refreshPage">Whether to refresh the page after clearing the entity type from the cookie.</param>
         public void ClearContextCookie( Type entityType, bool pageSpecific = false, bool refreshPage = true )
         {
-            string cookieName = GetContextCookieName( pageSpecific );
-
-            var contextCookie = Request.Cookies[cookieName];
-            if ( contextCookie == null )
+            if ( entityType == null )
             {
-                contextCookie = new HttpCookie( cookieName );
+                return;
             }
 
-            if ( entityType.IsDynamicProxyType() )
+            try
             {
-                entityType = entityType.BaseType;
+                var cookieName = GetContextCookieName( pageSpecific );
+                var contextCookie = FindCookie( cookieName ) ?? new HttpCookie( cookieName );
+                var contextItems = contextCookie.Value.FromJsonOrNull<Dictionary<string, string>>();
+
+                if ( entityType.IsDynamicProxyType() )
+                {
+                    entityType = entityType.BaseType;
+                }
+
+                contextItems?.Remove( entityType.FullName );
+
+                if ( contextItems?.Any() == true )
+                {
+                    // Re-serialize the value and bump the expiration date out.
+                    contextCookie.Value = contextItems.ToJson();
+                    contextCookie.Expires = RockDateTime.Now.AddYears( 1 );
+                }
+                else
+                {
+                    // No more entity types remain; delete the cookie.
+                    contextCookie.Value = null;
+                    contextCookie.Expires = RockDateTime.Now.AddDays( -1 );
+                }
+
+                AddOrUpdateCookie( contextCookie );
+
+                if ( refreshPage )
+                {
+                    Response.Redirect( Request.RawUrl, false );
+                    Context.ApplicationInstance.CompleteRequest();
+                }
             }
-
-            contextCookie.Values[entityType.FullName] = null;
-            contextCookie.Expires = RockInstanceConfig.SystemDateTime.AddYears( 1 );
-
-            AddOrUpdateCookie( contextCookie );
-
-            if ( refreshPage )
+            catch
             {
-                Response.Redirect( Request.RawUrl, false );
-                Context.ApplicationInstance.CompleteRequest();
+                // Intentionally ignore exception in case JSON [de]serialization fails.
             }
         }
 
@@ -3035,11 +3471,106 @@ Sys.Application.add_load(function () {
         }
 
         /// <summary>
+        /// Converts the legacy, "structured" context cookies to a simpler, JSON format.
+        /// </summary>
+        [Obsolete( "Remove this method after a few major versions, hopefully allowing enough time to convert all legacy context cookies." )]
+        [RockObsolete( "1.17" )]
+        private void ConvertLegacyContextCookiesToJSON()
+        {
+            // Find any cookies whose names start with the legacy cookie name prefix.
+            var legacyCookies = new List<HttpCookie>();
+            foreach ( var cookieName in Request.Cookies.AllKeys )
+            {
+                if ( !cookieName.StartsWith( "Rock_Context" ) )
+                {
+                    continue;
+                }
+
+                legacyCookies.Add( Request.Cookies[cookieName] );
+            }
+
+            foreach ( var legacyCookie in legacyCookies )
+            {
+                try
+                {
+                    // Add each of the "structured" values to a simple dictionary.
+                    var contextItems = new Dictionary<string, string>();
+
+                    for ( var i = 0; i < legacyCookie.Values.Count; i++ )
+                    {
+                        var cookieValue = legacyCookie.Values[i];
+                        if ( cookieValue.IsNullOrWhiteSpace() )
+                        {
+                            continue;
+                        }
+
+                        // We need to decrypt the value so we can use the entity type name for the key.
+                        var contextItem = Rock.Security.Encryption.DecryptString( cookieValue );
+                        var valueParts = contextItem.Split( '|' );
+                        if ( valueParts.Length != 2 )
+                        {
+                            continue;
+                        }
+
+                        // Re-add the entire, encoded value, as the object loading process depends on this specific format.
+                        var encodedCookieValue = HttpUtility.UrlEncode( cookieValue );
+                        contextItems.Add( valueParts[0], encodedCookieValue );
+                    }
+
+                    // Add the new, JSON-based cookie.
+                    if ( contextItems.Any() )
+                    {
+                        // We're changing the names of the cookies:
+                        //  1. Renaming the site cookie from the old name (Rock_Context) will make it easier
+                        //     to know when we've already converted to the new, JSON cookie on a given client,
+                        //     without having to dig into the cookie's value, thereby making subsequent
+                        //     request/response cycles faster.
+                        //  2. Legacy, page-specific cookie names followed this format: "Rock_Context:n",
+                        //     where n is the page ID. Since colons may not be used in cookie names, we'll
+                        //     convert these names to a valid format.
+                        var legacyCookieNameParts = legacyCookie.Name.Split( ':' );
+                        int? pageId = null;
+
+                        if ( legacyCookieNameParts.Length == 2 )
+                        {
+                            pageId = legacyCookieNameParts[1].AsIntegerOrNull();
+                            if ( pageId.GetValueOrDefault() <= 0 )
+                            {
+                                // There was something wrong with this cookie name; skip it.
+                                continue;
+                            }
+                        }
+
+                        var newCookieName = pageId.HasValue
+                            ? $"{RockRequestContext.PageContextCookieNamePrefix}{pageId.Value}"
+                            : RockRequestContext.SiteContextCookieName;
+
+                        var newCookie = new HttpCookie( newCookieName, contextItems.ToJson() )
+                        {
+                            Expires = legacyCookie.Expires // Leave the expiration date/time as it was.
+                        };
+
+                        AddOrUpdateCookie( newCookie );
+                    }
+                }
+                catch
+                {
+                    // Intentionally ignore exception in case conversion fails.
+                }
+
+                // Always remove the legacy, "structured" cookie, regardless of conversion success.
+                legacyCookie.Values.Clear();
+                legacyCookie.Expires = RockDateTime.Now.AddDays( -1 );
+                AddOrUpdateCookie( legacyCookie );
+            }
+        }
+
+        /// <summary>
         /// Adds context entities from a cookie to a provided <see cref="KeyEntity"/> dictionary.
         /// </summary>
-        /// <param name="cookie"></param>
-        /// <param name="keyEntityDictionary"></param>
-        /// <returns></returns>
+        /// <param name="cookie">The context cookie that contains the encrypted context entities.</param>
+        /// <param name="keyEntityDictionary">The dictionary into which to place the decrypted context entities.</param>
+        /// <returns>The dictionary holding the decrypted context entities.</returns>
         private Dictionary<string, Data.KeyEntity> AddCookieContextEntities( HttpCookie cookie, Dictionary<string, Data.KeyEntity> keyEntityDictionary )
         {
             if ( cookie == null )
@@ -3047,29 +3578,39 @@ Sys.Application.add_load(function () {
                 return keyEntityDictionary; // nothing to do.
             }
 
-            for ( int valueIndex = 0; valueIndex < cookie.Values.Count; valueIndex++ )
+            try
             {
-                string cookieValue = cookie.Values[valueIndex];
-                if ( string.IsNullOrWhiteSpace( cookieValue ) )
+                var contextItems = cookie.Value.FromJsonOrNull<Dictionary<string, string>>();
+                if ( contextItems?.Any( c => c.Value.IsNotNullOrWhiteSpace() ) != true )
                 {
-                    continue;
+                    // Delete the cookie since it holds no context items. Should never happen.
+                    cookie.Value = null;
+                    cookie.Expires = RockDateTime.Now.AddHours( -1 );
+
+                    return keyEntityDictionary;
                 }
 
-                try
+                foreach ( var encryptedItem in contextItems.Values )
                 {
-                    string contextItem = Rock.Security.Encryption.DecryptString( cookieValue );
-                    string[] parts = contextItem.Split( '|' );
-                    if ( parts.Length != 2 )
+                    if ( encryptedItem.IsNullOrWhiteSpace() )
                     {
                         continue;
                     }
 
-                    keyEntityDictionary.AddOrReplace( parts[0], new Data.KeyEntity( parts[1] ) );
+                    var decodedItem = HttpUtility.UrlDecode( encryptedItem );
+                    var decryptedItem = Rock.Security.Encryption.DecryptString( decodedItem );
+                    var itemParts = decryptedItem.Split( '|' );
+                    if ( itemParts.Length != 2 )
+                    {
+                        continue;
+                    }
+
+                    keyEntityDictionary.AddOrReplace( itemParts[0], new Data.KeyEntity( itemParts[1] ) );
                 }
-                catch
-                {
-                    // intentionally ignore exception in case cookie is corrupt
-                }
+            }
+            catch
+            {
+                // Intentionally ignore exception in case any part of this process fails.
             }
 
             return keyEntityDictionary;
@@ -3088,7 +3629,7 @@ Sys.Application.add_load(function () {
                 if ( LinkPersonAliasToDevice( ( int ) personAliasId, httpCookie.Values["ROCK_PERSONALDEVICE_ADDRESS"] ) )
                 {
                     var wiFiCookie = Response.Cookies["rock_wifi"];
-                    wiFiCookie.Expires = RockInstanceConfig.SystemDateTime.AddDays( -1 );
+                    wiFiCookie.Expires = RockDateTime.SystemDateTime.AddDays( -1 );
                     AddOrUpdateCookie( wiFiCookie );
                 }
             }
@@ -3097,11 +3638,12 @@ Sys.Application.add_load(function () {
         /// <summary>
         /// Gets the name of the context cookie.
         /// </summary>
-        /// <param name="pageSpecific">if set to <c>true</c> [page specific].</param>
-        /// <returns></returns>
+        /// <param name="pageSpecific">Whether to get the name for a page-specific context cookie.</param>
+        /// <returns>The name of the context cookie or <c>null</c> if <paramref name="pageSpecific"/> == <c>true</c>
+        /// and this request has not yet been prepared for a given page.</returns>
         public string GetContextCookieName( bool pageSpecific )
         {
-            return "Rock_Context" + ( pageSpecific ? ( ":" + PageId.ToString() ) : "" );
+            return RequestContext?.GetContextCookieName( pageSpecific );
         }
 
         /// <summary>
@@ -3112,13 +3654,7 @@ Sys.Application.add_load(function () {
         /// <param name="expirationDate">The expiration date.</param>
         public static void AddOrUpdateCookie( string name, string value, DateTime? expirationDate )
         {
-            var cookie = new HttpCookie( name )
-            {
-                Expires = expirationDate ?? RockInstanceConfig.SystemDateTime.AddYears( 1 ),
-                Value = value
-            };
-
-            AddOrUpdateCookie( cookie );
+            WebRequestHelper.AddOrUpdateCookie( HttpContext.Current, name, value, expirationDate );
         }
 
         /// <summary>
@@ -3130,35 +3666,7 @@ Sys.Application.add_load(function () {
         /// <param name="cookie">The cookie.</param>
         public static void AddOrUpdateCookie( HttpCookie cookie )
         {
-            // If the samesite setting is not in the Path then add it
-            if ( cookie.Path.IsNullOrWhiteSpace() || !cookie.Path.Contains( "SameSite" ) )
-            {
-                SameSiteCookieSetting sameSiteCookieSetting = GlobalAttributesCache.Get().GetValue( "core_SameSiteCookieSetting" ).ConvertToEnumOrNull<SameSiteCookieSetting>() ?? SameSiteCookieSetting.Lax;
-
-                // If IsSecureConnection is false then check the scheme in case the web server is behind a load balancer.
-                // The server could use unencrypted traffic to the balancer, which would encrypt it before sending to the browser.
-                var secureSetting = HttpContext.Current.Request.IsSecureConnection || HttpContext.Current.Request.UrlProxySafe().Scheme == "https" ? ";Secure" : string.Empty;
-
-                // For browsers to recognize SameSite=none the Secure tag is required, but it doesn't hurt to add it for all samesite settings.
-                string sameSiteCookieValue = $";SameSite={sameSiteCookieSetting}{secureSetting}";
-
-                cookie.Path += sameSiteCookieValue;
-            }
-
-            // Clone the cookie to prevent the SameSite property from making an appearence in our response.
-            var responseCookie = new HttpCookie( cookie.Name )
-            {
-                Domain = cookie.Domain,
-                Expires = cookie.Expires,
-                HttpOnly = cookie.HttpOnly,
-                Path = cookie.Path,
-                Secure = cookie.Secure,
-                Value = cookie.Value
-            };
-
-            HttpContext.Current.Request.Cookies.Remove( responseCookie.Name );
-            HttpContext.Current.Response.Cookies.Remove( responseCookie.Name );
-            HttpContext.Current.Response.Cookies.Add( responseCookie );
+            WebRequestHelper.AddOrUpdateCookie( HttpContext.Current, cookie );
         }
 
         /// <summary>
@@ -3168,26 +3676,7 @@ Sys.Application.add_load(function () {
         /// <returns></returns>
         public HttpCookie GetCookie( string name )
         {
-            /* MP 06-16-2022 
-
-            Make sure the Cookies AllKeys contains a cookie with that name first,
-            otherwise it will automatically create the cookie. This avoids
-            an issue where a Request cookie could get removed if using GetCookie
-            to see if the cookie exists.
-             
-             */
-
-            if ( Request.Cookies.AllKeys.Contains( name ) )
-            {
-                return Request.Cookies[name];
-            }
-
-            if ( Response.Cookies.AllKeys.Contains( name ) )
-            {
-                return Response.Cookies[name];
-            }
-
-            return null;
+            return WebRequestHelper.GetCookieFromContext( this.Context, name );
         }
 
         /// <summary>
@@ -3491,7 +3980,7 @@ Sys.Application.add_load(function () {
 
         #endregion
 
-        #region Static Helper Methods
+        #region Page Parameters
 
         /// <summary>
         /// Checks the page's RouteData values and then the query string for a
@@ -3587,7 +4076,7 @@ Sys.Application.add_load(function () {
                         and ignore the value stored in the QueryString list (the value is the same). In any case if there is contention between a
                         Route Key and QueryString Key the Route will take precedence.
                     */
-                    parameters.AddOrIgnore( param, Request.QueryString[param] );
+                    parameters.TryAdd( param, Request.QueryString[param] );
                 }
             }
 
@@ -3612,6 +4101,10 @@ Sys.Application.add_load(function () {
 
             return parameters;
         }
+
+        #endregion
+
+        #region Static Helper Methods
 
         /// <summary>
         /// Adds a new CSS link that will be added to the page header prior to the page being rendered
@@ -4110,6 +4603,10 @@ Sys.Application.add_load(function () {
             return WebRequestHelper.GetClientIpAddress( new HttpRequestWrapper( HttpContext.Current?.Request ) );
         }
 
+        #endregion
+
+        #region Obsidian Fingerprinting
+
         /// <summary>
         /// Initializes the obsidian file fingerprint. This sets the initial
         /// fingerprint value and then if we are in Debug mode it monitors for
@@ -4233,22 +4730,55 @@ Sys.Application.add_load(function () {
             }
         }
 
-        #region User Preferences
+        #endregion
+
+        #region Person Preferences
+
+        /// <summary>
+        /// Gets the global person preferences. These are unique to the person
+        /// but global across the entire system. Global preferences should be
+        /// used with extreme caution and care.
+        /// </summary>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetGlobalPersonPreferences()
+        {
+            return RequestContext.GetGlobalPersonPreferences();
+        }
+
+        /// <summary>
+        /// Gets the person preferences scoped to the specified entity.
+        /// </summary>
+        /// <param name="scopedEntity">The entity to use when scoping the preferences for a particular use.</param>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetScopedPersonPreferences( IEntity scopedEntity )
+        {
+            return RequestContext.GetScopedPersonPreferences( scopedEntity );
+        }
+
+        /// <summary>
+        /// Gets the person preferences scoped to the specified entity.
+        /// </summary>
+        /// <param name="scopedEntity">The entity to use when scoping the preferences for a particular use.</param>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetScopedPersonPreferences( IEntityCache scopedEntity )
+        {
+            return RequestContext.GetScopedPersonPreferences( scopedEntity );
+        }
+
+        #endregion
+
+        #region User Preferences (Obsolete)
 
         /// <summary>
         /// Returns a user preference for the current user and given key.
         /// </summary>
         /// <param name="key">A <see cref="System.String" /> representing the key to the user preference.</param>
         /// <returns>A <see cref="System.String" /> representing the specified user preference value, if a match is not found an empty string will be returned.</returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public string GetUserPreference( string key )
         {
-            var values = SessionUserPreferences();
-            if ( values.ContainsKey( key ) )
-            {
-                return values[key];
-            }
-
-            return string.Empty;
+            return GetGlobalPersonPreferences().GetValue( key );
         }
 
         /// <summary>
@@ -4259,14 +4789,16 @@ Sys.Application.add_load(function () {
         /// Each <see cref="System.Collections.Generic.KeyValuePair{String,String}"/> contains a key that represents the user preference key and a value that contains the user preference value associated
         /// with that key.
         /// </returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public Dictionary<string, string> GetUserPreferences( string keyPrefix )
         {
             var selectedValues = new Dictionary<string, string>();
+            var preferences = GetGlobalPersonPreferences();
 
-            var values = SessionUserPreferences();
-            foreach ( var key in values.Where( v => v.Key.StartsWith( keyPrefix ) ) )
+            foreach ( var key in preferences.GetKeys().Where( k => k.StartsWith( keyPrefix ) ) )
             {
-                selectedValues.Add( key.Key, key.Value );
+                selectedValues.TryAdd( key, preferences.GetValue( key ) );
             }
 
             return selectedValues;
@@ -4279,21 +4811,17 @@ Sys.Application.add_load(function () {
         /// <param name="key">A <see cref="System.String" /> representing the name of the key.</param>
         /// <param name="value">A <see cref="System.String" /> representing the preference value.</param>
         /// <param name="saveValue">if set to <c>true</c> [save value].</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void SetUserPreference( string key, string value, bool saveValue = true )
         {
-            var sessionValues = SessionUserPreferences();
-            if ( sessionValues.ContainsKey( key ) )
-            {
-                sessionValues[key] = value;
-            }
-            else
-            {
-                sessionValues.Add( key, value );
-            }
+            var preferences = GetGlobalPersonPreferences();
 
-            if ( saveValue && CurrentPerson != null )
+            preferences.SetValue( key, value );
+
+            if ( saveValue )
             {
-                PersonService.SaveUserPreference( CurrentPerson, key, value );
+                preferences.Save();
             }
         }
 
@@ -4301,36 +4829,22 @@ Sys.Application.add_load(function () {
         /// Saves the user preferences.
         /// </summary>
         /// <param name="keyPrefix">The key prefix.</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void SaveUserPreferences( string keyPrefix )
         {
-            if ( CurrentPerson != null )
-            {
-                var values = new Dictionary<string, string>();
-                SessionUserPreferences()
-                    .Where( p => p.Key.StartsWith( keyPrefix ) )
-                    .ToList()
-                    .ForEach( kv => values.Add( kv.Key, kv.Value ) );
-
-                PersonService.SaveUserPreferences( CurrentPerson, values );
-            }
+            GetGlobalPersonPreferences().Save();
         }
 
         /// <summary>
         /// Deletes a user preference value for the specified key
         /// </summary>
         /// <param name="key">A <see cref="System.String"/> representing the name of the key.</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void DeleteUserPreference( string key )
         {
-            var sessionValues = SessionUserPreferences();
-            if ( sessionValues.ContainsKey( key ) )
-            {
-                sessionValues.Remove( key );
-            }
-
-            if ( CurrentPerson != null )
-            {
-                PersonService.DeleteUserPreference( CurrentPerson, key );
-            }
+            GetGlobalPersonPreferences().SetValue( key, string.Empty );
         }
 
         /// <summary>
@@ -4340,29 +4854,20 @@ Sys.Application.add_load(function () {
         /// </summary>
         /// <returns>A <see cref="System.Collections.Generic.Dictionary{String, List}"/> containing the user preferences
         /// for the current user. If the current user is anonymous or unknown an empty dictionary will be returned.</returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public Dictionary<string, string> SessionUserPreferences()
         {
-            string sessionKey = string.Format( "{0}_{1}",
-                Person.USER_VALUE_ENTITY, CurrentPerson != null ? CurrentPerson.Id : 0 );
+            var preferences = GetGlobalPersonPreferences();
+            var userPreferences = new Dictionary<string, string>();
 
-            var userPreferences = Session[sessionKey] as Dictionary<string, string>;
-            if ( userPreferences == null )
+            foreach ( var key in preferences.GetKeys() )
             {
-                if ( CurrentPerson != null )
-                {
-                    userPreferences = PersonService.GetUserPreferences( CurrentPerson );
-                }
-                else
-                {
-                    userPreferences = new Dictionary<string, string>();
-                }
-                Session[sessionKey] = userPreferences;
+                userPreferences.TryAdd( key, preferences.GetValue( key ) );
             }
 
             return userPreferences;
         }
-
-        #endregion
 
         #endregion
 
@@ -4471,6 +4976,22 @@ Sys.Application.add_load(function () {
                 }
             }
         }
+        #endregion
+
+        #region IHttpAsyncHandler Implementation
+
+        /// <inheritdoc/>
+        public IAsyncResult BeginProcessRequest( HttpContext context, AsyncCallback cb, object extraData )
+        {
+            return AsyncPageBeginProcessRequest( context, cb, extraData );
+        }
+
+        /// <inheritdoc/>
+        public void EndProcessRequest( IAsyncResult result )
+        {
+            AsyncPageEndProcessRequest( result );
+        }
+
         #endregion
     }
 

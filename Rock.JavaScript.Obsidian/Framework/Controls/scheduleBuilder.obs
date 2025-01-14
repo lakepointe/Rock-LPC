@@ -22,13 +22,10 @@
            @save="onSaveSchedule">
         <DateTimePicker v-model="startDateTime"
                         label="Start Date / Time"
-                        help=""
-                        :rules="requiredRules" />
+                        help="Select the Date and Time to base the schedule on. Make sure to set this if you want the schedule to work. Set to blank if you want to leave this unscheduled."
+                         />
 
-        <RockFormField :modelValue="duration"
-                       label="Duration"
-                       name="duration"
-                       :rules="requiredRules">
+        <RockFormField :modelValue="duration" label="Duration" name="duration">
             <template #default>
                 <div class="form-control-group">
                     <NumberBox v-model="durationInHours"
@@ -287,17 +284,18 @@
 
 <script setup lang="ts">
     import { PropType, computed, ref, shallowRef, watch } from "vue";
-    import CheckBoxList from "./checkBoxList";
+    import CheckBoxList from "./checkBoxList.obs";
     import DatePickerBase from "./datePickerBase.obs";
     import DatePicker from "./datePicker.obs";
-    import DateRangePicker, { DateRangeParts } from "./dateRangePicker";
-    import DateTimePicker from "./dateTimePicker";
-    import DropDownList from "./dropDownList";
-    import Modal from "./modal";
-    import NumberBox from "./numberBox";
-    import RadioButtonList from "./radioButtonList";
-    import RockFormField from "./rockFormField";
-    import TransitionVerticalCollapse from "./transitionVerticalCollapse";
+    import DateRangePicker from "./dateRangePicker.obs";
+    import DateTimePicker from "./dateTimePicker.obs";
+    import DropDownList from "./dropDownList.obs";
+    import Modal from "./modal.obs";
+    import NumberBox from "./numberBox.obs";
+    import RadioButtonList from "./radioButtonList.obs";
+    import RockFormField from "./rockFormField.obs";
+    import TransitionVerticalCollapse from "./transitionVerticalCollapse.obs";
+    import type { DateRangeParts } from "@Obsidian/Types/Controls/dateRangePicker";
     import type { ValidationRule } from "@Obsidian/Types/validationRules";
     import { Event, Calendar, RecurrenceRule } from "@Obsidian/Utility/internetCalendar";
     import { containsRequiredRule } from "@Obsidian/ValidationRules";
@@ -311,8 +309,8 @@
     const props = defineProps({
         /** The ICS contents that represents the schedule. */
         modelValue: {
-            type: String as PropType<string>,
-            default: ""
+            type: String as PropType<string | null>,
+            required: false
         },
 
         ...standardRockFormFieldProps
@@ -410,45 +408,31 @@
     // #region Computed Values
 
     const requiredRules = computed((): ValidationRule[] => {
-        if (containsRequiredRule(props.rules)) {
             return ["required"];
-        }
-        else {
-            return [];
-        }
     });
 
     const durationInHours = computed({
         get(): number | null {
-            return duration.value ? Math.floor(duration.value / 60) : null;
+            return (duration.value === null || duration.value <= 1) ? 0 : Math.floor(duration.value / 60);
         },
+
 
         set(value: number | null) {
             const newDuration = ((value ?? 0) * 60) + (durationInMinutes.value ?? 0);
 
-            if (newDuration <= 0) {
-                duration.value = null;
-            }
-            else {
-                duration.value = newDuration;
-            }
+            duration.value = newDuration >= 0 ? newDuration : 0;
         }
     });
 
     const durationInMinutes = computed({
         get(): number | null {
-            return duration.value ? Math.floor(duration.value % 60) : null;
-        },
+            return (duration.value === null || duration.value <= 1) ? 0 : duration.value % 60;
+    },
 
         set(value: number | null) {
             const newDuration = ((durationInHours.value ?? 0) * 60) + (value ?? 0);
 
-            if (newDuration <= 0) {
-                duration.value = null;
-            }
-            else {
-                duration.value = newDuration;
-            }
+            duration.value = newDuration >= 0 ? newDuration : 0;
         }
     });
 
@@ -522,7 +506,7 @@
     // #region Functions
 
     function updateValuesFromModel(): void {
-        const calendar = getCalendarFromString(props.modelValue);
+        const calendar = getCalendarFromString(props.modelValue ?? "");
         const event = calendar?.events && calendar.events.length > 0 ? calendar.events[0] : null;
         const rrule = event?.recurrenceRules && event.recurrenceRules.length > 0 ? event.recurrenceRules[0] : null;
 
@@ -611,14 +595,19 @@
                 recurringContinueUntilType.value = "endBy";
                 recurringContinueUntilDate.value = rrule.endDate.toISOString();
             }
+
+            if (event?.excludedDates) {
+                recurringExclusionDates.value = event?.excludedDates;
+            }
+
         }
     }
 
     function getCalendarString(): string {
         const event = new Event();
 
-        event.startDateTime = RockDateTime.parseISO(startDateTime.value ?? "") ?? undefined;
-        event.endDateTime = event.startDateTime?.addMinutes(duration.value ?? 0);
+        event.startDateTime = RockDateTime.parseISO(startDateTime.value ?? "") ?? RockDateTime.now();
+        event.endDateTime = event.startDateTime?.addMinutes(duration.value ?? 1);
 
         if (scheduleType.value === "recurring") {
             if (occurrencePattern.value === "specificDates") {
@@ -715,7 +704,7 @@
             }
         }
 
-        if (event.startDateTime && event.endDateTime && duration.value !== null && duration.value > 0) {
+        if (event.startDateTime && event.endDateTime) {
             const calendar = new Calendar();
             calendar.events.push(event);
 
@@ -910,8 +899,8 @@
     }
 
     function onSaveSchedule(): void {
-        internalValue.value = getCalendarString();
 
+        internalValue.value = getCalendarString();
         emit("update:modelValue", internalValue.value);
         isModalVisible.value = false;
     }
@@ -946,7 +935,7 @@
     }
 
     function onAddExclusionDateRange(): void {
-        addExclusionDateRangeValue.value = {};
+        addExclusionDateRangeValue.value = undefined;
         isAddExclusionDateRangeVisible.value = true;
     }
 

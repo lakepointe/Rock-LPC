@@ -15,7 +15,7 @@
     import { Guid } from "@Obsidian/Types";
     import { PropType, ref, watch } from "vue";
     import CategorizedValuePickerDropDownLevel from "./categorizedValuePickerDropDownLevel.obs";
-    import RockFormField from "./rockFormField";
+    import RockFormField from "./rockFormField.obs";
     import { CategorizedValuePickerGetTreeOptionsBag } from "@Obsidian/ViewModels/Rest/Controls/categorizedValuePickerGetTreeOptionsBag";
     import { CategorizedValuePickerGetTreeResultsBag } from "@Obsidian/ViewModels/Rest/Controls/categorizedValuePickerGetTreeResultsBag";
     import { CategorizedValuePickerNodeBag } from "@Obsidian/ViewModels/Rest/Controls/categorizedValuePickerNodeBag";
@@ -24,8 +24,9 @@
     import { useVModelPassthrough, standardRockFormFieldProps, useStandardRockFormFieldProps } from "@Obsidian/Utility/component";
     import NotificationBox from "./notificationBox.obs";
     import { AlertType } from "@Obsidian/Enums/Controls/alertType";
-    import RockButton from "./rockButton";
-    import DropDownList from "./dropDownList";
+    import RockButton from "./rockButton.obs";
+    import DropDownList from "./dropDownList.obs";
+    import { emptyGuid, toGuidOrNull } from "@Obsidian/Utility/guid";
 
     const props = defineProps({
         modelValue: {
@@ -60,8 +61,8 @@
 
     async function loadTree(): Promise<void> {
         error.value = false;
-        const options: Partial<CategorizedValuePickerGetTreeOptionsBag> = {
-            definedTypeGuid: props.definedTypeGuid,
+        const options: CategorizedValuePickerGetTreeOptionsBag = {
+            definedTypeGuid: toGuidOrNull(props.definedTypeGuid) ?? emptyGuid,
             onlyIncludeGuids: props.onlyIncludeGuids
         };
         const result = await http.post<CategorizedValuePickerGetTreeResultsBag>("/api/v2/Controls/CategorizedValuePickerGetTree", undefined, options);

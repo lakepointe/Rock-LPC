@@ -449,6 +449,32 @@ namespace Rock.Blocks.WorkFlow.FormBuilder
             }
         }
 
+        internal static FormFieldShowHide ToFormFieldShowHide( this WorkflowActionFormShowHideOption value )
+        {
+            switch ( value )
+            {
+                case WorkflowActionFormShowHideOption.Show:
+                    return FormFieldShowHide.Show;
+
+                case WorkflowActionFormShowHideOption.Hide:
+                default:
+                    return FormFieldShowHide.Hide;
+            }
+        }
+
+        internal static WorkflowActionFormShowHideOption ToShowHideOption( this FormFieldShowHide viewModel )
+        {
+            switch( viewModel )
+            {
+                case FormFieldShowHide.Show:
+                    return WorkflowActionFormShowHideOption.Show;
+
+                case FormFieldShowHide.Hide:
+                default:
+                    return WorkflowActionFormShowHideOption.Hide;
+            }
+        }
+
         /// <summary>
         /// Creates a view model representation of a <see cref="Rock.Field.FieldVisibilityRules"/> object.
         /// </summary>
@@ -459,7 +485,7 @@ namespace Rock.Blocks.WorkFlow.FormBuilder
             return new FieldFilterGroupBag
             {
                 Guid = Guid.NewGuid(),
-                ExpressionType = ( int ) rules.FilterExpressionType,
+                ExpressionType = rules.FilterExpressionType,
                 Rules = rules.RuleList.Select( r => r.ToViewModel() ).ToList()
             };
         }
@@ -474,7 +500,7 @@ namespace Rock.Blocks.WorkFlow.FormBuilder
         {
             return new Rock.Field.FieldVisibilityRules
             {
-                FilterExpressionType = ( FilterExpressionType ) viewModel.ExpressionType,
+                FilterExpressionType = viewModel.ExpressionType,
                 RuleList = viewModel.Rules.Select( r => r.FromViewModel( formFields ) ).ToList()
             };
         }
@@ -489,7 +515,7 @@ namespace Rock.Blocks.WorkFlow.FormBuilder
             var viewModel = new FieldFilterRuleBag
             {
                 Guid = rule.Guid,
-                ComparisonType = ( int ) rule.ComparisonType,
+                ComparisonType = rule.ComparisonType,
                 SourceType = 0,
                 AttributeGuid = rule.ComparedToFormFieldGuid,
                 Value = rule.ComparedToValue

@@ -42,7 +42,7 @@ namespace Rock.Model
                 {
                     if ( logEntries?.Any() == true )
                     {
-                        var workflowLogs = RockContext.WorkflowLogs;
+                        var workflowLogs = RockContext.Set<WorkflowLog>();
 
                         foreach ( var logEntry in logEntries )
                         {
@@ -65,7 +65,9 @@ namespace Rock.Model
                             .OrderByDescending( x => x.Id )
                             .Select( x => x.WorkflowIdNumber )
                             .FirstOrDefault();
+
                         this.Entity.WorkflowIdNumber = maxNumber + 1;
+                        this.Entity.WorkflowId = $"{this.Entity.WorkflowTypeCache.WorkflowIdPrefix}{this.Entity.WorkflowIdNumber:00000}";
                     }
 
                     if ( State == EntityContextState.Deleted )

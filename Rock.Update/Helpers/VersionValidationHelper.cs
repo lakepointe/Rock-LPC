@@ -15,10 +15,12 @@
 // </copyright>
 
 using System;
+
+using Rock.Attribute;
+using Rock.Configuration;
 using Rock.Data;
 using Rock.Update.Enum;
 using Rock.Update.Exceptions;
-using Rock.Utility.Settings;
 using Rock.Web.Cache;
 
 namespace Rock.Update.Helpers
@@ -28,6 +30,8 @@ namespace Rock.Update.Helpers
     /// </summary>
     public static class VersionValidationHelper
     {
+        [RockObsolete( "1.16" )]
+        [Obsolete( "This class has been replaced with SqlServerCompatibilityLevel." )]
         public static class SqlServerVersion
         {
             public const int v2022 = 16;
@@ -37,6 +41,30 @@ namespace Rock.Update.Helpers
             public const int v2014 = 12;
             public const int v2012 = 11;
         }
+
+        /// <summary>
+        /// Identifies the Compatibility Level of a database by its version.
+        /// </summary>
+        /// <remarks>
+        ///     <para>
+        ///         <strong>This is an internal API</strong> that supports the Rock
+        ///         infrastructure and not subject to the same compatibility standards
+        ///         as public APIs. It may be changed or removed without notice in any
+        ///         release and should therefore not be directly used in any plug-ins.
+        ///     </para>
+        /// </remarks>
+        [RockInternal( "1.16" )]
+        public static class SqlServerCompatibilityLevel
+        {
+            public const int v2022 = 160;
+            public const int v2019 = 150;
+            public const int v2017 = 140;
+            public const int v2016 = 130;
+            public const int v2014 = 120;
+            public const int v2012 = 110;
+        }
+
+        private const int dotNet472ReleaseNumber = 461808;
 
         /// <summary>
         /// Checks the .NET Framework version and returns Pass, Fail, or Unknown which can be
@@ -49,7 +77,15 @@ namespace Rock.Update.Helpers
             try
             {
                 // Once we get to 4.5 Microsoft recommends we test via the Registry...
-                result = RockUpdateHelper.CheckDotNetVersionFromRegistry();
+                // Check if Release is >= 461808 (4.7.2)
+                if ( HostingSettings.GetDotNetReleaseNumber() >= dotNet472ReleaseNumber )
+                {
+                    return DotNetVersionCheckResult.Pass;
+                }
+                else
+                {
+                    return DotNetVersionCheckResult.Fail;
+                }
             }
             catch
             {
@@ -145,16 +181,26 @@ namespace Rock.Update.Helpers
 
             var isTargetVersionGreaterThan15 = targetVersion.Major > 1 || targetVersion.Minor > 15;
 
-            var hasSqlServer2016OrGreater = CheckSqlServerVersion( SqlServerVersion.v2016 );
+            var hasSqlServer2016OrGreater = CheckSqlServerCompatibilityLevel( SqlServerCompatibilityLevel.v2016 );
             if ( !hasSqlServer2016OrGreater && isTargetVersionGreaterThan15 )
             {
                 throw new VersionValidationException( $"Version {targetVersion} requires Microsoft SQL Azure or Microsoft Sql Server 2016 or greater." );
             }
 
-            var lavaSupportLevel = GlobalAttributesCache.Get().LavaSupportLevel;
+            // Read the LavaSupportLevel setting for the current database.
+            // The setting is removed by the v1.16 migration process, so this check is only relevant for databases prior to that version.
+#pragma warning disable CS0618 // Type or member is obsolete
+            var lavaSupportLevel = GlobalAttributesCache.Value( "core.LavaSupportLevel" ).ConvertToEnumOrNull<Lava.LavaSupportLevel>() ?? Lava.LavaSupportLevel.NoLegacy;
             if ( isTargetVersionGreaterThan15 && lavaSupportLevel != Lava.LavaSupportLevel.NoLegacy )
             {
                 throw new VersionValidationException( $"Version {targetVersion} requires a Lava Support Level of 'NoLegacy'." );
+            }
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            var isTargetVersionGreaterThan16 = targetVersion.Major > 1 || targetVersion.Minor > 16;
+            if ( isTargetVersionGreaterThan16 && RockApp.Current.GetCurrentLavaEngineName() != "Fluid" )
+            {
+                throw new VersionValidationException( $"Version {targetVersion} requires the 'Fluid' Lava Engine Liquid Framework." );
             }
         }
 
@@ -168,34 +214,16 @@ namespace Rock.Update.Helpers
         }
 
         /// <summary>
-        /// Checks the SQL server version and returns false if not at the needed
+        /// Checks the SQL server compatibility level and returns false if not at the needed
         /// level to proceed.
         /// </summary>
-        /// <param name="majorVersionNumber">The major version number required to pass the check.</param>
+        /// <param name="compatibiltyLevel">The compatibility level required to pass the check.</param>
         /// <returns></returns>
-        public static bool CheckSqlServerVersion( int majorVersionNumber )
+        public static bool CheckSqlServerCompatibilityLevel( int compatibiltyLevel )
         {
-            var isOk = RockInstanceConfig.Database.Platform == RockInstanceDatabaseConfiguration.PlatformSpecifier.AzureSql;
+            var database = RockApp.Current.GetDatabaseConfiguration();
 
-            if ( !isOk )
-            {
-                try
-                {
-                    var versionParts = RockInstanceConfig.Database.VersionNumber.Split( '.' );
-                    int.TryParse( versionParts[0], out var majorVersion );
-
-                    if ( majorVersion >= majorVersionNumber )
-                    {
-                        isOk = true;
-                    }
-                }
-                catch
-                {
-                    // This would be pretty bad, but regardless we'll just
-                    // return the isOk (not) and let the caller proceed.
-                }
-            }
-
+            var isOk = database.CompatibilityLevel >= compatibiltyLevel;
             return isOk;
         }
     }

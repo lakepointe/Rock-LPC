@@ -191,13 +191,13 @@ Example: Let's say you have a DataView called 'Small Group Attendance for Last W
 
                 // in case called from CategoryTreeView
                 int? metricCategoryId = PageParameter( PageParameterKey.MetricCategoryId ).AsIntegerOrNull();
-                MetricCategory metricCategory = null;
+
                 if ( metricCategoryId.HasValue )
                 {
                     if ( metricCategoryId.Value > 0 )
                     {
                         // editing a metric, but get the metricId from the metricCategory
-                        metricCategory = new MetricCategoryService( new RockContext() ).Get( metricCategoryId.Value );
+                        var metricCategory = new MetricCategoryService( new RockContext() ).Get( metricCategoryId.Value );
                         if ( metricCategory != null )
                         {
                             hfMetricCategoryId.Value = metricCategory.Id.ToString();
@@ -224,19 +224,6 @@ Example: Let's say you have a DataView called 'Small Group Attendance for Last W
                 {
                     pnlDetails.Visible = false;
                 }
-            }
-            else
-            {
-                // Canceling on Edit.  Return to Details.
-                var metricService = new MetricService( new RockContext() );
-                var metric = metricService.Get( hfMetricId.Value.AsInteger() );
-
-                if ( metric == null )
-                {
-                    return;
-                }
-
-                CreateChart( metric );
             }
         }
 
@@ -563,8 +550,15 @@ Example: Let's say you have a DataView called 'Small Group Attendance for Last W
                 hfMetricCategoryId.Value = metricCategoryId.ToString();
             }
 
-            qryParams[PageParameterKey.MetricCategoryId] = hfMetricCategoryId.Value;
-            qryParams[PageParameterKey.ExpandedIds] = PageParameter( PageParameterKey.ExpandedIds );
+            if ( hfMetricCategoryId.ValueAsInt() != 0 )
+            {
+                qryParams[PageParameterKey.MetricCategoryId] = hfMetricCategoryId.Value;
+            }
+
+            if ( PageParameter( PageParameterKey.ExpandedIds ).IsNotNullOrWhiteSpace() )
+            {
+                qryParams[PageParameterKey.ExpandedIds] = PageParameter( PageParameterKey.ExpandedIds );
+            }
 
             NavigateToPage( RockPage.Guid, qryParams );
         }
@@ -651,10 +645,10 @@ Example: Let's say you have a DataView called 'Small Group Attendance for Last W
             var qryParams = new Dictionary<string, string>();
             if ( parentCategoryId != null )
             {
-                qryParams["CategoryId"] = parentCategoryId.ToString();
+                qryParams[PageParameterKey.CategoryId] = parentCategoryId.ToString();
             }
 
-            qryParams["ExpandedIds"] = PageParameter( "ExpandedIds" );
+            qryParams[PageParameterKey.ExpandedIds] = PageParameter( PageParameterKey.ExpandedIds );
 
             NavigateToPage( RockPage.Guid, qryParams );
         }
@@ -1353,7 +1347,7 @@ The Lava can include Lava merge fields:";
                 TimeScale = ChartJsTimeSeriesTimeScaleSpecifier.Auto
             };
             var dataPoints = metricValues
-                .Where( a => a.YValue.HasValue )
+                .Where( a => a.YValue.HasValue && a.MetricValueDateKey.HasValue )
                 .GroupBy( x => new
                 {
                     DateKey = x.MetricValueDateKey.Value,
@@ -1380,22 +1374,33 @@ The Lava can include Lava merge fields:";
 
             var dataSeriesDatasets = dataPoints
                 .Select( x => x.MetricValuePartitionEntityIds )
-                .Distinct();
+                .Distinct()
+                .ToList();
+            var hasMultiplePartitions = dataSeriesDatasets.Count > 1;
 
             var combineValues = GetAttributeValue( AttributeKey.CombineChartSeries ).AsBooleanOrNull() ?? false;
             var datapointsByMetricTypeValue = dataPoints
-                                .GroupBy( d => d.MetricValueType );
+                                .GroupBy( d => d.MetricValueType )
+                                .ToList();
 
             if ( combineValues )
             {
                 foreach ( var datapoint in datapointsByMetricTypeValue )
                 {
-                    var name = $"{metric.YAxisLabel ?? "value"}";
+                    // Get the series name.
+                    // If the metric has a specified label use it.
+                    // Append "Total" if this is a combination of multiple partitions.
+                    var name = metric.YAxisLabel;
+                    if ( string.IsNullOrWhiteSpace(name) )
+                    {
+                        name = hasMultiplePartitions ? "Total" : "Value";
+                    }
+
                     var borderColor = chartStyle.SeriesColors?[0] ?? null;
 
                     if ( datapoint.Key == MetricValueType.Goal )
                     {
-                        name += $" {datapoint.Key}";
+                        name += $" Goal";
                         borderColor = chartStyle.GoalSeriesColor;
                     }
 
@@ -1419,20 +1424,33 @@ The Lava can include Lava merge fields:";
                 var seriesNameKeyValue = new Dictionary<string, string>();
                 foreach ( var dataSeriesDataset in dataSeriesDatasets )
                 {
-                    var seriesNamValue = GetSeriesPartitionName( dataSeriesDataset );
-                    seriesNameKeyValue.Add( dataSeriesDataset, seriesNamValue );
+                    var seriesNameValue = GetSeriesPartitionName( dataSeriesDataset );
+                    seriesNameKeyValue.Add( dataSeriesDataset, seriesNameValue );
                 }
 
-                foreach ( var dataseriesName in seriesNameKeyValue.Keys )
+                int seriesIndex = 0;
+                foreach ( var dataseriesKey in seriesNameKeyValue.Keys )
                 {
                     foreach ( var datapoint in datapointsByMetricTypeValue )
                     {
-                        var name = $"{metric.YAxisLabel ?? "value"}";
-                        var fillColor = chartStyle.SeriesColors?[0] ?? null;
+                        // Set the series name.
+                        var name = seriesNameKeyValue[dataseriesKey];
+                        if ( string.IsNullOrWhiteSpace( name ) )
+                        {
+                            name = "Value";
+                        }
+
+                        // Set the series color. If the chart style defines a set of colors, assign the next in the set.
+                        // If none are available, the chart component will assign a color from the default palette.
+                        string fillColor = null;
+                        if ( chartStyle.SeriesColors != null && chartStyle.SeriesColors.Length > seriesIndex )
+                        {
+                            fillColor = chartStyle.SeriesColors[seriesIndex];
+                        }
 
                         if ( datapoint.Key == MetricValueType.Goal )
                         {
-                            name += $"{datapoint.Key}";
+                            name += $" Goal";
                             fillColor = chartStyle.GoalSeriesColor;
                         }
 
@@ -1441,7 +1459,7 @@ The Lava can include Lava merge fields:";
                             Name = name,
                             BorderColor = fillColor,
                             DataPoints = datapoint
-                                .Where( x => x.MetricValuePartitionEntityIds == dataseriesName )
+                                .Where( x => x.MetricValuePartitionEntityIds == dataseriesKey )
                                 .Select( x => new ChartJsTimeSeriesDataPoint { DateTime = x.DateTime, Value = x.Value } )
                                 .Cast<IChartJsTimeSeriesDataPoint>()
                                 .ToList()
@@ -1449,6 +1467,8 @@ The Lava can include Lava merge fields:";
 
                         factory.Datasets.Add( dataset );
                     }
+
+                    seriesIndex++;
                 }
             }
 

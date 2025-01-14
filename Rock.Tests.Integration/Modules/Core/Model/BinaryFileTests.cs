@@ -18,14 +18,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 using Rock.Data;
 using Rock.Model;
+using Rock.Tests.Shared.TestFramework;
 
-namespace Rock.Tests.Integration.Core.Storage
+namespace Rock.Tests.Integration.Modules.Core.Model
 {
     [TestClass]
-    public class BinaryFileTests
+    public class BinaryFileTests : DatabaseTestsBase
     {
         #region Setup
         private Dictionary<string, Guid> _fileGuids;

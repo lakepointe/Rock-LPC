@@ -136,6 +136,11 @@ namespace Rock.SystemGuid
         public const string EXTERNAL_APPLICATION = "1FAC459C-5F62-4E7C-8933-61FF9FE2DFEF";
 
         /// <summary>
+        /// Guid for the types of External Links
+        /// </summary>
+        public const string EXTERNAL_LINK_TYPE = "D42C1A05-6504-4BDE-BBB7-0EC99A7FB632";
+
+        /// <summary>
         /// Guid for Financial Currency Type
         /// </summary>
         public const string FINANCIAL_ACCOUNT_TYPE = "752DA126-471F-4221-8503-5297593C99FF";
@@ -206,6 +211,11 @@ namespace Rock.SystemGuid
         public const string INTERACTION_CHANNEL_MEDIUM = "9bf5777a-961f-49a8-a834-45e5c2077967";
 
         /// <summary>
+        /// Guid for the types of interaction intent.
+        /// </summary>
+        public const string INTERACTION_INTENT = "F0E9555C-9464-41BD-BED7-96ADB0B79879";
+
+        /// <summary>
         /// Guid for the JSON Web Token Configuration
         /// </summary>
         public const string JWT_CONFIGURATION = "7D848CE3-F039-4CE1-A59B-F0D923F0C1A7";
@@ -214,6 +224,16 @@ namespace Rock.SystemGuid
         /// Guid for Default link list
         /// </summary>
         public const string LAVA_SHORTCODES = "3B1AF656-7AEF-52A8-4E2C-5EFF75A1A23A";
+
+        /// <summary>
+        /// Guid for the types of Library Content
+        /// </summary>
+        public const string LIBRARY_CONTENT_TYPE = "C23B34D6-91D7-4FC5-AA80-E68A62288A05";
+
+        /// <summary>
+        /// Guid for the types of Library Licenses
+        /// </summary>
+        public const string LIBRARY_LICENSE_TYPE = "83FB89B4-205A-41D6-A798-A81F12E6CDB0";
 
         /// <summary>
         /// Guid for Default link list
@@ -341,6 +361,11 @@ namespace Rock.SystemGuid
         public const string TEMPLATE = "A6E267E2-66A4-44D7-A5C9-9399666CBF95";
 
         /// <summary>
+        /// Theme Purpose
+        /// </summary>
+        public const string THEME_PURPOSE = "99FF0317-9B21-4E56-9F83-EA89A3C8C789";
+
+        /// <summary>
         /// Campus Topic Type
         /// </summary>
         public const string TOPIC_TYPE = "41141100-8fc6-44bb-aa36-9778eeda7f62";
@@ -369,6 +394,12 @@ namespace Rock.SystemGuid
         /// The REST allowed domains
         /// </summary>
         public const string REST_API_ALLOWED_DOMAINS = "DF7C8DF7-49F9-4858-9E5D-20842AF65AD8";
+
+        /// <summary>
+        /// The "Saved Check-in Configurations" defined type that provides a list
+        /// of saved configuration settings for quickly starting up kiosks.
+        /// </summary>
+        public const string SAVED_CHECKIN_CONFIGURATIONS = "F986008C-99BB-4C48-8A6E-38C8A121D75B";
 
         /// <summary>
         /// The school grades defined type, which has values that determine which grade the person is based. The Value of the DefinedValue is the GradeOffset.
@@ -474,6 +505,26 @@ namespace Rock.SystemGuid
         /// Lists checklist items to be completed by the administrator after installs and updates.
         /// </summary>
         public const string ADMINISTRATOR_CHECKLIST = "4BF34677-37E9-4E71-BD03-252B66C9373D";
+
+        /// <summary>
+        /// List of different types of relationships and individual could have in their Peer Network.
+        /// </summary>
+        public const string PEER_NETWORK_RELATIONSHIP_TYPE = "F2E8E639-F16D-489D-AAFB-BE0133531E41";
+
+        /// <summary>
+        /// List of different sources from which website traffic may originate.
+        /// </summary>
+        public const string UTM_SOURCE = "3CFE43A9-5D0C-4BE4-B1EC-AFA06BBB7C32";
+
+        /// <summary>
+        /// List of different marketing or advertising mediums that may initiate website traffic.
+        /// </summary>
+        public const string UTM_MEDIUM = "31693856-8553-4321-A302-B84CF1D22BAB";
+
+        /// <summary>
+        /// List of different campaigns that may generate website traffic.
+        /// </summary>
+        public const string UTM_CAMPAIGN = "A2F452BB-39E8-40F8-9DAD-74DBD920FD2F";
 
         /// <summary>
         /// The statement generator lava template (Legacy)

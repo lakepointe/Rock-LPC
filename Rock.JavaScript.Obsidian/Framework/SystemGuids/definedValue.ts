@@ -57,6 +57,8 @@ export const DefinedValue = {
     BlockTemplateMobileGroupMemberList: "E5618730-9E50-4BDA-9E13-D27697F83980",
     /** The block template for the mobile group member view. */
     BlockTemplateMobileGroupMemberView: "09053C7C-9374-4489-8A7B-71F02E3E7D89",
+    /** The block template for the mobile notes block. */
+    BlockTemplateMobileGroupMembers: "89322C87-CA36-4169-9361-FDA4EFEF07C1",
     /** The block template for the mobile group schedule preference landing page. */
     BlockTemplateMobileGroupSchedulePreferenceLandingPage: "D39CCB65-2444-48E4-9DE1-7A01AB20CB61",
     /** The block template for the mobile group schedule preference landing page. */
@@ -181,6 +183,14 @@ export const DefinedValue = {
     DeviceTypePrinter: "8284B128-E73B-4863-9FC2-43E6827B65E6",
     /** Entity Set for the purpose of doing a Person Merge request */
     EntitySetPurposePersonMergeRequest: "214EB26F-5493-4540-B2EF-F0887C8FBB9E",
+    /** Amazon External Link Type */
+    ExternalLinkTypeAmazon: "BB3E2119-3CF1-4B20-958E-304BFFF120B1",
+    /** Barnes and Noble External Link Type */
+    ExternalLinkTypeBarnesAndNoble: "ACAC304A-A760-4313-BD7D-F272C2A8BC5B",
+    /** ChristianBook External Link Type */
+    ExternalLinkTypeChristianBook: "EE74B3D2-1B5A-4436-9908-ABC63FF59309",
+    /** YouTube Video External Link Type */
+    ExternalLinkTypeYoutubeVideo: "FE7A6DE2-206C-420F-B67E-7139BB9B8B6D",
     /** The financial source of bank check */
     FinancialSourceTypeBankCheck: "61E46A46-7399-4817-A6EC-3D8495E2316E",
     /** The financial source of Kiosk */
@@ -228,6 +238,8 @@ export const DefinedValue = {
     InteractionchanneltypeCommunication: "55004F5C-A8ED-7CB7-47EE-5988E9F8E0A8",
     /** Interaction Channel Type: Content Channel */
     InteractionchanneltypeContentchannel: "F1A19D09-E010-EEB3-465A-940A6F023CEB",
+    /** Interaction Channel Type: Interaction Intents */
+    InteractionchanneltypeInteractionIntents: "A64DA89B-F634-4D58-ADC7-32243F84224B",
     /** Interaction Channel Type: System Events */
     InteractionchanneltypeSystemEvents: "5919214F-9C59-4913-BE4E-0DFB6A05F528",
     /** Interaction Channel Type: UrlShortener */
@@ -240,6 +252,14 @@ export const DefinedValue = {
     LanguageEnglish: "DF0A29A7-A61E-E4A7-4F3D-58CFDD3D3871",
     /** Translation Languages - Spanish */
     LanguageSpanish: "C93CB430-8554-E599-4F49-D7F3CED2B2C7",
+    /** Article Library Content Type */
+    LibraryContentTypeArticle: "8B66EBAA-9BE4-42C8-A106-655A2EFD6109",
+    /** Author Attribution Library License Type */
+    LibraryLicenseTypeAuthorAttribution: "9AED8DEE-F74D-4F38-AD45-2423170D31D2",
+    /** Open Library License Type */
+    LibraryLicenseTypeOpen: "54D8921D-A9E9-46DA-8B7C-433C163FD41A",
+    /** Organization Attribution Library License Type */
+    LibraryLicenseTypeOrganizationAttribution: "577F2BD5-BFDF-41B7-96A8-32C0F1E44905",
     /** Building Location Type */
     LocationTypeBuilding: "D9646A93-1667-4A44-82DA-12E1229B4695",
     /** Campus Location Type */
@@ -486,6 +506,12 @@ export const DefinedValue = {
     StructureContentEditorDefault: "09B25845-B879-4E69-87E9-003F9380B8DD",
     /** Structure Content Editor Message Notes */
     StructureContentEditorMessageNotes: "31C63FB9-1365-4EEF-851D-8AB9A188A06C",
+    /** Check-in */
+    ThemePurposeCheckin: "2BBB1A44-708E-4469-80DE-4AAE6227BEF8",
+    /** Website Legacy */
+    ThemePurposeWebsiteLegacy: "4E1477FD-B105-4E4B-99BB-E5F1B964DC94",
+    /** Website Nextgen */
+    ThemePurposeWebsiteNextgen: "B177E07F-7E07-4D7B-AFA7-9DE163797659",
     /** Every two weeks */
     TransactionFrequencyBiweekly: "72990023-0D43-4554-8D32-28461CAB8920",
     /** A Frequency of First and Fifteenth */

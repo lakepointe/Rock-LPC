@@ -28,6 +28,13 @@ namespace Rock.Tests.Shared
         // A Guid Reference that does not match any entity in a Rock database.
         public const string NoMatch = "00000000-0000-0000-0000-000000000001";
 
+        public static class Crm
+        {
+            public const string CampusMain = "76882AE3-1CE8-42A6-A2B6-8C0B29CF8CF8";
+            public const string CampusSouth = "5434F90B-BB91-4A34-8B09-8C117A9E5D95";
+            public const string CampusSteppingStone = "089844AF-6310-4C20-9434-A845F982B0C5";
+        }
+
         public static class Category
         {
             public const string DataViewLocations = "1D45C0A7-3DE8-428C-94A8-14E5ED5E2E36";
@@ -63,9 +70,27 @@ namespace Rock.Tests.Shared
 
         public static class DataViews
         {
-            // A DataView that returns all of the locations outside the state of Arizona.
+            public static string MembersAndAttendees = "CB4BB264-A1F4-4EDB-908F-2CCF3A534BC7";
+            public static string AdultMembersAndAttendees = "0da5f82f-cffe-45af-b725-49b3899a1f72";
+            public static string AdultMembersAndAttendeesMales = "D0846DB2-7AE8-4897-867F-1AF5CC1DE95A";
+            public static string AdultMembersAndAttendeesFemales = "1D144B43-F985-4122-B2E3-D548CC3B2A82";
+            public static string Males = "c43983d7-1f22-4e94-9f5c-342da3a0e168";
+            public static string Females = "e2cc2258-bf35-4db2-91e2-9be1b68156a3";
+            public static string UnderThirtyFive = "ff608842-bb10-4c9c-aa18-9d5c407590d3";
+            public static string ThirtyFiveAndOlder = "5537d54c-1b9b-4b81-aa63-f10d676fae77";
+
             public static string LocationsOutsideArizona = "14B1854D-4F45-4F4D-AFFF-C0A1E06353DF";
             public static string LocationsInsideArizona = "C39B353E-3E44-42C0-9D85-2107FB5E8C04";
+        }
+
+        public static class DataFilters
+        {
+            public static string ContentChannel = "4049b6d7-ba63-494d-b0fd-8171617a1db9";
+        }
+
+        public static class Events
+        {
+            public const string EventIdentifierRockSolidFinancesClass = "Rock Solid Finances Class";
         }
 
         public static class Groups
@@ -83,16 +108,19 @@ namespace Rock.Tests.Shared
             public static string TedDecker = "8FEDC6EE-8630-41ED-9FC5-C7157FD1EAA4";
             public static string CindyDecker = "B71494DB-D809-451A-A950-28898D0FD92C";
             public static string AlexDecker = "27919690-3CCE-4FA6-95C4-CD21419EB51F";
+            public static string NoahDecker = "32aab9e4-970d-4551-a17e-385e66113bd5";
 
             public static string BillMarble = "1EA811BB-3118-42D1-B020-32A82BC8081A";
             public static string AlishaMarble = "69DC0FDC-B451-4303-BD91-EF17C0015D23";
+            public static string ThomasMiller = "955bf3e9-d38a-4dcb-a6f2-edf5ec2571c5";
 
             public static string SarahSimmons = "FC6B9819-EF2E-44C9-93DB-05571B39E58F";
-            public static string BrianJones = "3D7F6605-3666-4AB5-9F4E-D7FEBF93278E";
 
             public static string BenJones = "3C402382-3BD2-4337-A996-9E62F1BAB09D";
-
+            public static string BrianJones = "3D7F6605-3666-4AB5-9F4E-D7FEBF93278E";
             public static string MariahJackson = "9C2A020B-CF34-403E-A948-3E91FDFB958B";
+
+            public static string CraigLowe = "b701e5d2-adbd-4c66-91e8-3d6cd298d9a0";
             public static string MaddieLowe = "C398A8E3-C9BC-4017-A3F6-7C2BFF654056";
 
             public static string SamHanks = "1E6E66C7-A487-48E6-B064-7F9F4DDE6680";
@@ -133,7 +161,12 @@ namespace Rock.Tests.Shared
         {
 
             public const string ScheduleSat1630Guid = "7883CAC8-6E30-482B-95A7-2F0DEE859BE1";
+            public const string ScheduleSat1800Guid = "33FF69E9-059B-4702-B1E5-4D499CB7B07A";
+            public const string ScheduleSun0900Guid = "FF6FB240-0C32-4542-BE40-159C522F7E51";
+            public const string ScheduleSun1030Guid = "4628D917-EC9C-4269-B39C-5BCBEF3658E7";
             public const string ScheduleSun1200Guid = "1F6C15DA-982F-43B1-BDE9-D4E70CFBCB45";
+
+            public const string ScheduleDaily1630Guid = "A5C81078-EB8C-46AA-BB91-1E2BA8BA76AE";
         }
 
         public static class Steps

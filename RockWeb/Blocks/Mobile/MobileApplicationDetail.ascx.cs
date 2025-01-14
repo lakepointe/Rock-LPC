@@ -30,7 +30,7 @@ using Rock.Data;
 using Rock.DownhillCss;
 using Rock.Model;
 using Rock.Security;
-
+using Rock.Utility;
 using Rock.Web;
 using Rock.Web.Cache;
 using Rock.Web.UI;
@@ -337,7 +337,7 @@ namespace RockWeb.Blocks.Mobile
 
 
             // Set the UI fields for the preview thumbnail.
-            imgAppPreview.ImageUrl = string.Format( "~/GetImage.ashx?Id={0}", site.ThumbnailBinaryFileId );
+            imgAppPreview.ImageUrl = FileUrlHelper.GetImageUrl( site.ThumbnailBinaryFileId );
             pnlPreviewImage.Visible = site.ThumbnailBinaryFileId.HasValue;
 
             //
@@ -493,6 +493,13 @@ namespace RockWeb.Blocks.Mobile
             cbCompressUpdatePackages.Checked = additionalSettings.IsPackageCompressionEnabled;
             tbAuth0ClientDomain.Text = additionalSettings.Auth0Domain;
             tbAuth0ClientId.Text = additionalSettings.Auth0ClientId;
+            tbEntraClientId.Text = additionalSettings.EntraClientId;
+            tbEntraTenantId.Text = additionalSettings.EntraTenantId;
+
+            if( additionalSettings.EntraAuthenticationComponent != null )
+            {
+                compEntraAuthComponent.SetValue( additionalSettings.EntraAuthenticationComponent.ToString() );
+            }
 
             ceEditNavBarActionXaml.Text = additionalSettings.NavigationBarActionXaml;
             ceEditHomepageRoutingLogic.Text = additionalSettings.HomepageRoutingLogic;
@@ -511,6 +518,17 @@ namespace RockWeb.Blocks.Mobile
             ppEditSmsConversationPage.SetValue( additionalSettings.SmsConversationPageId );
 
             ppEditInteractiveExperiencePage.SiteType = SiteType.Mobile;
+
+            int channelMediumWebsiteValueId = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.INTERACTIONCHANNELTYPE_WEBSITE.AsGuid() ).Id;
+            var interactionChannelForSite = new InteractionChannelService( new RockContext() ).Queryable()
+                .Where( a => a.ChannelTypeMediumValueId == channelMediumWebsiteValueId && a.ChannelEntityId == site.Id ).FirstOrDefault();
+
+            if ( interactionChannelForSite != null )
+            {
+                nbPageViewRetentionPeriodDays.Text = interactionChannelForSite.RetentionDuration.ToString();
+            }
+
+            cbEnablePageViewGeoTracking.Checked = site.EnablePageViewGeoTracking;
 
             //
             // Set the API Key.
@@ -929,7 +947,7 @@ namespace RockWeb.Blocks.Mobile
             site.IsActive = cbEditActive.Checked;
             site.Description = tbEditDescription.Text;
             site.LoginPageId = ppEditLoginPage.PageId;
-
+            
             var additionalSettings = site.AdditionalSettings.FromJsonOrNull<AdditionalSiteSettings>() ?? new AdditionalSiteSettings();
 
             // Save the deep link settings, if enabled.
@@ -993,6 +1011,13 @@ namespace RockWeb.Blocks.Mobile
             additionalSettings.HomepageRoutingLogic = ceEditHomepageRoutingLogic.Text;
             additionalSettings.Auth0ClientId = tbAuth0ClientId.Text;
             additionalSettings.Auth0Domain = tbAuth0ClientDomain.Text;
+            additionalSettings.EntraClientId = tbEntraClientId.Text;
+            additionalSettings.EntraTenantId = tbEntraTenantId.Text;
+
+            if( compEntraAuthComponent.SelectedValue.IsNotNullOrWhiteSpace() )
+            {
+                additionalSettings.EntraAuthenticationComponent = compEntraAuthComponent.SelectedValueAsGuid().Value;
+            }
 
             //
             // Save the image.
@@ -1011,6 +1036,9 @@ namespace RockWeb.Blocks.Mobile
                 binaryFileService.Get( site.ThumbnailBinaryFileId.Value ).IsTemporary = false;
             }
 
+            site.EnablePageViewGeoTracking = cbEnablePageViewGeoTracking.Checked;
+
+            // This is a new site.
             if ( site.Id == 0 )
             {
                 rockContext.WrapTransaction( () =>
@@ -1027,6 +1055,7 @@ namespace RockWeb.Blocks.Mobile
                     var layoutService = new LayoutService( rockContext );
                     var pageName = string.Format( "{0} Homepage", site.Name );
 
+                    // Create the default layout for the homepage.
                     var layout = new Layout
                     {
                         Name = "Homepage",
@@ -1040,6 +1069,7 @@ namespace RockWeb.Blocks.Mobile
                     layoutService.Add( layout );
                     rockContext.SaveChanges();
 
+                    // Create the default homepage for this mobile application.
                     var page = new Page
                     {
                         InternalName = pageName,
@@ -1068,6 +1098,28 @@ namespace RockWeb.Blocks.Mobile
 
                 rockContext.SaveChanges();
             }
+
+            //
+            // Create the default interaction channel for this site, and set the Retention Duration.
+            //
+            var interactionChannelService = new InteractionChannelService( rockContext );
+            int channelMediumWebsiteValueId = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.INTERACTIONCHANNELTYPE_WEBSITE.AsGuid() ).Id;
+            var interactionChannelForSite = interactionChannelService.Queryable()
+                .Where( a => a.ChannelTypeMediumValueId == channelMediumWebsiteValueId && a.ChannelEntityId == site.Id ).FirstOrDefault();
+
+            if ( interactionChannelForSite == null )
+            {
+                interactionChannelForSite = new InteractionChannel();
+                interactionChannelForSite.ChannelTypeMediumValueId = channelMediumWebsiteValueId;
+                interactionChannelForSite.ChannelEntityId = site.Id;
+                interactionChannelService.Add( interactionChannelForSite );
+            }
+
+            interactionChannelForSite.Name = site.Name;
+            interactionChannelForSite.RetentionDuration = nbPageViewRetentionPeriodDays.Text.AsIntegerOrNull();
+            interactionChannelForSite.ComponentEntityTypeId = EntityTypeCache.Get<Rock.Model.Page>().Id;
+
+            rockContext.SaveChanges();
 
             NavigateToCurrentPage( new Dictionary<string, string>
             {
@@ -1201,9 +1253,14 @@ namespace RockWeb.Blocks.Mobile
         /// <summary>
         /// Handles the Click event of the lbDeploy control.
         /// </summary>
+        /// <remarks>
+        /// "async void" is not normal, but WebForms has special logic to deal with
+        /// it that allows await to be used and ensures HttpContext is propogated
+        /// along the async call chain.
+        /// </remarks>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        protected void lbDeploy_Click( object sender, EventArgs e )
+        protected async void lbDeploy_Click( object sender, EventArgs e )
         {
             var applicationId = PageParameter( "SiteId" ).AsInteger();
 
@@ -1211,10 +1268,10 @@ namespace RockWeb.Blocks.Mobile
             {
                 var siteService = new SiteService( rockContext );
 
-                siteService.BuildMobileApplication( applicationId );
-
-                ShowDetail( applicationId );
+                await siteService.BuildMobileApplicationAsync( applicationId );
             }
+
+            ShowDetail( applicationId );
         }
 
         #endregion

@@ -1,0 +1,80 @@
+﻿<!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
+<template>
+    <div>
+        <div v-html="messageHtml"></div>
+        <SaveFinancialAccountForm v-if="gatewayGuid && transactionCode && gatewayPersonIdentifier && enableSaveAccount"
+                                  :gatewayGuid="gatewayGuid"
+                                  :transactionCode="transactionCode"
+                                  :gatewayPersonIdentifier="gatewayPersonIdentifier"
+                                  saveAccountCheckBoxLabel="Save account information for future payments"
+                                  class="well">
+            <template #header>
+                <!-- LPC MODIFIED CODE -->
+                <h3>{{ getLang() == "es" ? "Haz Los Pagos Más Fáciles" : "Make Payments Even Easier" }}</h3>
+                <!-- END LPC MODIFIED CODE -->
+            </template>
+        </SaveFinancialAccountForm>
+    </div>
+</template>
+
+<script setup lang="ts">
+    import { computed } from "vue";
+    import { CurrentRegistrationEntryState, use } from "./utils.partial";
+    import SaveFinancialAccountForm from "@Obsidian/Controls/saveFinancialAccountForm.obs";
+    import { Guid } from "@Obsidian/Types";
+    import { toGuidOrNull } from "@Obsidian/Utility/guid";
+    // LPC CODE
+    import { useStore } from "@Obsidian/PageState";
+
+    const store = useStore();
+    // END LPC CODE
+
+    const registrationEntryState = use(CurrentRegistrationEntryState);
+
+    // #region Computed Values
+
+    /** The term to refer to a registrant */
+    const registrationTerm = computed<string>(() => {
+        return registrationEntryState.viewModel.registrationTerm?.toLowerCase() ?? "";
+    });
+
+    /** The success lava markup */
+    const messageHtml = computed<string>(() => {
+        return registrationEntryState.successViewModel?.messageHtml || `You have successfully completed this ${registrationTerm.value}`;
+    });
+
+    /** The financial gateway record's guid */
+    const gatewayGuid = computed<Guid | null>(() => {
+        return toGuidOrNull(registrationEntryState.viewModel.gatewayGuid);
+    });
+
+    /** The transaction code that can be used to create a saved account */
+    const transactionCode = computed<string>(() => {
+        return registrationEntryState.viewModel.isRedirectGateway ?
+            "" :
+            registrationEntryState.successViewModel?.transactionCode || "";
+    });
+
+    /** The token returned for the payment method */
+    const gatewayPersonIdentifier = computed<string>(() => {
+        return registrationEntryState.successViewModel?.gatewayPersonIdentifier || "";
+    });
+
+    const enableSaveAccount = computed<boolean>(() => {
+        return registrationEntryState.viewModel.enableSaveAccount && registrationEntryState.savedAccountGuid === null;
+    });
+
+    // #endregion
+
+    // LPC CODE
+    /** Gets the lang parameter from the query string.
+     * Returns "en" or "es". Defaults to "en" if invalid. */
+    function getLang(): string {
+        let lang = typeof store.state.pageParameters["lang"] === "string" ? store.state.pageParameters["lang"] : "";
+        if (lang != "es") {
+            lang = "en";
+        }
+        return lang;
+    }
+    // END LPC CODE
+</script>

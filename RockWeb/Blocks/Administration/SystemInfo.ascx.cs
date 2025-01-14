@@ -17,7 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Configuration;
 using System.Data;
 using System.IO;
 using System.Linq;
@@ -30,10 +29,13 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
+
 using Rock;
-using Rock.Bus.Message;
+using Rock.Configuration;
 using Rock.Data;
+using Rock.Enums.Configuration;
 using Rock.Model;
+using Rock.Security;
 using Rock.Transactions;
 using Rock.Utility.Settings;
 using Rock.VersionInfo;
@@ -96,6 +98,7 @@ namespace RockWeb.Blocks.Administration
             {
                 ShowDetailTab();
             }
+
         }
 
         /// <summary>
@@ -151,6 +154,11 @@ namespace RockWeb.Blocks.Administration
         /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>
         protected void btnClearCache_Click( object sender, EventArgs e )
         {
+            if ( !IsUserAuthorized( Authorization.ADMINISTRATE ) )
+            {
+                return;
+            }
+
             var msgs = RockCache.ClearAllCachedItems();
 
             // Flush today's Check-in Codes
@@ -197,6 +205,11 @@ namespace RockWeb.Blocks.Administration
 
         protected void btnRestart_Click( object sender, EventArgs e )
         {
+            if ( !IsUserAuthorized( Authorization.ADMINISTRATE ) )
+            {
+                return;
+            }
+
             RockWebFarm.OnRestartRequested( CurrentPerson );
             RestartWebApplication();
         }
@@ -281,7 +294,7 @@ namespace RockWeb.Blocks.Administration
         {
             StringBuilder sb = new StringBuilder();
 
-            var result = DbService.ExecuteScaler( "SELECT TOP 1 [MigrationId] FROM [__MigrationHistory] ORDER BY [MigrationId] DESC ", CommandType.Text, null );
+            var result = DbService.ExecuteScalar( "SELECT TOP 1 [MigrationId] FROM [__MigrationHistory] ORDER BY [MigrationId] DESC ", CommandType.Text, null );
             if ( result != null )
             {
                 sb.AppendFormat( "Last Core Migration: {0}{1}", ( string ) result, Environment.NewLine );
@@ -405,24 +418,31 @@ namespace RockWeb.Blocks.Administration
 
             try
             {
-                RockInstanceDatabaseConfiguration databaseConfig = RockInstanceConfig.Database;
+                var databaseConfig = RockApp.Current.GetDatabaseConfiguration();
+
                 _catalog = databaseConfig.DatabaseName;
 
                 databaseResults.Append( string.Format( "Name: {0} <br /> Server: {1}", _catalog, databaseConfig.ServerName ) );
                 databaseResults.Append( string.Format( "<br />Database Version: {0}", databaseConfig.Version ) );
-                if ( databaseConfig.Platform != RockInstanceDatabaseConfiguration.PlatformSpecifier.AzureSql )
+                if ( databaseConfig.Platform != DatabasePlatform.AzureSql )
                 {
-                    databaseResults.Append( string.Format( "<br />Database Friendly Version: {0}", databaseConfig.VersionFriendlyName ) );
+                    databaseResults.Append( string.Format( "<br />Database Friendly Version: {0}", databaseConfig.GetVersionFriendlyName() ) );
                 }
-                databaseResults.AppendFormat( "<br />Database Compatibility Version: {0}", databaseConfig.CompatibilityVersion );
-                databaseResults.AppendFormat( "<br />Database Size: {0} MB", databaseConfig.DatabaseSize );
-                databaseResults.AppendFormat( "<br />Log File Size: {0} MB", databaseConfig.LogSize );
-                databaseResults.AppendFormat( "<br />Recovery Model: {0}", databaseConfig.RecoverMode );
-                databaseResults.AppendFormat( "<br />Allow Snapshot Isolation: {0}<br />Is Read Committed Snapshot On: {1}<br />", databaseConfig.SnapshotIsolationAllowed.ToYesNo(), databaseConfig.ReadCommittedSnapshotEnabled.ToYesNo() );
+                databaseResults.AppendFormat( "<br />Database Compatibility Version: {0}", databaseConfig.GetCompatibilityLevelFriendlyName() );
+                databaseResults.AppendFormat( "<br />Database Size: {0} MB", databaseConfig.GetDatabaseSize() );
+                databaseResults.AppendFormat( "<br />Log File Size: {0} MB", databaseConfig.GetLogSize() );
+                databaseResults.AppendFormat( "<br />Recovery Model: {0}", databaseConfig.RecoveryModel );
+                databaseResults.AppendFormat( "<br />Allow Snapshot Isolation: {0}<br />Is Read Committed Snapshot On: {1}<br />", databaseConfig.IsSnapshotIsolationAllowed.ToYesNo(), databaseConfig.IsReadCommittedSnapshotEnabled.ToYesNo() );
 
-                if ( databaseConfig.Platform == RockInstanceDatabaseConfiguration.PlatformSpecifier.AzureSql )
+                if ( databaseConfig.Platform == DatabasePlatform.AzureSql )
                 {
                     databaseResults.AppendFormat( "<br />Azure Service Tier Objective: {0}", databaseConfig.ServiceObjective );
+                }
+
+                if ( System.Configuration.ConfigurationManager.ConnectionStrings["RockContextReadOnly"] != null ) 
+                {
+                    var rockContextReadOnly = new RockContextReadOnly();
+                    databaseResults.AppendFormat( "<br />RockContextReadOnly: {0}", rockContextReadOnly.Database.SqlQuery<string>( "SELECT DATABASEPROPERTYEX(DB_NAME(), 'Updateability')" ).First() );
                 }
             }
             catch ( Exception ex )
@@ -488,6 +508,12 @@ namespace RockWeb.Blocks.Administration
                 LoadPageDiagnostics();
             }
 
+            if ( !IsUserAuthorized( Authorization.ADMINISTRATE ) )
+            {
+                divActions.Visible = false;
+                btnDrainQueue.Visible = false;
+            }
+
             SetActivePanel( _ActivePanel );
         }
 
@@ -539,9 +565,9 @@ namespace RockWeb.Blocks.Administration
         {
             lDatabase.Text = GetDbInfo();
 
-            lSystemDateTime.Text = new DateTimeOffset( RockInstanceConfig.SystemDateTime ).ToString();
+            lSystemDateTime.Text = new DateTimeOffset( RockDateTime.SystemDateTime ).ToString();
 
-            lRockTime.Text = RockInstanceConfig.RockDateTimeOffset.ToString();
+            lRockTime.Text = RockDateTime.Now.ToRockDateTimeOffset().ToString();
 
             var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
 
@@ -555,14 +581,14 @@ namespace RockWeb.Blocks.Administration
                 lProcessStartTime.Text = "-";
             }
 
-            lRockApplicationStartTime.Text = new DateTimeOffset( RockInstanceConfig.ApplicationStartedDateTime ).ToString();
+            lRockApplicationStartTime.Text = new DateTimeOffset( RockApp.Current.HostingSettings.ApplicationStartDateTime ).ToString();
 
-            lExecLocation.Text = "Machine Name: " + RockInstanceConfig.MachineName;
-            lExecLocation.Text += "<br>" + Assembly.GetExecutingAssembly().Location + "<br>" + RockInstanceConfig.PhysicalDirectory;
+            lExecLocation.Text = "Machine Name: " + RockApp.Current.HostingSettings.MachineName;
+            lExecLocation.Text += "<br>" + Assembly.GetExecutingAssembly().Location + "<br>" + RockApp.Current.HostingSettings.WebRootPath;
             
             lLastMigrations.Text = GetLastMigrationData();
 
-            lLavaEngine.Text = RockInstanceConfig.LavaEngineName;
+            lLavaEngine.Text = RockApp.Current.GetCurrentLavaEngineName();
 
             var transactionQueueStats = RockQueue.GetStandardQueuedTransactions().GroupBy( a => a.GetType().Name ).ToList().Select( a => new { Name = a.Key, Count = a.Count() } );
             lTransactionQueue.Text = transactionQueueStats.Select( a => string.Format( "{0}: {1}", a.Name, a.Count ) ).ToList().AsDelimited( "<br/>" );

@@ -31,8 +31,14 @@ export type EntityTagListCreatePersonalTagOptionsBag = {
     /** Gets or sets the category unique identifier that the tag should be associated with. */
     categoryGuid?: Guid | null;
 
+    /** Gets or sets the entity qualifier column. */
+    entityQualifierColumn?: string | null;
+
+    /** Gets or sets the entity qualifier value. */
+    entityQualifierValue?: string | null;
+
     /** Gets or sets the entity type unique identifier. */
-    entityTypeGuid?: Guid | null;
+    entityTypeGuid: Guid;
 
     /** Gets or sets the name of the tag to be created. */
     name?: string | null;

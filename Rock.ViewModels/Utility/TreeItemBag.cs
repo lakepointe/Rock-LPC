@@ -41,6 +41,14 @@ namespace Rock.ViewModels.Utility
         public string Text { get; set; }
 
         /// <summary>
+        /// Gets or sets the type of item represented by this instance. There is
+        /// no pre-defined meaning to this, it is up to the item provider to
+        /// decide what to do with it.
+        /// </summary>
+        /// <value>The type of item.</value>
+        public string Type { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether this instance is a folder.
         /// A folder is an item that is intended to hold child items. This is
         /// a distinction from the <see cref="HasChildren"/> property which
@@ -81,5 +89,13 @@ namespace Rock.ViewModels.Utility
         /// The child tree items of this item.
         /// </value>
         public List<TreeItemBag> Children { get; set; }
+
+        /// <summary>
+        /// Gets or sets the child count. Optional.
+        /// </summary>
+        /// <value>
+        /// The number of children this node has
+        /// </value>
+        public int? ChildCount { get; set; }
     }
 }

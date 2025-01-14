@@ -23,6 +23,9 @@
 
 /** Describes a single item that can be displayed in a tree view. */
 export type TreeItemBag = {
+    /** Gets or sets the child count. Optional. */
+    childCount?: number | null;
+
     /**
      * Gets or sets the children. A value of null indicates that the
      * children should be lazy loaded by the caller.
@@ -48,6 +51,13 @@ export type TreeItemBag = {
 
     /** Gets or sets the text that should be displayed to identify this item. */
     text?: string | null;
+
+    /**
+     * Gets or sets the type of item represented by this instance. There is
+     * no pre-defined meaning to this, it is up to the item provider to
+     * decide what to do with it.
+     */
+    type?: string | null;
 
     /** Gets or sets the generic identifier of this item. */
     value?: string | null;

@@ -24,6 +24,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
+using System.Web;
 
 namespace Rock.Drawing.Avatar
 {
@@ -138,11 +139,18 @@ namespace Rock.Drawing.Avatar
             // If there is a photo in the settings we will always use that
             if ( settings.PhotoId.HasValue )
             {
-                // Get image from the binary file
-                avatar = RockImage.GetPersonImageFromBinaryFileService( settings.PhotoId.Value );
+                try
+                {
+                    // Get image from the binary file
+                    avatar = RockImage.GetPersonImageFromBinaryFileService( settings.PhotoId.Value );
+                }
+                catch ( Exception )
+                {
+                    return null;
+                }
 
                 // Resize image
-                avatar.CropResize( settings.Size, settings.Size );
+                avatar?.CropResize( settings.Size, settings.Size );
             }
 
             // If not photo was provided then we'll create a fallback
@@ -180,12 +188,13 @@ namespace Rock.Drawing.Avatar
                 avatar.Mutate( o => o.ApplyCircleCorners() );
             }
 
+
             // Cache the image to the file system
             try
             {
                 avatar.SaveAsPng( $"{settings.CachePath}{settings.CacheKey}.png" );
             }
-            catch (Exception) { }
+            catch ( Exception ) { }
 
             var outputStream = new MemoryStream();
             avatar.SaveAsPng( outputStream );

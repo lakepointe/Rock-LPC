@@ -21,6 +21,7 @@ using System.Linq;
 using System.Web.UI;
 using Rock;
 using Rock.Attribute;
+using Rock.Blocks;
 using Rock.Data;
 using Rock.Model;
 using Rock.Security;
@@ -28,6 +29,7 @@ using Rock.Utility;
 using Rock.Web.Cache;
 using Rock.Web.UI;
 using Rock.Web.UI.Controls;
+using Slingshot.Core.Data;
 
 namespace RockWeb.Blocks.Core
 {
@@ -45,7 +47,6 @@ namespace RockWeb.Blocks.Core
         {
             public const string DetailPage = "DetailPage";
         }
-
 
         #region Base Control Methods
 
@@ -80,10 +81,11 @@ namespace RockWeb.Blocks.Core
         {
             if ( !Page.IsPostBack )
             {
-                tbNameFilter.Text = gfSettings.GetUserPreference( "Name" );
-                tbPathFilter.Text = gfSettings.GetUserPreference( "Path" );
-                ddlCategoryFilter.SetValue( gfSettings.GetUserPreference( "Category" ) );
-                cbExcludeSystem.Checked = !string.IsNullOrWhiteSpace( gfSettings.GetUserPreference( "Exclude System" ) );
+                tbNameFilter.Text = gfSettings.GetFilterPreference( "Name" );
+                tbPathFilter.Text = gfSettings.GetFilterPreference( "Path" );
+                ddlCategoryFilter.SetValue( gfSettings.GetFilterPreference( "Category" ) );
+                cbExcludeSystem.Checked = !string.IsNullOrWhiteSpace( gfSettings.GetFilterPreference( "Exclude System" ) );
+                cbShowObsidianOnly.Checked = !string.IsNullOrWhiteSpace( gfSettings.GetFilterPreference( "Show Obsidian Only" ) );
 
                 BlockTypeService.RegisterBlockTypes( Request.MapPath( "~" ), Page );
 
@@ -104,10 +106,11 @@ namespace RockWeb.Blocks.Core
         /// <param name="e"></param>
         protected void gfSettings_ApplyFilterClick( object sender, EventArgs e )
         {
-            gfSettings.SaveUserPreference( "Name", tbNameFilter.Text );
-            gfSettings.SaveUserPreference( "Path", tbPathFilter.Text );
-            gfSettings.SaveUserPreference( "Category", ddlCategoryFilter.SelectedValue );
-            gfSettings.SaveUserPreference( "Exclude System", cbExcludeSystem.Checked ? "Yes" : string.Empty );
+            gfSettings.SetFilterPreference( "Name", tbNameFilter.Text );
+            gfSettings.SetFilterPreference( "Path", tbPathFilter.Text );
+            gfSettings.SetFilterPreference( "Category", ddlCategoryFilter.SelectedValue );
+            gfSettings.SetFilterPreference( "Exclude System", cbExcludeSystem.Checked ? "Yes" : string.Empty );
+            gfSettings.SetFilterPreference( "Show Obsidian Only", cbShowObsidianOnly.Checked ? "Yes" : string.Empty );
             BindGrid();
         }
 
@@ -191,8 +194,7 @@ namespace RockWeb.Blocks.Core
                 }
                 else if ( blockTypeInfoRow.EntityTypeId.HasValue )
                 {
-                    var entityType = EntityTypeCache.Get( blockTypeInfoRow.EntityTypeId.Value );
-                    e.Row.Cells[4].Text = string.Format( "<span class='label label-info'>{0}</span>", entityType.Name );
+                    e.Row.Cells[4].Text = string.Format( "<span class='label label-info'>{0}</span>", blockTypeInfoRow.EntityName );
                 }
                 else
                 {
@@ -239,32 +241,36 @@ namespace RockWeb.Blocks.Core
             SortProperty sortProperty = gBlockTypes.SortProperty;
 
             var blockTypes = blockTypeService.Queryable().AsNoTracking();
-
+            
             // Exclude system blocks if checked.
-            if ( !string.IsNullOrWhiteSpace( gfSettings.GetUserPreference( "Exclude System" ) ) )
+            if ( !string.IsNullOrWhiteSpace( gfSettings.GetFilterPreference( "Exclude System" ) ) )
             {
                 blockTypes = blockTypes.Where( b => b.IsSystem == false );
             }
 
             // Filter by Name
-            string nameFilter = gfSettings.GetUserPreference( "Name" );
+            string nameFilter = gfSettings.GetFilterPreference( "Name" );
             if ( !string.IsNullOrEmpty( nameFilter.Trim() ) )
             {
                 blockTypes = blockTypes.Where( b => b.Name.Contains( nameFilter.Trim() ) );
             }
 
             // Filter by Path
-            string path = gfSettings.GetUserPreference( "Path" );
+            string path = gfSettings.GetFilterPreference( "Path" );
             if ( !string.IsNullOrEmpty( path.Trim() ) )
             {
                 blockTypes = blockTypes.Where( b => b.Path.Contains( path.Trim() ) );
             }
 
-            string category = gfSettings.GetUserPreference( "Category" );
+            string category = gfSettings.GetFilterPreference( "Category" );
             if ( !string.IsNullOrWhiteSpace( category ) )
             {
                 blockTypes = blockTypes.Where( b => b.Category == category );
             }
+
+            // A dictionary of WebSite blocks where the boolean value indicates if it's Obsidian or not.
+            var obsidianBlockTypesDict = BlockTypeService.BlockTypesToDisplay( SiteType.Web )
+                .ToDictionary( q => q.Id, q => typeof( IRockObsidianBlockType ).IsAssignableFrom( q.EntityType?.GetEntityType() ) );
 
             var selectQry = blockTypes.Select( a =>
                 new BlockTypeInfoRow
@@ -277,7 +283,27 @@ namespace RockWeb.Blocks.Core
                     EntityTypeId = a.EntityTypeId,
                     BlocksCount = a.Blocks.Count(),
                     IsSystem = a.IsSystem
-                } );
+                } ).AsEnumerable()
+                    // We have to operate on the AsEnumerable so we can perform the dictionary lookup outside of LINQ to Entities
+                    .Select( item => new BlockTypeInfoRow
+                    {
+                        Id = item.Id,
+                        Name = item.Name,
+                        Category = item.Category,
+                        Description = item.Description,
+                        Path = item.Path,
+                        EntityTypeId = item.EntityTypeId,
+                        BlocksCount = item.BlocksCount,
+                        IsSystem = item.IsSystem,
+                        EntityName = (item.EntityTypeId.HasValue ? EntityTypeCache.Get( item.EntityTypeId.Value )?.Name : string.Empty ),
+                        IsObsidian = ( obsidianBlockTypesDict.ContainsKey( item.Id ) ? obsidianBlockTypesDict[item.Id] : false)
+                    } );
+
+            // Filter by Obsidian. (Filtering by IsObsidian has to happen after the selectQry is built.)
+            if ( !string.IsNullOrWhiteSpace( gfSettings.GetFilterPreference( "Show Obsidian Only" ) ) )
+            {
+                selectQry = selectQry.Where( a => a.IsObsidian );
+            }
 
             if ( sortProperty != null )
             {
@@ -286,16 +312,28 @@ namespace RockWeb.Blocks.Core
                     // special case:  See if the file exists and sort by that
                     if ( sortProperty.Direction == System.Web.UI.WebControls.SortDirection.Ascending )
                     {
-                        gBlockTypes.DataSource = selectQry.ToList().OrderBy( a => System.IO.File.Exists( Request.MapPath( a.Path ) ) ).ToList();
+                        gBlockTypes.DataSource = selectQry.ToList().OrderBy( a => System.IO.File.Exists( Request.MapPath( a.Path ) ) ).ThenBy( a => a.EntityName ).ThenBy( a => a.Name ).ToList();
                     }
                     else
                     {
-                        gBlockTypes.DataSource = selectQry.ToList().OrderBy( a => !System.IO.File.Exists( Request.MapPath( a.Path ) ) ).ToList();
+                        gBlockTypes.DataSource = selectQry.ToList().OrderBy( a => !System.IO.File.Exists( Request.MapPath( a.Path ) ) ).ThenByDescending( a => a.EntityName ).ThenByDescending( a => a.Name ).ToList();
                     }
                 }
                 else
                 {
-                    gBlockTypes.DataSource = selectQry.Sort( sortProperty ).ToList();
+                    // Sort by property name dynamically
+                    if ( sortProperty.Direction == System.Web.UI.WebControls.SortDirection.Ascending )
+                    {
+                        gBlockTypes.DataSource = selectQry.OrderBy( a => a.GetType()
+                            .GetProperty( sortProperty.Property )
+                            .GetValue( a, null ) ).ThenBy( a => a.Name ).ToList();
+                        }
+                    else
+                    {
+                        gBlockTypes.DataSource = selectQry.OrderByDescending( a => a.GetType()
+                            .GetProperty( sortProperty.Property )
+                            .GetValue( a, null ) ).ThenBy( a => a.Name ).ToList();
+                    }
                 }
             }
             else
@@ -313,6 +351,8 @@ namespace RockWeb.Blocks.Core
 
             public string Name { get; set; }
 
+            public string EntityName { get; set; }
+
             public string Category { get; set; }
 
             public string Description { get; set; }
@@ -320,6 +360,8 @@ namespace RockWeb.Blocks.Core
             public string Path { get; set; }
 
             public int BlocksCount { get; set; }
+
+            public bool IsObsidian { get; set; }
 
             public bool IsSystem { get; set; }
 
