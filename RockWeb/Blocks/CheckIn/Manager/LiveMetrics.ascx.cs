@@ -713,34 +713,49 @@ namespace RockWeb.Blocks.CheckIn.Manager
 
                     if ( childLocationIds.Any() || childGroupIds.Any() )
                     {
-                        var childGroups = groupService.GetAllDescendentGroups( group.Id, false );
-                        var allDescendentchildLocations = group.GroupLocations.Where( a => childLocationIds.Contains( a.LocationId ) ).ToList();
-                        var childGroupChildLocations = childGroups.SelectMany( a => a.GroupLocations ).Where( l => validLocationids.Contains( l.LocationId ) ).ToList();
-                        if ( childGroupChildLocations != null && childGroupChildLocations.Any() )
-                        {
-                            allDescendentchildLocations.AddRange( childGroupChildLocations );
-                        }
+                        // LPC MODIFIED CODE
+                        /*
+                            Jon Corey - 1/22/2025
+                            Reverted some of the changes made in this commit: https://github.com/SparkDevNetwork/Rock/commit/806a16b33d3d315f6a1eb979284f40e9437bc198
+
+                            The changes that have been commented out below were causing MAJOR performance issues when loading this block.
+
+                            This reversion assumes that we do not have a SoftRoomThreshold on every descendant location. Since this isn't a feature that Lakepointe really uses, we can make this reversion a lot simpler and easier to re-implement when Spark fixes the issue.
+
+                            This issue has been reported in this issue: https://github.com/SparkDevNetwork/Rock/issues/6157
+
+                            Once the issue is fixed, we should implement that fix here instead of doing this janky commenting.
+                        */
+
+                        //var childGroups = groupService.GetAllDescendentGroups( group.Id, false );
+                        //var allDescendentchildLocations = group.GroupLocations.Where( a => childLocationIds.Contains( a.LocationId ) ).ToList();
+                        //var childGroupChildLocations = childGroups.SelectMany( a => a.GroupLocations ).Where( l => validLocationids.Contains( l.LocationId ) ).ToList();
+                        //if ( childGroupChildLocations != null && childGroupChildLocations.Any() )
+                        //{
+                        //    allDescendentchildLocations.AddRange( childGroupChildLocations );
+                        //}
 
                         int? totalSoftThreshold = null;
-                        var locations = allDescendentchildLocations.Select( a => a.Location ).DistinctBy( a => a.Id );
-                        if ( locations.All( a => a.SoftRoomThreshold.HasValue ) )
-                        {
+                        //var locations = allDescendentchildLocations.Select( a => a.Location ).DistinctBy( a => a.Id );
+                        //if ( locations.All( a => a.SoftRoomThreshold.HasValue ) )
+                        //{
 
-                            totalSoftThreshold = locations.Where( a => a.IsActive ).Select( a => a.SoftRoomThreshold ).Sum();
-                        }
+                        //    totalSoftThreshold = locations.Where( a => a.IsActive ).Select( a => a.SoftRoomThreshold ).Sum();
+                        //}
 
                         var navGroup = new NavigationGroup( group, chartTimes, totalSoftThreshold );
                         navGroup.ChildLocationIds = childLocationIds;
                         navGroup.ChildGroupIds = childGroupIds;
-                        if ( totalSoftThreshold.HasValue )
-                        {
-                            /*
-                                SK - 07/02/2023
-                                We need to keep track of Threshold values on per location basis.
-                                It will be used in calculation of Total Threshold values for Areas that  has multiple group with same location associated with multiple group.
-                            */
-                            navGroup.LocationTotalThresholdKeyValues = locations.ToDictionary( l => l.Id, t => t.IsActive ? t.SoftRoomThreshold.Value : 0 );
-                        }
+                        //if ( totalSoftThreshold.HasValue )
+                        //{
+                        //    /*
+                        //        SK - 07/02/2023
+                        //        We need to keep track of Threshold values on per location basis.
+                        //        It will be used in calculation of Total Threshold values for Areas that  has multiple group with same location associated with multiple group.
+                        //    */
+                        //    navGroup.LocationTotalThresholdKeyValues = locations.ToDictionary( l => l.Id, t => t.IsActive ? t.SoftRoomThreshold.Value : 0 );
+                        //}
+                        // END LPC MODIFIED CODE
 
                         NavData.Groups.Add( navGroup );
 
