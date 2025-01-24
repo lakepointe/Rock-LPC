@@ -28,6 +28,13 @@
                 </div>
                 <!-- END LPC CODE -->
             </div>
+            <!-- LPC CODE -->
+            <div class="row">
+                <div class="col-md-6 col-sm-6">
+                    <StaticFormControl :label="getLang() == 'es' ? 'Idioma Preferido' : 'Preferred Language'" :modelValue="registrar.preferredLanguage ?? ''" />
+                </div>
+            </div>
+            <!-- END LPC CODE -->
         </template>
         <template v-else>
             <div class="row">
@@ -54,6 +61,7 @@
                     <PhoneNumberBox
                                     :label="getLang() == 'es' ? 'Teléfono' : 'Mobile Phone'"
                                     :modelValue="registrar.mobilePhone ?? ''"
+                                    @update:modelValue="registrar.mobilePhone = $event"
                                     rules="required"
                                     tabindex="4" />
                 </div>
@@ -63,6 +71,7 @@
                     <DropDownList
                                   :label="getLang() == 'es' ? 'Idioma Preferido' : 'Preferred Language'"
                                   :modelValue="registrar.preferredLanguage ?? ''"
+                                  @update:modelValue="registrar.preferredLanguage = getFirstString($event)"
                                   :items="languageOptions"
                                   rules="required"
                                   tabIndex="5" />
@@ -286,6 +295,22 @@
     }
 
     // LPC CODE
+    /** Takes in a string or string[]. Returns the first valid string.
+     * If the value is a string, the value is returned.
+     * If the value is a string[], the first element is returned.
+     * Otherwise an empty string is returned. */
+    function getFirstString(value: string | string[]) {
+        if (typeof value == "string") {
+            return value;
+        }
+        else if (value.length > 0) {
+            return value[0];
+        }
+        else {
+            return "";
+        }
+    }
+
     /** Gets the lang parameter from the query string.
      * Returns "en" or "es". Defaults to "en" if invalid. */
     function getLang(): string {
