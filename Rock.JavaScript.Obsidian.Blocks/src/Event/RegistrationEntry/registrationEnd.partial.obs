@@ -67,6 +67,59 @@
         if (registrationEntryState.viewModel.registrationAttributesEnd) {
             for (const a of registrationEntryState.viewModel.registrationAttributesEnd) {
                 attrs[a.key ?? ""] = a;
+                
+                // LPC CODE
+                if (getLang() == "es") {
+                    if (a.preHtml != null && a.preHtml != "" && a.configurationValues != null) {
+                        // Get Translations
+                        let optionTranslations = new Map();
+
+                        let el = document.createElement('div');
+                        el.innerHTML = a.preHtml ?? "";
+                        let options = el.getElementsByClassName("SpanishOption");
+                        for (let j = 0; j < options.length; j++) {
+                            optionTranslations.set(options[j].getAttribute("option"), options[j].textContent);
+                        }
+
+                        // Translate Values
+                        let values = a.configurationValues["values"];
+                        let trueText = a.configurationValues["truetext"];
+                        let falseText = a.configurationValues["falsetext"];
+
+                        // Handle Booleans
+                        if (trueText != null && trueText != "") {
+                            if (optionTranslations.has(trueText)) {
+                                a.configurationValues["truetext"] = optionTranslations.get(trueText);
+                            }
+                        }
+                        if (falseText != null && falseText != "") {
+                            if (optionTranslations.has(falseText)) {
+                                a.configurationValues["falsetext"] = optionTranslations.get(falseText);
+                            }
+                        }
+
+                        // Expected values examples:
+                        // [{"value":"1","text":"One"},{"value":"2","text":"Two"},{"value":"3","text":"Three"}]
+                        // [{"value":"1","text":"One","description":"The first value"},{"value":"2","text":"Two","description":"The second value"},{"value":"3","text":"Three","description":"The third value"}]
+                        if (values != null && values != "" && values.includes("value") && values.includes("text")) {
+                            let valuesObjects = JSON.parse(values);
+                            for (let y = 0; y < valuesObjects.length; y++) {
+                                if (valuesObjects[y].hasOwnProperty('text')) {
+                                    let originalText = valuesObjects[y].text;
+                                    if (optionTranslations.has(originalText)) {
+                                        valuesObjects[y].text = optionTranslations.get(originalText);
+                                        if (valuesObjects[y].hasOwnProperty('description')) {
+                                            valuesObjects[y].description = optionTranslations.get(originalText);
+                                        }
+                                    }
+                                }
+                            }
+                            // Replace values property with the results
+                            a.configurationValues["values"] = JSON.stringify(valuesObjects);
+                        }
+                    }
+                }
+                // END LPC CODE
             }
         }
 
