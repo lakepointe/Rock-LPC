@@ -488,16 +488,25 @@
                                         <Rock:RockTextBox ID="rtbCurrentAddress" runat="server" TextMode="MultiLine" Rows="5" Required="true" Visible="true" />
                                     </div>
                                     <div class="col-md-6">
+                                        <Rock:RockTextBox ID="rtbPriorAddress" runat="server" TextMode="MultiLine" Rows="5" Required="true" Visible="true" />
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <Rock:RockTextBox ID="rtbHowLongInUSA" runat="server" Visible="true" Required="true" Enabled="true" />
+                                    </div>
+                                    <div class="col-md-4">
                                         <Rock:RockTextBox ID="rtbYearsInTX" runat="server" Visible="true" Required="true" Enabled="true" />
+                                    </div>
+                                    <div class="col-md-4">
                                         <Rock:RockTextBox ID="rtbMonthsAtLakepointe" runat="server" Visible="true" Required="true" Enabled="true" />
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <Rock:RockTextBox ID="rtbPriorAddress" runat="server" TextMode="MultiLine" Rows="5" Required="true" Visible="true" />
+                                        <Rock:FileUploader ID="rfuIDFront" runat="server" Required="true" Enabled="true" />
                                     </div>
                                     <div class="col-md-6">
-                                        <Rock:FileUploader ID="rfuIDFront" runat="server" Required="true" Enabled="true" />
                                         <Rock:RockTextBox ID="rtbSocialSecurityNumber" runat="server" Visible="true" Required="false" />
                                     </div>
                                 </div>
