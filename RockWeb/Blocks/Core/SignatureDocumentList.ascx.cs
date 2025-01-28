@@ -224,6 +224,23 @@ namespace RockWeb.Blocks.Core
                     var typeColumn = gSignatureDocuments.ColumnsOfType<RockBoundField>().Where( f => f.HeaderText == "Document Type" ).First();
                     typeColumn.Visible = false;
                 }
+                // LPC CODE
+                /*
+                    Jon Corey - 2025-01-28
+
+                    Fixes an issue where when creating a new signature document or using a non-integer parameter
+                    this block would try to load all of the signature documents, which would cause a timeout.
+
+                    This fixes that issue by not running the query if the provided Document Type ID is either 0
+                    or null (non-integer parameters are converted to null).
+                */
+                else
+                {
+                    gSignatureDocuments.DataSource = null;
+                    gSignatureDocuments.DataBind();
+                    return;
+                }
+                // END LPC CODE
             }
 
             var documentListQry = qry.Select( d => new
