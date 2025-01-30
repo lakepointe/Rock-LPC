@@ -797,7 +797,8 @@ WHERE pa.Guid = @personAliasGuid
     {% sql now:'{{ today | Date:"yyyy-MM-ddTHH:mm:ss" }}' return:'Items' %}
         SELECT cci.Id, cci.Title, cci.Content, cci.Priority, cci.Status, cci.StartDateTime, cci.ExpireDateTime,
             image.Value AS [Image], video.Value AS [Video], pdf.Value AS [PDF], button1.Value AS [Button1], button1Label.Value AS [Button1Label], button2.Value AS [Button2], button2Label.Value AS [Button2Label],
-            button3.Value AS [Button3], button3Label.Value AS [Button3Label], button4.Value AS [Button4], button4Label.Value AS [Button4Label]
+            button3.Value AS [Button3], button3Label.Value AS [Button3Label], button4.Value AS [Button4], button4Label.Value AS [Button4Label], button5.Value AS [Button5], button5Label.Value AS [Button5Label],
+            button6.Value AS [Button6], button6Label.Value AS [Button6Label]
         FROM [dbo].[ContentChannelItem] cci
         LEFT OUTER JOIN [dbo].[AttributeValue] image ON image.EntityId = cci.Id AND image.AttributeId = 111320
         LEFT OUTER JOIN [dbo].[AttributeValue] video ON video.EntityId = cci.Id AND video.AttributeId = 111321
@@ -810,6 +811,10 @@ WHERE pa.Guid = @personAliasGuid
         LEFT OUTER JOIN [dbo].[AttributeValue] button3Label ON button3Label.EntityId = cci.Id AND button3Label.AttributeId = 111435
         LEFT OUTER JOIN [dbo].[AttributeValue] button4 ON button4.EntityId = cci.Id AND button4.AttributeId = 111325
         LEFT OUTER JOIN [dbo].[AttributeValue] button4Label ON button4Label.EntityId = cci.Id AND button4Label.AttributeId = 111436
+        LEFT OUTER JOIN [dbo].[AttributeValue] button5 ON button5.EntityId = cci.Id AND button5.AttributeId = 151021
+        LEFT OUTER JOIN [dbo].[AttributeValue] button5Label ON button5Label.EntityId = cci.Id AND button5Label.AttributeId = 151022
+        LEFT OUTER JOIN [dbo].[AttributeValue] button6 ON button6.EntityId = cci.Id AND button6.AttributeId = 151023
+        LEFT OUTER JOIN [dbo].[AttributeValue] button6Label ON button6Label.EntityId = cci.Id AND button6Label.AttributeId = 151024
         WHERE cci.ContentChannelId = 103
             AND (cci.StartDateTime <= @now)
             AND (cci.ExpireDateTime IS NULL OR cci.ExpireDateTime >= @now)
@@ -831,6 +836,8 @@ WHERE pa.Guid = @personAliasGuid
         {% if item.Button2 and item.Button2 != '' %}{% assign x = x | Plus:1 %}{% endif %}
         {% if item.Button3 and item.Button3 != '' %}{% assign x = x | Plus:1 %}{% endif %}
         {% if item.Button4 and item.Button4 != '' %}{% assign x = x | Plus:1 %}{% endif %}
+        {% if item.Button5 and item.Button5 != '' %}{% assign x = x | Plus:1 %}{% endif %}
+        {% if item.Button6 and item.Button6 != '' %}{% assign x = x | Plus:1 %}{% endif %}
         {% if x > 0 %}
             {% if x == 1 %}
                 {% assign cw = 'col-md-12' %}
@@ -894,6 +901,16 @@ WHERE pa.Guid = @personAliasGuid
                         <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ item.Button4 }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">{{ item.Button4Label | Default:'Week 4 Curriculum' }}</a></p>
                     </div>
                 {% endif %}
+                {% if item.Button5 and item.Button5 != '' %}
+                    <div class='{{ cw }}'>
+                        <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ item.Button5 }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">{{ item.Button5Label | Default:'Week 5 Curriculum' }}</a></p>
+                    </div>
+                {% endif %}
+                {% if item.Button6 and item.Button6 != '' %}
+                    <div class='{{ cw }}'>
+                        <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ item.Button6 }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">{{ item.Button6Label | Default:'Week 6 Curriculum' }}</a></p>
+                    </div>
+                {% endif %}
             </div>
         {% endif %}
         <div class="spacer"></div>
@@ -905,7 +922,8 @@ WHERE pa.Guid = @personAliasGuid
     {% sql now:'{{ today | Date:"yyyy-MM-ddTHH:mm:ss" }}' return:'Items' %}
         SELECT cci.Id, cci.Title, cci.Content, cci.Priority, cci.Status, cci.StartDateTime, cci.ExpireDateTime,
             image.Value AS [Image], video.Value AS [Video], pdf.Value AS [PDF], button1.Value AS [Button1], button1Label.Value AS [Button1Label], button2.Value AS [Button2], button2Label.Value AS [Button2Label],
-            button3.Value AS [Button3], button3Label.Value AS [Button3Label], button4.Value AS [Button4], button4Label.Value AS [Button4Label]
+            button3.Value AS [Button3], button3Label.Value AS [Button3Label], button4.Value AS [Button4], button4Label.Value AS [Button4Label], button5.Value AS [Button5], button5Label.Value AS [Button5Label],
+            button6.Value AS [Button6], button6Label.Value AS [Button6Label]
         FROM [dbo].[ContentChannelItem] cci
         LEFT OUTER JOIN [dbo].[AttributeValue] image ON image.EntityId = cci.Id AND image.AttributeId = 111327
         LEFT OUTER JOIN [dbo].[AttributeValue] video ON video.EntityId = cci.Id AND video.AttributeId = 111328
@@ -918,6 +936,10 @@ WHERE pa.Guid = @personAliasGuid
         LEFT OUTER JOIN [dbo].[AttributeValue] button3Label ON button3Label.EntityId = cci.Id AND button3Label.AttributeId = 111439
         LEFT OUTER JOIN [dbo].[AttributeValue] button4 ON button4.EntityId = cci.Id AND button4.AttributeId = 111332
         LEFT OUTER JOIN [dbo].[AttributeValue] button4Label ON button4Label.EntityId = cci.Id AND button4Label.AttributeId = 111440
+        LEFT OUTER JOIN [dbo].[AttributeValue] button5 ON button5.EntityId = cci.Id AND button5.AttributeId = 151025
+        LEFT OUTER JOIN [dbo].[AttributeValue] button5Label ON button5Label.EntityId = cci.Id AND button5Label.AttributeId = 151029
+        LEFT OUTER JOIN [dbo].[AttributeValue] button6 ON button6.EntityId = cci.Id AND button6.AttributeId = 151027
+        LEFT OUTER JOIN [dbo].[AttributeValue] button6Label ON button6Label.EntityId = cci.Id AND button6Label.AttributeId = 151028
         WHERE cci.ContentChannelId = 104
             AND (cci.StartDateTime <= @now)
             AND (cci.ExpireDateTime IS NULL OR cci.ExpireDateTime >= @now)
@@ -939,6 +961,8 @@ WHERE pa.Guid = @personAliasGuid
         {% if item.Button2 and item.Button2 != '' %}{% assign x = x | Plus:1 %}{% endif %}
         {% if item.Button3 and item.Button3 != '' %}{% assign x = x | Plus:1 %}{% endif %}
         {% if item.Button4 and item.Button4 != '' %}{% assign x = x | Plus:1 %}{% endif %}
+        {% if item.Button5 and item.Button5 != '' %}{% assign x = x | Plus:1 %}{% endif %}
+        {% if item.Button6 and item.Button6 != '' %}{% assign x = x | Plus:1 %}{% endif %}
         {% if x > 0 %}
             {% if x == 1 %}
                 {% assign cw = 'col-md-12' %}
@@ -1000,6 +1024,16 @@ WHERE pa.Guid = @personAliasGuid
                 {% if item.Button4 and item.Button4 != '' %}
                     <div class='{{ cw }}'>
                         <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ item.Button4 }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">{{ item.Button4Label | Default:'Week 4 Curriculum' }}</a></p>
+                    </div>
+                {% endif %}
+                {% if item.Button5 and item.Button5 != '' %}
+                    <div class='{{ cw }}'>
+                        <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ item.Button5 }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">{{ item.Button5Label | Default:'Week 5 Curriculum' }}</a></p>
+                    </div>
+                {% endif %}
+                {% if item.Button6 and item.Button6 != '' %}
+                    <div class='{{ cw }}'>
+                        <p><a href="{{ 'Global' | Attribute:'PublicApplicationRoot' }}GetFile.ashx?Guid={{ item.Button6 }}" class="btn btn-primary" target="_blank" style="width:100%; white-space:normal;">{{ item.Button6Label | Default:'Week 6 Curriculum' }}</a></p>
                     </div>
                 {% endif %}
             </div>
