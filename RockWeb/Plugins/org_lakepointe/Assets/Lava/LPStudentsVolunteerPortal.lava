@@ -1119,7 +1119,6 @@ WHERE pa.Guid = @personAliasGuid
                     Gonna be out
                 </a>
                 <a href="{{'Global' | Attribute:'PublicApplicationRoot'}}page/2327?Campus={{ CurrentPerson.PrimaryCampus.Guid }}" class="btn btn-primary StaffContacts">
-                <!--<a href="{{'Global' | Attribute:'PublicApplicationRoot'}}page/4025?Campus={{ CurrentPerson.PrimaryCampus.Guid }}" class="btn btn-primary StaffContacts">-->
                     <div class="toolIcon"><i class="far fa-book-user"></i></div>
                     Staff Contacts
                 </a>
