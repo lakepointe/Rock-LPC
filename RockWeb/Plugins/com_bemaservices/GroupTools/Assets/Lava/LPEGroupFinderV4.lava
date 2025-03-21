@@ -593,7 +593,7 @@
       },
       getGroupCount() {
         this.groupCount = -1;
-        var url = '/api/com_bemaservices/GroupTools/GetGroupFinderInformationV4?{% if categoryIdParameter > 0 %}groupTypeDefinedValueId={{categoryIdParameter}}&{% endif %}IncludeGroupsWithoutCampus=True&limitByCapacity=true&includePendingMembersInGroupCapacity=True&includeGroupsWithoutCapacity=true&GroupTypeIds={{groupTypeId}}' + this.getFilterParameters();
+        var url = '/api/com_bemaservices/GroupTools/GetGroupFinderInformationV4?{% if categoryIdParameter > 0 %}groupTypeDefinedValueId={{categoryIdParameter}}&{% endif %}IncludeGroupsWithoutCampus=False&limitByCapacity=true&includePendingMembersInGroupCapacity=True&includeGroupsWithoutCapacity=true&GroupTypeIds={{groupTypeId}}' + this.getFilterParameters();
         axios.get(url, {
           headers: {
             'Authorization-Token': `6FuURHoPOhKk04168thMRtAl`
@@ -611,7 +611,7 @@
       addGroups() {
         let axiosSource = axios.CancelToken.source();
         this.request = { cancel: axiosSource.cancel };
-        var url = '/api/com_bemaservices/GroupTools/GetGroupsInformationV4?{% if categoryIdParameter > 0 %}groupTypeDefinedValueId={{categoryIdParameter}}&{% endif %}IncludeGroupsWithoutCampus=True&limitByCapacity=true&includePendingMembersInGroupCapacity=True&includeGroupsWithoutCapacity=true&SkipLeaders=True{% if categoryIdParameter != '6502' and categoryIdParameter != '6503' %}&SkipMeetingLocations=True{% endif %}&SkipGroupMemberCount=False&SkipLifeStage=true&RequestedAttributeIds=104125&GroupTypeIds={{groupTypeId}}&Limit=' + this.limit + '&Offset=' + this.groups.length + this.getFilterParameters();
+        var url = '/api/com_bemaservices/GroupTools/GetGroupsInformationV4?{% if categoryIdParameter > 0 %}groupTypeDefinedValueId={{categoryIdParameter}}&{% endif %}IncludeGroupsWithoutCampus=False&limitByCapacity=true&includePendingMembersInGroupCapacity=True&includeGroupsWithoutCapacity=true&SkipLeaders=True{% if categoryIdParameter != '6502' and categoryIdParameter != '6503' %}&SkipMeetingLocations=True{% endif %}&SkipGroupMemberCount=False&SkipLifeStage=true&RequestedAttributeIds=104125&GroupTypeIds={{groupTypeId}}&Limit=' + this.limit + '&Offset=' + this.groups.length + this.getFilterParameters();
 
         if (this.filteredGroupIds != "") {
           url += '&GroupIds=' + this.filteredGroupIds;
