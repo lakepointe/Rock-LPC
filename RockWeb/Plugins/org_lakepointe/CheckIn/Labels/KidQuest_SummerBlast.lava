@@ -15,13 +15,13 @@ CT~~CD,~CC^~CT~
 ^FO7,285^FB547,1,0,L^A0N,80,80^FH\^FD
 {% for groupMember in GroupMembers %}
     {% if groupMember.PersonId == Person.Id %}
-        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'SNGradeColor','Object' | Property:'Description'}}
+        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'GradeColorGroup','Object' | Property:'Description'}}
         {% break %}
     {% endif %}
 {% endfor %}
 {% for groupMember in Group.Members %}
     {% if groupMember.PersonId == Person.Id %}
-        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'SNGradeColor','Object' | Property:'Description'}}
+        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'GradeColorGroup','Object' | Property:'Description'}}
         {% break %}
     {% endif %}
 {% endfor %}
@@ -126,13 +126,13 @@ Evangelism label - Only on Wednesday
 ^FO257,200^FB260,1,0,L^A0N,40,40^FH\^FD
 {% for groupMember in GroupMembers %}
     {% if groupMember.PersonId == Person.Id %}
-        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'SNGradeColor','Object' | Property:'Description'}}
+        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'GradeColorGroup','Object' | Property:'Description'}}
         {% break %}
     {% endif %}
 {% endfor %}
 {% for groupMember in Group.Members %}
     {% if groupMember.PersonId == Person.Id %}
-        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'SNGradeColor','Object' | Property:'Description'}}
+        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'GradeColorGroup','Object' | Property:'Description'}}
         {% break %}
     {% endif %}
 {% endfor %}
@@ -172,9 +172,6 @@ Day 3
 {% endcase %}
 ^FS
 
-^FO617,7^FB387,1,0,L^A0R,33,33^FH\^FD{{ Person.NickName }}^FS
-^FO583,7^FB387,1,0,L^A0R,33,33^FH\^FD{{ Person.LastName }}^FS
-
 ^FO540,7^FB387,1,0,L^A0R,30,30^FH\^FD{{ Person.GradeFormatted }}^FS
 
 ^FO380,7^FB100,L^A0R,100,100^FH\^FD{% assign personLegalNotes = Person | Attribute:'LegalNotes' %}{% if personLegalNotes != '' %}C{% endif %}^FS
@@ -183,13 +180,13 @@ Day 3
 ^FO200,7^FB325,1,0,L^A0R,75,75^FH\^FD
 {% for groupMember in GroupMembers %}
     {% if groupMember.PersonId == Person.Id %}
-        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'SNGradeColor','Object' | Property:'Description'}}
+        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'GradeColorGroup','Object' | Property:'Description'}}
         {% break %}
     {% endif %}
 {% endfor %}
 {% for groupMember in Group.Members %}
     {% if groupMember.PersonId == Person.Id %}
-        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'SNGradeColor','Object' | Property:'Description'}}
+        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'GradeColorGroup','Object' | Property:'Description'}}
         {% break %}
     {% endif %}
 {% endfor %}

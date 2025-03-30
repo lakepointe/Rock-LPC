@@ -85,17 +85,13 @@ Day 4
 
 
 {% comment %} Out Slip {% endcomment %}
+{% if personSelfRelease != 'Yes' %}
 ^XA~JSN^LT0^MNW^MTD^POI^PMN^LH0,0^JMA^PR6,6~SD15^LRN^CI27^XZ
 ^XA^PW800^LL0400^LS0^FWI,0
 
 ^FO740,293^FB100,1,0,R^A0R,50,50^FDOUT^FS
 ^FO700,227^FB167,1,0,R^A0R,37,37^FH\^FD{{ 'Now' | Date:"M/d/yyyy" }}^FS
 ^FO660,227^FB167,1,0,R^A0R,37,37^FH\^FD{{ 'Now' | Date:'hh:mm tt'}}^FS
-
-^FO617,7^FB387,1,0,L^A0R,33,33^FH\^FD{{ Person.NickName }}^FS
-^FO583,7^FB387,1,0,L^A0R,33,33^FH\^FD{{ Person.LastName }}^FS
-
-^FO540,7^FB387,1,0,L^A0R,30,30^FH\^FD{{ Person.GradeFormatted }}^FS
 
 ^FO280,7^FB325,1,0,L^A0R,30,30^FH\^FD{{Group.Id | GroupById | Property:'Name'}}^FS
 ^FO200,7^FB325,1,0,L^A0R,75,75^FH\^FD
@@ -121,3 +117,4 @@ Day 4
 
 ^MMC
 ^XZ
+{% endif %}
