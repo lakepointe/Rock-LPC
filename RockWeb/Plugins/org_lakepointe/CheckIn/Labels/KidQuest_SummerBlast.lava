@@ -85,16 +85,16 @@ Day 3
 ^FO360,7^FB325,1,0,L^A0R,20,20^FH\^FD{% assign personAllergy = Person | Attribute:'Allergy' %}{% if personAllergy != '' %}{{ personAllergy | Truncate:50,'...' }}{% endif %}^FS
 
 ^FO280,7^FB325,1,0,L^A0R,30,30^FH\^FD{{Group.Id | GroupById | Property:'Name'}}^FS
-^FO200,7^FB325,1,0,L^A0R,75,75^FH\^FD
+^FO150,7^FB325,2,0,L^A0R,60,60^FH\^FD
 {% for groupMember in GroupMembers %}
     {% if groupMember.PersonId == Person.Id %}
-        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'SNGradeColor','Object' | Property:'Description'}}
+        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'GradeColorGroup','Object' | Property:'Description'}}
         {% break %}
     {% endif %}
 {% endfor %}
 {% for groupMember in Group.Members %}
     {% if groupMember.PersonId == Person.Id %}
-        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'SNGradeColor','Object' | Property:'Description'}}
+        {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'GradeColorGroup','Object' | Property:'Description'}}
         {% break %}
     {% endif %}
 {% endfor %}
@@ -177,7 +177,7 @@ Day 3
 ^FO380,7^FB100,L^A0R,100,100^FH\^FD{% assign personLegalNotes = Person | Attribute:'LegalNotes' %}{% if personLegalNotes != '' %}C{% endif %}^FS
 
 ^FO280,7^FB325,1,0,L^A0R,30,30^FH\^FD{{Group.Id | GroupById | Property:'Name'}}^FS
-^FO200,7^FB325,1,0,L^A0R,75,75^FH\^FD
+^FO150,7^FB325,2,0,L^A0R,60,60^FH\^FD
 {% for groupMember in GroupMembers %}
     {% if groupMember.PersonId == Person.Id %}
         {{groupMember | Attribute:'SmallGroup'}} {{groupMember | Attribute:'GradeColor','Object' | Property:'Description'}}{{groupMember | Attribute:'GradeColorGroup','Object' | Property:'Description'}}
