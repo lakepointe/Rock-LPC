@@ -11,7 +11,7 @@
 {% assign memo = '' %}
 
 {% for gt in Person.GroupTypes %}
-    {%  for g in gt.Groups %}
+    {% for g in gt.Groups %}
         {% assign groupObject = g.Id | GroupById %}
 
         {% assign selected = groupObject | Property:'Selected' %}

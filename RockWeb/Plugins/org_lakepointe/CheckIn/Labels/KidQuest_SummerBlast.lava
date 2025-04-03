@@ -112,9 +112,10 @@ Day 3
 
 
 {%- comment -%}
-Evangelism label - Only on Wednesday
+Evangelism label - Only on Wednesday, only for KidQuest (exlude Summer Blast GT 677)
 {%- endcomment -%}
-{% if day == 'Wednesday'%}
+{% assign groupType = Person.GroupTypes | First %}
+{% if day == 'Wednesday' and groupType.Id != 677 %}
 ^XA~JSN^LT0^MNW^MTD^PON^PMN^LH0,0^JMA^PR6,6~SD15^LRN^CI27^XZ
 ^XA^PW800^LL0400^LS0
 
