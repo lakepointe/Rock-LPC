@@ -32,7 +32,7 @@
   "KeysForMinistries": "1^Not Sure,2^Parent Helper/Observer,3^Sidekick,4^Grade School Ministry,5^SOAR Special Needs Ministry,6^Midweek Kids,7^Preschool Ministry,8^Preschooler's Place (MDO),9^Student Ministry -- Middle School,10^Student Ministry -- High School,11^Childcare Employee,13^Media Ministry,14^Mission Trip or Event,16^KidQuest,15^Other",
   "KeysForMinistriesStudents": "1^Not Sure,2^Observer,3^Sidekick,4^Grade School Ministry,5^SOAR Special Needs Ministry,6^Midweek Kids,7^Preschool Ministry,9^Student Ministry -- Middle School,11^Childcare Employee,13^Media Ministry,14^Mission Trip or Event,16^KidQuest,15^Other",
   "KeysForMinistriesChildren": "1^Not Sure,2^Observer,3^Sidekick,4^Grade School Ministry,5^SOAR Special Needs Ministry,6^Midweek Kids,7^Preschool Ministry,13^Media Ministry,14^Mission Trip or Event,16^KidQuest,15^Other",
-  "KeysForMinistriesLevel2": "1^Not Sure,17^Weekend Host Teams,18^Next Step Class,19^Homepointe,13^Media Ministry,16^Bookstore,14^Mission Trip or Event,15^Other",
+  "KeysForMinistriesLevel2": "1^Not Sure,17^Weekend Host Teams,18^Next Step Class,19^Spiritual Follow Up Team,13^Media Ministry,16^Bookstore,14^Mission Trip or Event,15^Other",
   "KeysForMinistriesLevel0": "1^Not Sure,20^Host Teams,21^Ministry Support,22^Event,23^Other",
   "OtherLabel": "Please list any specific ministry/event information here:",
 
