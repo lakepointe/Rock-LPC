@@ -43,6 +43,7 @@ export type RegistrantBasicInfo = {
     mobilePhone: string;
     // END LPC CODE
     guid: Guid;
+    isOnWaitList: boolean
 };
 
 export type RegistrationCostSummaryInfo = {

@@ -104,7 +104,8 @@ export function getRegistrantBasicInfo(registrant: RegistrantBag, registrantForm
         // LPC CODE
         mobilePhone: (registrant?.fieldValues?.[mobilePhoneGuidOrEmptyString] || "") as string,
         // END LPC CODE
-        guid: registrant?.guid || ""
+        guid: registrant?.guid || "",
+        isOnWaitList: registrant.isOnWaitList
     };
 }
 
