@@ -25,9 +25,10 @@ import {
     PaymentPlanConfiguration,
     PersonGuid,
     FormFieldGuid,
-    FormFieldValue
+    FormFieldValue,
+    RegistrationEntryTerminology
 } from "./types.partial";
-import { InjectionKey, Ref, inject, nextTick } from "vue";
+import { ComputedRef, InjectionKey, Ref, inject, nextTick } from "vue";
 import { smoothScrollToTop } from "@Obsidian/Utility/page";
 import { PublicComparisonValueBag } from "@Obsidian/ViewModels/Utility/publicComparisonValueBag";
 import { ComparisonValue } from "@Obsidian/Types/Reporting/comparisonValue";
@@ -104,7 +105,8 @@ export function getRegistrantBasicInfo(registrant: RegistrantBag, registrantForm
         // LPC CODE
         mobilePhone: (registrant?.fieldValues?.[mobilePhoneGuidOrEmptyString] || "") as string,
         // END LPC CODE
-        guid: registrant?.guid || ""
+        guid: registrant?.guid || "",
+        isOnWaitList: registrant.isOnWaitList
     };
 }
 
@@ -156,6 +158,11 @@ export const ConfigurePaymentPlan: InjectionKey<{
     wipPaymentPlanConfiguration: Ref<PaymentPlanConfiguration | null | undefined>;
     finalPaymentPlanConfiguration: Ref<PaymentPlanConfiguration | null | undefined>;
 }> = Symbol("registration-configure-payment-plan");
+
+/**
+ * An injection key to provide the registration entry terms.
+ */
+export const RegistrationEntryTerms: InjectionKey<ComputedRef<RegistrationEntryTerminology>> = Symbol("registration-entry-terms");
 
 /** An injection key to provide the original field values for each registrant. */
 export const OriginalFormFieldValues: InjectionKey<Ref<Record<PersonGuid, Record<FormFieldGuid, FormFieldValue>>>> = Symbol("original-field-values");

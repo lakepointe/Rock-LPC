@@ -3,14 +3,14 @@
     <div class="registrationentry-registrant">
         <NotificationBox v-if="hasWaitlist && !isOnWaitlist" alertType="success">
             <!-- LPC MODIFIED CODE -->
-            <p v-if="getLang() == 'es'">Esta {{ registrantTermLowerCase }} estará completamente registrada.</p>
-            <p v-else>This {{ registrantTermLowerCase }} will be fully registered.</p>
+            <p v-if="getLang() == 'es'">Esta {{ registrationEntryTerms.registrantSingularLowerCase }} estará completamente registrada.</p>
+            <p v-else>This {{ registrationEntryTerms.registrantSingularLowerCase }} will be fully registered.</p>
             <!-- END LPC MODIFIED CODE -->
         </NotificationBox>
         <NotificationBox v-else-if="isOnWaitlist" alertType="warning">
             <!-- LPC MODIFIED CODE -->
-            <p v-if="getLang() == 'es'">Esta {{ registrantTermLowerCase }} estará en la lista de espera.</p>
-            <p v-else>This {{ registrantTermLowerCase }} will be on the waiting list.</p>
+            <p v-if="getLang() == 'es'">Esta {{ registrationEntryTerms.registrantSingularLowerCase }} estará en la lista de espera.</p>
+            <p v-else>This {{ registrationEntryTerms.registrantSingularLowerCase }} will be on the waiting list.</p>
             <!-- END LPC MODIFIED CODE -->
         </NotificationBox>
         <template v-for="(r, i) in registrants" :key="r.guid">
@@ -21,7 +21,7 @@
 <script setup lang="ts">
     import { computed, ref } from "vue";
     import Registrant from "./registrant.partial.obs";
-    import { CurrentRegistrationEntryState, PersistSession, scrollToTopAfterNextRender, use } from "./utils.partial";
+    import { CurrentRegistrationEntryState, PersistSession, RegistrationEntryTerms, scrollToTopAfterNextRender, use } from "./utils.partial";
     import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
     import { RegistrantBag } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrantBag";
     // LPC CODE
@@ -32,6 +32,7 @@
 
     const registrationEntryState = use(CurrentRegistrationEntryState);
     const persistSession = use(PersistSession);
+    const registrationEntryTerms = use(RegistrationEntryTerms);
 
     const emit = defineEmits<{
         (e: "next"): void,
@@ -152,11 +153,6 @@
     const isOnWaitlist = computed<boolean>(() => {
         const currentRegistrant = registrationEntryState.registrants[registrationEntryState.currentRegistrantIndex];
         return currentRegistrant.isOnWaitList;
-    });
-
-    /** The registrant term (singular) (lower case). */
-    const registrantTermLowerCase = computed<string>(() => {
-        return registrationEntryState.viewModel.registrantTerm?.toLowerCase() || "registrant";
     });
 
     const registrants = computed<RegistrantBag[]>(() => {

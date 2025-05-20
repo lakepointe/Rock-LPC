@@ -40,7 +40,7 @@
                 v-model="child.firstName"
                 :disabled="disabled"
                 :label="getLang() == 'es' ? 'Nombre' : 'First Name'"
-                :rules="requiredRules" />
+                :rules="[...requiredRules, ...noSpecialCharactersRules, ...noEmojisOrSpecialFontsRules]" />
             <!-- END LPC MODIFIED CODE -->
         </div>
 
@@ -54,7 +54,7 @@
                 v-model="child.lastName"
                 :disabled="disabled"
                 :label="getLang() == 'es' ? 'Apellido' : 'Last Name'"
-                :rules="requiredRules" />
+                :rules="[...requiredRules, ...noSpecialCharactersRules, ...noEmojisOrSpecialFontsRules]" />
             <!-- END LPC MODIFIED CODE -->
         </div>
     </div>
@@ -245,7 +245,7 @@
 <script setup lang="ts">
     import { computed, PropType, ref, watch } from "vue";
     import { ChildRequestBag } from "./types.partial";
-    import { createNotEqualRule, createPersonViewModel, createRuleWithReplacement, createRuleWithSuffix, getNumberAsOrdinalString, monthAndDayAndYearRequiredRule, required } from "./utils.partial";
+    import { createNotEqualRule, createPersonViewModel, createRuleWithReplacement, createRuleWithSuffix, getNumberAsOrdinalString, monthAndDayAndYearRequiredRule, required, noSpecialCharacters, noEmojisOrSpecialFonts } from "./utils.partial";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer.obs";
     import BirthdayPicker from "@Obsidian/Controls/birthdayPicker.obs";
     import CheckBox from "@Obsidian/Controls/checkBox.obs";
@@ -376,6 +376,16 @@
     const requiredBirthdayRules = computed<ValidationRule[]>(() => [
         createRuleWithSuffix(monthAndDayAndYearRequiredRule, `for ${caption.value}`),
         "required"
+    ]);
+
+    const noSpecialCharactersRules = computed<ValidationRule[]>(() => [
+        createRuleWithSuffix(noSpecialCharacters, `for ${caption.value}`),
+        "nospecialcharacters"
+    ]);
+
+    const noEmojisOrSpecialFontsRules = computed<ValidationRule[]>(() => [
+        createRuleWithSuffix(noEmojisOrSpecialFonts, `for ${caption.value}`),
+        "noemojisorspecialfonts"
     ]);
 
     //#endregion

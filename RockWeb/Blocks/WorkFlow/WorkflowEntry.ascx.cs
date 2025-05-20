@@ -324,8 +324,6 @@ namespace RockWeb.Blocks.WorkFlow
         /// <param name="e">The <see cref="T:System.EventArgs" /> object that contains the event data.</param>
         protected override void OnLoad( EventArgs e )
         {
-            base.OnLoad( e );
-
             // If PostBack is triggered by captcha leave message notification as is.
             if ( this.Page.Request.Params["__EVENTARGUMENT"] != "TokenReceived" )
             {
@@ -342,6 +340,8 @@ namespace RockWeb.Blocks.WorkFlow
                     ProcessActionRequest();
                 }
             }
+
+            base.OnLoad( e );
         }
 
         /// <summary>
@@ -445,15 +445,15 @@ namespace RockWeb.Blocks.WorkFlow
         }
 
         /// <summary>
-        /// Event raised after the Captcha control receives a token for a solved Captcha.
+        /// Handles the TokenReceived event of the CpCaptcha control.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="Captcha.TokenReceivedEventArgs"/> instance containing the event data.</param>
         protected void cpCaptcha_TokenReceived( object sender, Captcha.TokenReceivedEventArgs e )
         {
             if ( e.IsValid )
             {
-                cpCaptcha.Visible = false;
+                pnlCaptcha.Visible = false;
                 AddSubmitButtons( _actionType?.WorkflowForm );
             }
 
@@ -1363,7 +1363,7 @@ namespace RockWeb.Blocks.WorkFlow
                  See https://app.asana.com/0/1121505495628584/1200153314028124/f
                  */
 
-                cpPersonEntryCampus.IncludeInactive = true;
+                cpPersonEntryCampus.IncludeInactive = formPersonEntrySettings.IncludeInactiveCampus;
                 if ( formPersonEntrySettings.CampusStatusValueId.HasValue )
                 {
                     cpPersonEntryCampus.CampusStatusFilter = new List<int> { formPersonEntrySettings.CampusStatusValueId.Value };
@@ -1413,6 +1413,13 @@ namespace RockWeb.Blocks.WorkFlow
             if ( setValues )
             {
                 pePerson2.Visible = cbShowPerson2.Checked;
+
+                // Default Marital Status to Married if Spouse Entry is mandatory
+                if( pePerson2.Visible && !dvpMaritalStatus.SelectedDefinedValueId.HasValue )
+                {
+                    var maritalStatusMarriedValueId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.PERSON_MARITAL_STATUS_MARRIED.AsGuid() );
+                    dvpMaritalStatus.SetValue( maritalStatusMarriedValueId );
+                }
             }
 
             dvpMaritalStatus.DefinedTypeId = DefinedTypeCache.GetId( Rock.SystemGuid.DefinedType.PERSON_MARITAL_STATUS.AsGuid() );
@@ -1458,12 +1465,6 @@ namespace RockWeb.Blocks.WorkFlow
                 cpPersonEntryCampus.SetValue( personEntryPerson.PrimaryCampusId );
                 dvpMaritalStatus.SetValue( personEntryPerson.MaritalStatusValueId );
                 personEntryFamilyId = personEntryPerson.PrimaryFamilyId;
-            }
-            else
-            {
-                // default to Married if this is a new person
-                var maritalStatusMarriedValueId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.PERSON_MARITAL_STATUS_MARRIED.AsGuid() );
-                dvpMaritalStatus.SetValue( maritalStatusMarriedValueId );
             }
 
             pePerson1.SetFromPerson( personEntryPerson );
@@ -1543,6 +1544,13 @@ namespace RockWeb.Blocks.WorkFlow
         protected void cbShowPerson2_CheckedChanged( object sender, EventArgs e )
         {
             pePerson2.Visible = cbShowPerson2.Checked;
+
+            // Default Marital Status to Married if Spouse Entry is visible.
+            if ( pePerson2.Visible && !dvpMaritalStatus.SelectedDefinedValueId.HasValue )
+            {
+                var maritalStatusMarriedValueId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.PERSON_MARITAL_STATUS_MARRIED.AsGuid() );
+                dvpMaritalStatus.SetValue( maritalStatusMarriedValueId );
+            }
         }
 
         /// <summary>
@@ -1639,7 +1647,9 @@ namespace RockWeb.Blocks.WorkFlow
                 existingPersonSpouseId = matchedPersonsSpouse.Id;
             }
 
-            if ( formPersonEntrySettings.MaritalStatus != WorkflowActionFormPersonEntryOption.Hidden )
+
+            // Keeping the Marital Status in sync with the other controls in PersonEditor.
+            if ( formPersonEntrySettings.MaritalStatus != WorkflowActionFormPersonEntryOption.Hidden && dvpMaritalStatus.SelectedDefinedValueId.IsNotNullOrZero() )
             {
                 personEntryPerson.MaritalStatusValueId = dvpMaritalStatus.SelectedDefinedValueId;
             }

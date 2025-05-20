@@ -56,7 +56,8 @@ export class RockCurrency {
         }
         else {
             // Always truncate the currency value decimal places (with Big.roundDown).
-            this.big = new Big(value).round(this.currencyInfo.decimalPlaces, Big.roundDown);
+            // Default to 0 if the value is nullish.
+            this.big = new Big(value ?? 0).round(this.currencyInfo.decimalPlaces, Big.roundDown);
         }
     }
 
@@ -158,7 +159,7 @@ export class RockCurrency {
     }
 
     /**
-     * Determines if this currency is less than to another currency.
+     * Determines if this currency is less than another currency.
      *
      * @param value The currency to which to compare.
      * @returns `true` if this currency is less than the provided currency; otherwise, `false` is returned.
@@ -166,6 +167,17 @@ export class RockCurrency {
     isLessThan(value: RockCurrencyValue): boolean {
         const currency = this.asRockCurrency(value);
         return this.big.lt(currency.big);
+    }
+
+    /**
+     * Determines if this currency is less than or equal to another currency.
+     *
+     * @param value The currency to which to compare.
+     * @returns `true` if this currency is less than or equal to the provided currency; otherwise, `false` is returned.
+     */
+    isLessThanOrEqualTo(value: RockCurrencyValue): boolean {
+        const currency = this.asRockCurrency(value);
+        return this.big.lte(currency.big);
     }
 
     /**
@@ -185,7 +197,7 @@ export class RockCurrency {
     }
 
     /**
-     * Determines if this currency is greater than to another currency.
+     * Determines if this currency is greater than another currency.
      *
      * @param value The currency to which to compare.
      * @returns `true` if this currency is greater than the provided currency; otherwise, `false` is returned.

@@ -26,13 +26,14 @@ using System.Reflection;
 using System.Text;
 
 using Humanizer;
-
+using PuppeteerSharp.BrowserData;
 using Rock.Attribute;
 using Rock.Core;
 using Rock.Data;
 using Rock.Logging;
 using Rock.Model;
 using Rock.Observability;
+using Rock.Pdf;
 using Rock.Web.Cache;
 using WebGrease.Css.Extensions;
 
@@ -279,7 +280,7 @@ namespace Rock.Jobs
 
             RunCleanupTask( "upcoming event date", () => UpdateEventNextOccurrenceDates() );
 
-            RunCleanupTask( "older chrome engines", () => RemoveOlderChromeEngines() );
+            RunCleanupTask( "non-default chrome engines", () => RemoveNonDefaultChromeEngines() );
 
             RunCleanupTask( "legacy sms phone numbers", () => SynchronizeLegacySmsPhoneNumbers() );
 
@@ -2602,30 +2603,67 @@ SELECT @@ROWCOUNT
                 }
             }
 
+            // Fix any anonymous PersonAlias records that have a NULL LastVisitDate.
+            // These could happen because older versions of Rock created the
+            // PersonAlias initially with a NULL value. It was only the second page
+            // load for that same visitor that would set the LastVisitDate value.
+            // This was fixed in 1.16.7, which means this code can probably be
+            // safely removed in Rock v18.
+            var stopProcessingAfter = RockDateTime.Now.AddMinutes( 2 );
+
+            while ( RockDateTime.Now < stopProcessingAfter )
+            {
+                using ( var rockContext = CreateRockContext() )
+                {
+                    var anonymousVisitorId = new PersonService( rockContext ).GetId( Rock.SystemGuid.Person.ANONYMOUS_VISITOR.AsGuid() );
+                    var personAliasService = new PersonAliasService( rockContext );
+                    var now = RockDateTime.Now;
+
+                    var aliasesToUpdate = personAliasService
+                        .Queryable()
+                        .Where( a => a.PersonId == anonymousVisitorId
+                            && !a.LastVisitDateTime.HasValue )
+                        .Take( 500 )
+                        .ToList();
+
+                    // If no aliases need to be updated, then we are done.
+                    if ( !aliasesToUpdate.Any() )
+                    {
+                        break;
+                    }
+
+                    aliasesToUpdate.ForEach( a => a.LastVisitDateTime = now );
+
+                    rockContext.SaveChanges( disablePrePostProcessing: true );
+                }
+            }
+
             return deleteCount;
         }
 
         /// <summary>
-        /// Removes older unused versions of the chrome engine
+        /// Removes all installed versions of Chrome that do not match the default browser version, ensuring only the required version remains.
         /// </summary>
         /// <returns></returns>
-        private int RemoveOlderChromeEngines()
+        private int RemoveNonDefaultChromeEngines()
         {
             var options = new PuppeteerSharp.BrowserFetcherOptions()
             {
-                Product = PuppeteerSharp.Product.Chrome,
+                Browser = PuppeteerSharp.SupportedBrowser.Chrome,
                 Path = System.Web.Hosting.HostingEnvironment.MapPath( "~/App_Data/ChromeEngine" )
             };
 
             var browserFetcher = new PuppeteerSharp.BrowserFetcher( options );
-            var olderVersions = browserFetcher.LocalRevisions().Where( r => r != PuppeteerSharp.BrowserFetcher.DefaultChromiumRevision );
+            var olderVersions = browserFetcher.GetInstalledBrowsers().Where( r => r.BuildId != PdfGenerator.BrowserVersion && r.Browser == options.Browser );
+            int totalRemoved = 0;
 
             foreach ( var version in olderVersions )
             {
-                browserFetcher.Remove( version );
+                browserFetcher.Uninstall( version.BuildId );
+                totalRemoved++;
             }
 
-            return olderVersions.Count();
+            return totalRemoved;
         }
 
         /// <summary>

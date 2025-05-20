@@ -8,20 +8,20 @@
         </NotificationBox>
         <NotificationBox v-else-if="mustLogin" alertType="warning">
             <strong>Please log in</strong>
-            <p>You must be logged in to access this registration.</p>
+            <p>You must be logged in to access this {{ terms.registrationSingularLowerCase }}.</p>
         </NotificationBox>
         <NotificationBox v-else-if="isUnauthorized" alertType="warning">
             <strong>Sorry</strong>
-            <p>You are not allowed to view or edit the selected registration since you are not the one who created the registration.</p>
+            <p>You are not allowed to view or edit the selected {{ terms.registrationSingularLowerCase }} since you are not the one who created the {{ terms.registrationSingularLowerCase }}.</p>
         </NotificationBox>
         <NotificationBox v-else-if="isInvalidGateway" alertType="warning">
             <strong>Incorrect Configuration</strong>
-            <p>This registration has costs/fees associated with it but the configured payment gateway is not supported.</p>
+            <p>This {{ terms.registrationSingularLowerCase }} has costs/{{ terms.feePluralLowerCase }} associated with it but the configured payment gateway is not supported.</p>
         </NotificationBox>
         <NotificationBox v-else-if="preventNewRegistration" class="text-left" alertType="warning">
-            <strong>{{ registrationTermTitleCase }} Full</strong>
+            <strong>{{ terms.registrationSingularTitleCase }} Full</strong>
             <p>
-                There are not any more {{ registrationTermPlural }} available for {{ config.instanceName }}.
+                There are not any more {{ terms.registrationPluralLowerCase }} available for {{ config.instanceName }}.
             </p>
         </NotificationBox>
         <template v-else>
@@ -72,8 +72,8 @@
     import SessionRenewal from "./RegistrationEntry/sessionRenewal.partial.obs";
     import RegistrationEntrySuccess from "./RegistrationEntry/success.partial.obs";
     import RegistrationEntrySummary from "./RegistrationEntry/summary.partial.obs";
-    import { PaymentPlanConfiguration, RegistrationCostSummaryInfo, RegistrationEntryState, Step } from "./RegistrationEntry/types.partial";
-    import { CurrentRegistrationEntryState, PersistSession, GetPersistSessionArgs, getDefaultRegistrantInfo, getForcedFamilyGuid, scrollToTopAfterNextRender, RegistrationCostSummary, getRegistrantBasicInfo, OriginalFormFieldValues, ConfigurePaymentPlan } from "./RegistrationEntry/utils.partial";
+    import { PaymentPlanConfiguration, RegistrationCostSummaryInfo, RegistrationEntryState, RegistrationEntryTerminology, Step } from "./RegistrationEntry/types.partial";
+    import { CurrentRegistrationEntryState, PersistSession, GetPersistSessionArgs, getDefaultRegistrantInfo, getForcedFamilyGuid, scrollToTopAfterNextRender, RegistrationCostSummary, getRegistrantBasicInfo, OriginalFormFieldValues, ConfigurePaymentPlan, RegistrationEntryTerms } from "./RegistrationEntry/utils.partial";
     import CountdownTimer from "@Obsidian/Controls/countdownTimer.obs";
     import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
     import ProgressTracker from "@Obsidian/Controls/progressTracker.obs";
@@ -84,7 +84,7 @@
     import { List } from "@Obsidian/Utility/linq";
     import NumberFilter, { toWord } from "@Obsidian/Utility/numberUtils";
     import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
-    import StringFilter, { isNullOrWhiteSpace, toTitleCase } from "@Obsidian/Utility/stringUtils";
+    import { isNullOrWhiteSpace, toTitleCase } from "@Obsidian/Utility/stringUtils";
     import { CurrentPersonBag } from "@Obsidian/ViewModels/Crm/currentPersonBag";
     import { RegistrationEntryArgsBag } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrationEntryArgsBag";
     import { RegistrationEntryInitializationBox } from "@Obsidian/ViewModels/Blocks/Event/RegistrationEntry/registrationEntryInitializationBox";
@@ -237,7 +237,7 @@
 
     const uppercaseRegistrantTerm = computed<string>(() => {
         // LPC MODIFIED CODE
-        return StringFilter.toTitleCase(getLang() == "es" ? "persona" : config.registrantTerm ?? "");
+        return getLang() == "es" ? "persona" : config.registrantTerm ?? "";
         // END LPC MODIFIED CODE
     });
 
@@ -246,16 +246,16 @@
         const ordinal = NumberFilter.toOrdinal(registrationEntryState.value.currentRegistrantIndex + 1, getLang());
         let title = "";
         if (getLang() == "es") {
-            title = StringFilter.toTitleCase(
+            title = 
                 registrationEntryState.value.registrants.length <= 1 ?
                     "Persona" :
-                    ordinal + " Persona");
+                    ordinal + " Persona";
         }
         else {
-            title = StringFilter.toTitleCase(
+            title = 
                 registrationEntryState.value.registrants.length <= 1 ?
                     uppercaseRegistrantTerm.value :
-                    ordinal + " " + uppercaseRegistrantTerm.value);
+                    ordinal + " " + uppercaseRegistrantTerm.value;
         }
         // END LPC MODIFIED CODE
 
@@ -322,13 +322,14 @@
     /** The items to display in the progress tracker */
     const progressTrackerItems = computed<ProgressTrackerItem[]>(() => {
         const items: ProgressTrackerItem[] = [];
+        const { registrantSingularTitleCase, registrationSingularTitleCase } = terms.value;
 
         if (registrationEntryState.value.firstStep === Step.Intro) {
             items.push({
                 key: "Start",
                 // LPC MODIFIED CODE
                 title: getLang() == "es" ? "Iniciar" : "Start",
-                subtitle: registrationTerm.value ?? ""
+                subtitle: registrationSingularTitleCase
                 // END LPC MODIFIED CODE
             });
         }
@@ -338,7 +339,7 @@
                 key: "Pre",
                 // LPC MODIFIED CODE
                 title: getLang() == "es" ? "Información de" : config.registrationAttributeTitleStart ?? "",
-                subtitle: registrationTerm.value ?? ""
+                subtitle: registrationSingularTitleCase
                 // END LPC MODIFIED CODE
             });
         }
@@ -348,7 +349,7 @@
                 key: "Registrant",
                 // LPC MODIFIED CODE
                 title: uppercaseRegistrantTerm.value ?? "",
-                subtitle: registrationTerm.value ?? ""
+                subtitle: registrationSingularTitleCase
                 // END LPC MODIFIED CODE
             });
         }
@@ -358,49 +359,49 @@
             const info = getRegistrantBasicInfo(registrant, config.registrantForms ?? []);
 
             if (info?.firstName && info.lastName) {
-                items.push({
-                    key: `Registrant-${registrant.guid}`,
-                    title: info.firstName,
-                    subtitle: info.lastName
-                });
+            items.push({
+            key: `Registrant-${registrant.guid}`,
+            title: info.firstName,
+            subtitle: info.lastName
+            });
             }
             else {
-                items.push({
-                    key: `Registrant-${registrant.guid}`,
-                    // LPC MODIFIED CODE
-                    title: toTitleCase(uppercaseRegistrantTerm.value ?? ""),
-                    subtitle: toTitleCase(toWord(i + 1, getLang()))
-                    // END LPC MODIFIED CODE
-                });
-            }
-        }
-
-        if (hasPostAttributes) {
             items.push({
-                key: "Post",
-                title: config.registrationAttributeTitleEnd ?? "",
-                // LPC MODIFIED CODE
-                subtitle: registrationTerm.value ?? ""
-                // END LPC MODIFIED CODE
+            key: `Registrant-${registrant.guid}`,
+            // LPC MODIFIED CODE
+            title: registrationSingularTitleCase ?? "",
+            subtitle: toTitleCase(toWord(i + 1, getLang()))
+            // END LPC MODIFIED CODE
             });
-        }
+            }
+            }
 
-        items.push({
+            if (hasPostAttributes) {
+            items.push({
+            key: "Post",
+            title: config.registrationAttributeTitleEnd ?? "",
+            // LPC MODIFIED CODE
+            subtitle: registrationSingularTitleCase ?? ""
+            // END LPC MODIFIED CODE
+            });
+            }
+
+            items.push({
             key: "Finalize",
             // LPC MODIFIED CODE
             title: getLang() == "es" ? "Finalizar" : "Finalize",
-            subtitle: registrationTerm.value ?? ""
+            subtitle: registrationSingularTitleCase ?? ""
             // END LPC MODIFIED CODE
-        });
+            });
 
-        return items;
-    });
+            return items;
+            });
 
-    /**
-     * Determines if there are any costs or fees on the registration and
-     * checks if we have a valid gateway.
-     */
-    const isInvalidGateway = computed<boolean>(() => {
+            /**
+            * Determines if there are any costs or fees on the registration and
+            * checks if we have a valid gateway.
+            */
+            const isInvalidGateway = computed<boolean>(() => {
         if (!config) {
             return false;
         }
@@ -432,22 +433,48 @@
 
     const preventNewRegistration = computed<boolean>(() => {
         return isFull.value && !config.isExistingRegistration;
-    });
+        });
 
-    const registrationTerm = computed<string>(() => {
-        // LPC MODIFIED CODE
-        return (getLang() == "es" ? "registro" : (config.registrationTerm || "registration")).toLowerCase();
-        // END LPC MODIFIED CODE
-    });
-
-    const registrationTermPlural = computed<string>(() => {
-        // LPC MODIFIED CODE
-        return (getLang() == "es" ? "registros" : (config.pluralRegistrationTerm || "registrations")).toLowerCase();
-        // END LPC MODIFIED CODE
-    });
-
-    const registrationTermTitleCase = computed<string>(() => {
-        return toTitleCase(registrationTerm.value);
+    const terms = computed<RegistrationEntryTerminology>
+        (() => {
+        return {
+        discountCodeSingularLowerCase: getLang() === 'es'
+        ? 'código de descuento'
+        : registrationEntryState.value.viewModel.discountCodeTerm?.toLowerCase() ?? 'discount code',
+        discountCodeSingularTitleCase: getLang() === 'es'
+        ? 'Código de Descuento'
+        : toTitleCase(registrationEntryState.value.viewModel.discountCodeTerm ?? null) || 'Discount Code',
+        feePluralLowerCase: getLang() === 'es'
+        ? 'tarifas'
+        : registrationEntryState.value.viewModel.pluralFeeTerm?.toLowerCase() || 'fees',
+        feePluralTitleCase: getLang() === 'es'
+        ? 'Tarifas'
+        : toTitleCase(registrationEntryState.value.viewModel.pluralFeeTerm ?? null) || 'Fees',
+        feeSingularLowerCase: getLang() === 'es'
+        ? 'tarifa'
+        : registrationEntryState.value.viewModel.feeTerm?.toLowerCase() || 'fee',
+        registrantPluralLowerCase: getLang() === 'es'
+        ? 'participantes'
+        : registrationEntryState.value.viewModel.pluralRegistrantTerm?.toLowerCase() || 'registrants',
+        registrantSingularLowerCase: getLang() === 'es'
+        ? 'participante'
+        : registrationEntryState.value.viewModel.registrantTerm?.toLowerCase() || 'registrant',
+        registrantSingularTitleCase: getLang() === 'es'
+        ? 'Participante'
+        : toTitleCase(registrationEntryState.value.viewModel.registrantTerm ?? null) || 'Registrant',
+        registrationPluralLowerCase: getLang() === 'es'
+        ? 'registros'
+        : registrationEntryState.value.viewModel.pluralRegistrationTerm?.toLowerCase() || 'registrations',
+        registrationSingularLowerCase: getLang() === 'es'
+        ? 'registro'
+        : registrationEntryState.value.viewModel.registrationTerm?.toLowerCase() || 'registration',
+        registrationSingularTitleCase: getLang() === 'es'
+        ? 'Registro'
+        : toTitleCase(registrationEntryState.value.viewModel.registrationTerm ?? null) || 'Registration',
+        signatureDocumentSingularTitleCase: getLang() === 'es'
+        ? 'Exención'
+        : toTitleCase(registrationEntryState.value.viewModel.signatureDocumentTerm ?? null) || 'Release',
+        };
     });
 
     // LPC CODE
@@ -573,8 +600,9 @@
             registrationEntryState.value.currentStep = Step.RegistrationEndForm;
         }
         else {
+            const lastRegistrantIndex = (registrationEntryState.value.registrants?.length ?? 0) - 1;
             const lastFormIndex = (registrationEntryState.value.viewModel.registrantForms?.length ?? 0) - 1;
-
+            registrationEntryState.value.currentRegistrantIndex = lastRegistrantIndex;
             registrationEntryState.value.currentRegistrantFormIndex = lastFormIndex;
             registrationEntryState.value.currentStep = Step.PerRegistrantForms;
         }
@@ -658,6 +686,7 @@
     provide(CurrentRegistrationEntryState, registrationEntryState.value);
     provide(GetPersistSessionArgs, getRegistrationEntryBlockArgs);
     provide(PersistSession, persistSession);
+    provide(RegistrationEntryTerms, terms);
 
     // Provide the same dependencies with simple string keys for dependent plugins.
     provide("registrationEntryState", registrationEntryState.value);

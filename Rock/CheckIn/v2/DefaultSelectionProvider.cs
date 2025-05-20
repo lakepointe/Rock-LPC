@@ -93,6 +93,32 @@ namespace Rock.CheckIn.v2
 
             var selectedOpportunities = new List<OpportunitySelectionBag>();
 
+            // If there were any pre-selected opportunities from filters and
+            // they are still valid then add them to the opportunity list.
+            foreach ( var preSelected in person.PreSelectedOpportunities )
+            {
+                var groupOpportunity = person.Opportunities.Groups.FirstOrDefault( g => g.Id == preSelected.Group.Id );
+
+                if ( groupOpportunity == null )
+                {
+                    continue;
+                }
+
+                // Only one selection per schedule is allowed.
+                if ( selectedOpportunities.Any( o => o.Schedule.Id == preSelected.Schedule.Id ) )
+                {
+                    continue;
+                }
+
+                // Verify the selections are still valid for this group opportunity.
+                if ( !groupOpportunity.Locations.Any( l => l.LocationId == preSelected.Location.Id && l.ScheduleId == preSelected.Schedule.Id ) )
+                {
+                    continue;
+                }
+
+                selectedOpportunities.Add( preSelected );
+            }
+
             if ( !previousCheckIns.Any() )
             {
                 // Just try to pick anything valid.
@@ -109,7 +135,12 @@ namespace Rock.CheckIn.v2
                 // First try to find a valid exact match against a previous check-in.
                 if ( TryGetExactMatch( person, previousCheckIn, out var opportunities ) )
                 {
-                    selectedOpportunities.Add( opportunities );
+                    // If we matched a schedule that we already have a
+                    // selection for then skip it.
+                    if ( !selectedOpportunities.Any( o => o.Schedule.Id == opportunities.Schedule.Id ) )
+                    {
+                        selectedOpportunities.Add( opportunities );
+                    }
 
                     continue;
                 }
@@ -118,7 +149,25 @@ namespace Rock.CheckIn.v2
                 // available location and schedule.
                 if ( TryGetBestMatchingGroup( person, previousCheckIn, out opportunities ) )
                 {
-                    selectedOpportunities.Add( opportunities );
+                    // If we matched a schedule that we already have a
+                    // selection for then skip it.
+                    if ( !selectedOpportunities.Any( o => o.Schedule.Id == opportunities.Schedule.Id ) )
+                    {
+                        selectedOpportunities.Add( opportunities );
+                    }
+
+                    continue;
+                }
+
+                // Finally, just try to match anything.
+                if ( TryGetAnyValidSelection( person, out opportunities ) )
+                {
+                    // If we matched a schedule that we already have a
+                    // selection for then skip it.
+                    if ( !selectedOpportunities.Any( o => o.Schedule.Id == opportunities.Schedule.Id ) )
+                    {
+                        selectedOpportunities.Add( opportunities );
+                    }
 
                     continue;
                 }
@@ -142,7 +191,12 @@ namespace Rock.CheckIn.v2
             var group = person.Opportunities.Groups
                 .FirstOrDefault( g => g.Id == previousCheckIn.GroupId );
 
-            if ( group == null || !group.LocationIds.Contains( previousCheckIn.LocationId ) )
+            if ( group == null )
+            {
+                return false;
+            }
+
+            if ( !group.Locations.Any( l => l.LocationId == previousCheckIn.LocationId && l.ScheduleId == previousCheckIn.ScheduleId ) )
             {
                 return false;
             }
@@ -157,16 +211,10 @@ namespace Rock.CheckIn.v2
 
             var location = person.Opportunities.Locations
                 .FirstOrDefault( l => l.Id == previousCheckIn.LocationId );
-
-            if ( location == null || !location.ScheduleIds.Contains( previousCheckIn.ScheduleId ) )
-            {
-                return false;
-            }
-
             var schedule = person.Opportunities.Schedules
                 .FirstOrDefault( s => s.Id == previousCheckIn.ScheduleId );
 
-            if ( schedule == null )
+            if ( location == null || schedule == null )
             {
                 return false;
             }
@@ -255,30 +303,21 @@ namespace Rock.CheckIn.v2
         /// <returns><c>true</c> if a match was found and <paramref name="selectedOpportunities"/> is valid, <c>false</c> otherwise.</returns>
         protected virtual bool TryGetFirstValidSelectionForGroup( AreaOpportunity area, GroupOpportunity group, Attendee person, out OpportunitySelectionBag selectedOpportunities )
         {
-            foreach ( var locationId in group.LocationIds )
+            foreach ( var loc in group.Locations )
             {
                 var location = person.Opportunities.Locations
-                    .FirstOrDefault( l => l.Id == locationId );
+                    .FirstOrDefault( l => l.Id == loc.LocationId );
+                var schedule = person.Opportunities.Schedules
+                    .FirstOrDefault( s => s.Id == loc.ScheduleId );
 
-                if ( location == null )
+                if ( location == null || schedule == null )
                 {
                     continue;
                 }
 
-                foreach ( var scheduleId in location.ScheduleIds )
-                {
-                    var schedule = person.Opportunities.Schedules
-                        .FirstOrDefault( s => s.Id == scheduleId );
+                selectedOpportunities = GetSelectedOpportunities( area, group, location, schedule );
 
-                    if ( schedule == null )
-                    {
-                        continue;
-                    }
-
-                    selectedOpportunities = GetSelectedOpportunities( area, group, location, schedule );
-
-                    return true;
-                }
+                return true;
             }
 
             selectedOpportunities = null;

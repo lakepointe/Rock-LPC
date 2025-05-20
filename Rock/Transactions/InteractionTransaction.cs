@@ -286,6 +286,7 @@ namespace Rock.Transactions
                 var interaction = interactionService.CreateInteraction( info.InteractionComponentId.Value, info.UserAgent, info.InteractionData, info.IPAddress, info.BrowserSessionId );
 
                 // The rest of the properties need to be manually set.
+                interaction.Guid = info.InteractionGuid ?? Guid.NewGuid();
                 interaction.EntityId = info.InteractionEntityId;
                 interaction.Operation = info.InteractionOperation.IsNotNullOrWhiteSpace() ? info.InteractionOperation.Trim() : "View";
                 interaction.InteractionSummary = info.InteractionSummary?.Trim();
@@ -309,6 +310,38 @@ namespace Rock.Transactions
                 interaction.SetInteractionData( info.InteractionData?.Trim() );
                 interactionsToInsert.Add( interaction );
             }
+
+            /*
+                1/14/2025 - KBH
+
+                Added code to check for duplicate Guids before inserting into the Interaction table.
+                    1. Check for any duplicate interaction Guids within our current list of interactions
+                       to insert.
+                    2. Check for any interaction guids in the database that match any of the interaction
+                       guids we are attempting to insert.
+
+                REASON FOR THE CODE:
+                    A malicious user can send multiple requests to the RegisterPageInteraction route. If
+                    the requests made by the malicious user contain duplicate interaction Guids, the
+                    attempt to Bulk Insert will fail and rollback. Any queued interactions (good or bad)
+                    will be lost.
+
+                    This added code may also prevent similar (duplicate guid) scenarios when a Web Farm
+                    is introduced. 
+             */
+
+            // Remove any duplicate interactions within the current list of interactions to insert.
+            interactionsToInsert = interactionsToInsert
+                .DistinctBy( i => i.Guid )
+                .ToList();
+
+            // Cross checking to verify that Guids aren't present in the interaction table.
+            var interactionGuidsToInsert = interactionsToInsert.Select( i => i.Guid ).ToList();
+            var duplicateInteractionGuidsFromDatabase = new InteractionService( new RockContext() ).Queryable()
+                                    .Where( i => interactionGuidsToInsert.Contains( i.Guid ) )
+                                    .Select( i => i.Guid )
+                                    .ToList();
+            interactionsToInsert.RemoveAll( a => duplicateInteractionGuidsFromDatabase.Contains( a.Guid ) );
 
             rockContext.BulkInsert( interactionsToInsert );
 
@@ -426,6 +459,12 @@ namespace Rock.Transactions
         #endregion InteractionDeviceType Properties
 
         #region Interaction Properties
+
+        /// <inheritdoc cref="IEntity.Guid"/>
+        /// <remarks>
+        /// If this is not specified then a new Guid will be created.
+        /// </remarks>
+        public Guid? InteractionGuid { get; set; }
 
         /// <inheritdoc cref="Interaction.InteractionDateTime"/>
         /// <remarks>
