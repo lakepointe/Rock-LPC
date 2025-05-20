@@ -64,6 +64,7 @@ namespace Rock.Web.UI
         private PlaceHolder phLoadStats;
         private LinkButton _btnRestoreImpersonatedByUser;
         private ScriptManager _scriptManager;
+        private HiddenField _hfInteractionGuid;
         private PageCache _pageCache = null;
 
         private string _clientType = null;
@@ -843,8 +844,6 @@ namespace Rock.Web.UI
             ConvertLegacyContextCookiesToJSON();
 #pragma warning restore 618
 
-            RequestContext = new RockRequestContext( Request, new RockResponseContext( this ), CurrentUser );
-
             if ( _pageCache != null )
             {
                 RequestContext.PrepareRequestForPage( _pageCache );
@@ -1465,6 +1464,7 @@ Rock.settings.initialize({{
                                 {
                                     Page.Trace.Warn( "\tSetting block properties" );
                                     blockControl.SetBlock( _pageCache, block, canEdit, canAdministrate );
+                                    blockControl.RequestContext = RequestContext;
                                     control = new RockBlockWrapper( blockControl );
                                 }
                             }
@@ -1540,6 +1540,7 @@ Obsidian.onReady(() => {{
             pageId: {_pageCache.Id},
             pageGuid: '{_pageCache.Guid}',
             pageParameters: {sanitizedPageParameters.ToJson()},
+            interactionGuid: '{RequestContext.RelatedInteractionGuid}',
             currentPerson: {currentPersonJson},
             isAnonymousVisitor: {( isAnonymousVisitor ? "true" : "false" )},
             loginUrlWithReturnUrl: '{GetLoginUrlWithReturnUrl()}'
@@ -1752,6 +1753,17 @@ Obsidian.init({{ debug: true, fingerprint: ""v={_obsidianFingerprint}"" }});
                         _pageCache.CacheControlHeader.SetupHttpCachePolicy( Response.Cache );
                     }
                 }
+
+                // Put a hidden field on the form that contains the interaction
+                // unique identifier of the original page load. When the view
+                // state is loaded the value will be replaced with the original.
+                _hfInteractionGuid = new HiddenField
+                {
+                    ID = "hfInteractionGuid",
+                    Value = RequestContext.RelatedInteractionGuid.ToString()
+                };
+
+                Form.Controls.Add( _hfInteractionGuid );
 
                 Page.Trace.Warn( "Setting meta tags" );
 
@@ -2471,6 +2483,12 @@ Obsidian.onReady(() => {{
 
             base.OnLoad( e );
 
+            // Attempt to restore the original interaction unique identifier.
+            if ( IsPostBack && Guid.TryParse( _hfInteractionGuid.Value, out var originalInteractionGuid ) )
+            {
+                RequestContext.RelatedInteractionGuid = originalInteractionGuid;
+            }
+
             Page.Header.DataBind();
 
             try
@@ -2579,14 +2597,16 @@ Sys.Application.add_load(function () {
                 return;
             }
 
-            // If we have identified a logged-in user, record the page interaction immediately and return.
+            // If we have identified a logged-in user, record the page interaction immediately and return. (Does not include anonymous visitors)
             if ( CurrentPerson != null )
             {
                 var interactionInfo = new InteractionTransactionInfo
                 {
+                    InteractionGuid = RequestContext.RelatedInteractionGuid,
                     InteractionTimeToServe = _tsDuration.TotalSeconds,
                     InteractionChannelCustomIndexed1 = Request.UrlReferrerNormalize(),
-                    InteractionChannelCustom2 = Request.UrlReferrerSearchTerms()
+                    InteractionChannelCustom2 = Request.UrlReferrerSearchTerms(),
+                    InteractionChannelCustom1 = Activity.Current?.TraceId.ToString()
                 };
 
                 // If we have a UTM cookie, add the information to the interaction.
@@ -2600,8 +2620,7 @@ Sys.Application.add_load(function () {
 
                 pageViewTransaction.Enqueue();
 
-                var intentSettings = _pageCache.GetAdditionalSettings<PageService.IntentSettings>();
-                InteractionService.RegisterIntentInteractions( intentSettings.InteractionIntentValueIds );
+                InteractionService.RegisterIntentInteractions( _pageCache.InteractionIntentValueIds );
 
                 return;
             }
@@ -2622,6 +2641,7 @@ Sys.Application.add_load(function () {
             // extracted from the request header to prevent cross-site scripting (XSS) issues.
             var pageInteraction = new PageInteractionInfo
             {
+                Guid = RequestContext.RelatedInteractionGuid,
                 ActionName = "View",
                 BrowserSessionGuid = rockSessionGuid,
                 PageId = this.PageId,
@@ -2639,6 +2659,12 @@ Sys.Application.add_load(function () {
             // If the user is logged in, they are identified by the supplied UserIdKey representing their current PersonAlias.
             // If the user is a visitor, the ROCK_VISITOR_KEY cookie is read from the client browser to obtain the
             // UserIdKey supplied to them. For a first visit, the cookie is set in this response.
+            // Additionally, this script now stores a list of interaction GUIDs in sessionStorage to prevent duplicate interactions.
+            // Each time a new interaction is recorded, the GUID is checked against the stored list in sessionStorage.
+            // If the GUID has already been recorded in the current session, the interaction will not be sent again, ensuring
+            // that only unique interactions are tracked during the session. This additional change was needed to prevent the
+            // scenario where a duplicate interaction would be sent whenever an individual used a browser's back arrow to navigate
+            // back to a page that had already sent an interaction. 
             string script = @"
 Sys.Application.add_load(function () {
     const getCookieValue = (name) => {
@@ -2646,19 +2672,29 @@ Sys.Application.add_load(function () {
 
         return !match ? '' : match.pop();
     };
-    var interactionArgs = <jsonData>;
-    if (!interactionArgs.<userIdProperty>) {
-        interactionArgs.<userIdProperty> = getCookieValue('<rockVisitorCookieName>');
+
+    var interactionGuid = '<interactionGuid>';
+    var interactionGuids = JSON.parse(sessionStorage.getItem('interactionGuids')) || [];
+
+    if (!interactionGuids.includes(interactionGuid)) {
+        interactionGuids.push(interactionGuid);
+        sessionStorage.setItem('interactionGuids', JSON.stringify(interactionGuids));
+
+        var interactionArgs = <jsonData>;
+        if (!interactionArgs.<userIdProperty>) {
+            interactionArgs.<userIdProperty> = getCookieValue('<rockVisitorCookieName>');
+        }
+        $.ajax({
+            url: '/api/Interactions/RegisterPageInteraction',
+            type: 'POST',
+            data: interactionArgs
+            });
     }
-    $.ajax({
-        url: '/api/Interactions/RegisterPageInteraction',
-        type: 'POST',
-        data: interactionArgs
-        });
 });
 ";
 
             script = script.Replace( "<rockVisitorCookieName>", Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY );
+            script = script.Replace( "<interactionGuid>", pageInteraction.Guid.ToString() );
             script = script.Replace( "<jsonData>", pageInteraction.ToJson() );
             script = script.Replace( "<userIdProperty>", nameof( pageInteraction.UserIdKey ) );
 
@@ -2725,13 +2761,6 @@ Sys.Application.add_load(function () {
             var scope = _lazyServiceProvider.Value.CreateScope();
 
             _pageServiceScopes.Add( scope );
-
-            var accessor = scope.ServiceProvider.GetRequiredService<IRockRequestContextAccessor>();
-
-            if ( accessor is RockRequestContextAccessor internalAccessor )
-            {
-                internalAccessor.RockRequestContext = RequestContext;
-            }
 
             return scope;
         }
@@ -4528,7 +4557,15 @@ Sys.Application.add_load(function () {
 
                     StringBuilder sbScriptTagHTML = new StringBuilder();
                     sbScriptTagHTML.Append( $"<script id='{scriptId}' src='{src}'" );
-                    string additionalAttributesHtml = additionalAttributes?.Select( a => $"{a.Key}='{a.Value}'" ).ToList().AsDelimited( " " );
+                    string additionalAttributesHtml = additionalAttributes?
+                        .Select( a =>
+                            a.Value == null
+                                ? $"{a.Key}"
+                                : $"{a.Key}='{a.Value}'"
+                        )
+                        .ToList()
+                        .AsDelimited( " " );
+
                     if ( additionalAttributesHtml.IsNotNullOrWhiteSpace() )
                     {
                         sbScriptTagHTML.Append( $" {additionalAttributesHtml}" );
@@ -4622,6 +4659,7 @@ Sys.Application.add_load(function () {
             {
                 var obsidianPath = System.Web.Hosting.HostingEnvironment.MapPath( "~/Obsidian" );
                 var pluginsPath = System.Web.Hosting.HostingEnvironment.MapPath( "~/Plugins" );
+                var now = RockDateTime.Now;
 
                 // Find the last date any obsidian file was modified.
                 var lastWriteTime = Directory.EnumerateFiles( obsidianPath, "*.js", SearchOption.AllDirectories )
@@ -4639,10 +4677,15 @@ Sys.Application.add_load(function () {
                     } )
                     .Where( d => d.HasValue )
                     .Select( d => ( DateTime? ) RockDateTime.ConvertLocalDateTimeToRockDateTime( d.Value ) )
+                    // This is an attempt to fix random issues where people have the
+                    // JS file cached in the browser. A theory is that some JS file
+                    // has a future date time, so even after an upgrade the same
+                    // fingerprint value is used. Ignore any dates in the future.
+                    .Where( d => d < now )
                     .OrderByDescending( d => d )
                     .FirstOrDefault();
 
-                _obsidianFingerprint = ( lastWriteTime ?? RockDateTime.Now ).Ticks;
+                _obsidianFingerprint = ( lastWriteTime ?? now ).Ticks;
 
                 // Check if we are in debug mode and if so enable the watchers.
                 var cfg = ( CompilationSection ) ConfigurationManager.GetSection( "system.web/compilation" );
@@ -4983,6 +5026,13 @@ Sys.Application.add_load(function () {
         /// <inheritdoc/>
         public IAsyncResult BeginProcessRequest( HttpContext context, AsyncCallback cb, object extraData )
         {
+            RequestContext = new RockRequestContext( context.Request, new RockResponseContext( this ), CurrentUser );
+
+            if ( _lazyServiceProvider.Value.GetRequiredService<IRockRequestContextAccessor>() is RockRequestContextAccessor internalAccessor )
+            {
+                internalAccessor.RockRequestContext = RequestContext;
+            }
+
             return AsyncPageBeginProcessRequest( context, cb, extraData );
         }
 
@@ -4990,6 +5040,14 @@ Sys.Application.add_load(function () {
         public void EndProcessRequest( IAsyncResult result )
         {
             AsyncPageEndProcessRequest( result );
+
+            if ( _lazyServiceProvider.Value.GetRequiredService<IRockRequestContextAccessor>() is RockRequestContextAccessor internalAccessor )
+            {
+                if ( ReferenceEquals( internalAccessor.RockRequestContext, RequestContext ) )
+                {
+                    internalAccessor.RockRequestContext = null;
+                }
+            }
         }
 
         #endregion

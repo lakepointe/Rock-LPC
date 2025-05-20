@@ -5,7 +5,7 @@
 
             <Registrar />
 
-            <div v-if="hasPaymentCost">
+            <div v-if="hasPaymentCost && hasRegistrantNotOnWaitList">
                 <!-- LPC MODIFIED CODE -->
                 <h4>{{ getLang() == "es" ? "Resumen de pago" : "Payment Summary" }}</h4>
                 <!-- END LPC MODIFIED CODE -->
@@ -13,12 +13,23 @@
                 <CostSummary />
             </div>
 
-            <div v-else class="margin-b-md">
+            <div v-if="!hasPaymentCost && hasRegistrantNotOnWaitList" class="margin-b-md">
                 <!-- LPC MODIFIED CODE -->
                 <p>{{ getLang() == "es" ? "La siguiente persona será registrada a" : `The following ${registrantOrRegistrantsTermLowerCase} will be registered for` }} {{ instanceName }}:</p>
                 <!-- END LPC MODIFIED CODE -->
                 <ul>
                     <li v-for="r in registrantInfos" :key="r.guid">
+                        <strong>{{ r.firstName }} {{ r.lastName }}</strong>
+                    </li>
+                </ul>
+            </div>
+
+            <div v-if="hasRegistrantOnWaitList" class="margin-b-md">
+                <!-- LPC MODIFIED CODE -->
+                <p>{{ getLang() == "es" ? "La siguiente persona será añadida a la lista de espera para" : `The following ${registrantOrRegistrantsTermLowerCase} will be added to the waiting list for` }} {{ instanceName }}:</p>
+                <!-- END LPC MODIFIED CODE -->
+                <ul>
+                    <li v-for="r in registrantInfos.filter(r => r.isOnWaitList)" :key="r.guid">
                         <strong>{{ r.firstName }} {{ r.lastName }}</strong>
                     </li>
                 </ul>
@@ -49,6 +60,7 @@
         CurrentRegistrationEntryState,
         GetPersistSessionArgs,
         PersistSession,
+        RegistrationEntryTerms,
         getRegistrantBasicInfo, use
     } from "./utils.partial";
     import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
@@ -68,6 +80,7 @@
     const invokeBlockAction = useInvokeBlockAction();
     const registrationEntryState = use(CurrentRegistrationEntryState);
     const persistSession = use(PersistSession);
+    const registrationEntryTerms = use(RegistrationEntryTerms);
 
     const emit = defineEmits<{
         (e: "next"): void,
@@ -152,17 +165,7 @@
 
     /** The registrant term - plural if there are more than 1 */
     const registrantOrRegistrantsTermLowerCase = computed<string>(() => {
-        return registrantInfos.value.length === 1 ? registrantTermLowerCase.value : registrantsTermLowerCase.value;
-    });
-
-    /** The registrant term (singular) (lower case). */
-    const registrantTermLowerCase = computed<string>(() => {
-        return registrationEntryState.viewModel.registrantTerm?.toLowerCase() || "registrant";
-    });
-
-    /** The registrants term (plural) (lower case). */
-    const registrantsTermLowerCase = computed<string>(() => {
-        return registrationEntryState.viewModel.pluralRegistrantTerm?.toLowerCase() || "registrants";
+        return registrantInfos.value.length === 1 ? registrationEntryTerms.value.registrantSingularLowerCase : registrationEntryTerms.value.registrantPluralLowerCase;
     });
 
     /** The name of this registration instance */
@@ -182,6 +185,16 @@
             return getLang() == "es" ? "Terminar" : "Finish";
             // END LPC MODIFIED CODE
         }
+    });
+
+    /** Were any registrants put on the waitlist when submitting the registration. */
+    const hasRegistrantOnWaitList = computed<boolean>(() => {
+        return registrantInfos.value.some(r => r.isOnWaitList);
+    });
+
+    /** Were any registrants successfully registered when submitting the registration. */
+    const hasRegistrantNotOnWaitList = computed<boolean>(() => {
+        return registrantInfos.value.some(r => !r.isOnWaitList);
     });
 
     // #endregion

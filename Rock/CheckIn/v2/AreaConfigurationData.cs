@@ -16,6 +16,7 @@
 //
 
 using Rock.Data;
+using Rock.Enums.CheckIn;
 using Rock.Model;
 using Rock.Web.Cache;
 
@@ -42,10 +43,34 @@ namespace Rock.CheckIn.v2
         public virtual AttendanceRule AttendanceRule { get; }
 
         /// <summary>
+        /// Gets the matching logic used when <see cref="AttendanceRule"/>
+        /// is <see cref="AttendanceRule.AlreadyEnrolledInGroup"/>.
+        /// </summary>
+        public virtual AlreadyEnrolledMatchingLogic AlreadyEnrolledMatchingLogic { get; }
+
+        /// <summary>
+        /// Gets a value that groups in this area should not be available
+        /// when a person already has a check-in for the same schedule.
+        /// </summary>
+        public virtual bool IsConcurrentCheckInPrevented { get; }
+
+        /// <summary>
+        /// Determines if the group type has been configured to support scheduling
+        /// people ahead of time.
+        /// </summary>
+        public virtual bool IsSchedulingEnabled { get; }
+
+        /// <summary>
         /// Gets where labels should be printed for groups in this area.
         /// </summary>
         /// <value>The printed label destination.</value>
         public virtual PrintTo PrintTo { get; }
+
+        /// <summary>
+        /// How locations should be selected when a group in this area is
+        /// being used for check-in.
+        /// </summary>
+        public virtual LocationSelectionStrategy LocationSelectionStrategy { get; set; }
 
         #endregion
 
@@ -69,7 +94,13 @@ namespace Rock.CheckIn.v2
         internal AreaConfigurationData( GroupTypeCache groupTypeCache, RockContext rockContext )
         {
             AttendanceRule = groupTypeCache.AttendanceRule;
+            AlreadyEnrolledMatchingLogic = groupTypeCache.AlreadyEnrolledMatchingLogic;
+            IsConcurrentCheckInPrevented = groupTypeCache.IsConcurrentCheckInPrevented;
+            IsSchedulingEnabled = groupTypeCache.IsSchedulingEnabled;
             PrintTo = groupTypeCache.AttendancePrintTo;
+            LocationSelectionStrategy = groupTypeCache
+                .GetAttributeValue( SystemKey.GroupTypeAttributeKey.CHECKIN_GROUPTYPE_LOCATION_SELECTION_STRATEGY )
+                .ConvertToEnum<LocationSelectionStrategy>( LocationSelectionStrategy.Ask );
         }
 
         #endregion

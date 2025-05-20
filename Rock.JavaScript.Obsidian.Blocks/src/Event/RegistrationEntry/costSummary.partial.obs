@@ -130,11 +130,11 @@
                     </div>
 
                     <div v-if="isPaymentPlanConfigurationSupported && !isPaymentPlanConfigured && !registrationEntryState.viewModel.session?.activePaymentPlan" class="form-group">
-                        <RockButton btnType="default" btnSize="sm" @click="onOpenConfigurePaymentPlanModal">Set Up Payment Plan</RockButton>
+                        <RockButton btnType="default" btnSize="sm" @click="onOpenConfigurePaymentPlanModal" :disabled="registrationEntryState.amountToPayToday >= discountedTotal">Set Up Payment Plan</RockButton>
                     </div>
                 </template>
 
-                <div v-else class="form-group static-control">
+                <div v-else-if="!registrationEntryState.viewModel.session?.activePaymentPlan" class="form-group static-control">
                     <!-- LPC MODIFIED CODE -->
                     <label class="control-label">{{ getLang() == "es" ? "Cantidad a Pagar" : "Amount Due" }}</label>
                     <!-- END LPC MODIFIED CODE -->
@@ -395,8 +395,8 @@
         }
 
         // excluding the grouping separators (or the thousands separators) as they were not compactible with the rules engine.
-        rules.push(`gte:${min.format({excludeGroupingSeparators: true})}`);
-        rules.push(`lte:${max.format({excludeGroupingSeparators: true})}`);
+        rules.push(`gte:${min.format({ excludeGroupingSeparators: true })}`);
+        rules.push(`lte:${max.format({ excludeGroupingSeparators: true })}`);
 
         return rules;
     });

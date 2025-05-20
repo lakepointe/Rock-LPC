@@ -84,7 +84,6 @@ namespace RockWeb
         /// <param name="context">The context.</param>
         private void ProcessContentFileRequest( HttpContext context )
         {
-
             // Don't trust query strings
             string untrustedFilePath = context.Request.QueryString["fileName"];
             string encryptedRootFolder = context.Request.QueryString["rootFolder"];
@@ -142,6 +141,14 @@ namespace RockWeb
                     if ( fileContents != null )
                     {
                         string mimeType = MimeMapping.GetMimeMapping( trustedPhysicalFilePath );
+
+                        // If the requested file is not an image respond with not found.
+                        if ( !mimeType.StartsWith( "image/" ) )
+                        {
+                            SendNotFound( context );
+                            return;
+                        }
+
                         context.Response.AddHeader( "content-disposition", string.Format( "inline;filename={0}", Path.GetFileName( trustedPhysicalFilePath ) ) );
                         context.Response.ContentType = mimeType;
 
@@ -286,7 +293,9 @@ namespace RockWeb
             // Use BinaryFileType.RequiresViewSecurity because checking security for every file is slow (~40ms+ per request)
             if ( parentEntityAllowsView == null && binaryFileMetaData.BinaryFileType_RequiresViewSecurity )
             {
-                if ( !binaryFileAuth.IsAuthorized( Rock.Security.Authorization.VIEW, currentPerson ) )
+                var securityGrant = SecurityGrant.FromToken( context.Request.QueryString["securityGrant"] );
+
+                if ( !binaryFileAuth.IsAuthorized( Rock.Security.Authorization.VIEW, currentPerson ) && securityGrant?.IsAccessGranted( binaryFileAuth, Rock.Security.Authorization.VIEW ) != true )
                 {
                     SendNotAuthorized( context );
                     return;
@@ -472,6 +481,7 @@ namespace RockWeb
             cleanedQueryString.Remove( "isBinaryFile" );
             cleanedQueryString.Remove( "rootFolder" );
             cleanedQueryString.Remove( "fileName" );
+            cleanedQueryString.Remove( "securityGrant" );
 
             string fileName = string.Empty;
             foreach ( var key in cleanedQueryString.Keys )

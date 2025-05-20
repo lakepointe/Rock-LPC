@@ -146,12 +146,14 @@
             case RegistrationPersonFieldType.FirstName:
                 // LPC MODIFIED CODE
                 componentProps.label = getLang() == "es" ? "Nombre" : "First Name";
+                componentProps.rules = [componentProps.rules, "nospecialcharacters", "noemojisorspecialfonts"];
                 // END LPC MODIFIED CODE
                 break;
 
             case RegistrationPersonFieldType.LastName:
                 // LPC MODIFIED CODE
                 componentProps.label = getLang() == "es" ? "Apellido" : "Last Name";
+                componentProps.rules = [componentProps.rules, "nospecialcharacters", "noemojisorspecialfonts"];
                 // END LPC MODIFIED CODE
                 break;
 
