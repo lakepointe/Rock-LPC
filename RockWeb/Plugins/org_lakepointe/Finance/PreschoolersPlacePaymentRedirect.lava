@@ -3,7 +3,7 @@
 {% endcomment %}
 
 {% comment %} When updating: Update instanceId to the new Registration Instance Id {% endcomment %}
-{% sql instanceId:'3597' personId:'{{ CurrentPerson.Id }}'%}
+{% sql instanceId:'4898' personId:'{{ CurrentPerson.Id }}'%}
     SELECT r.Id
     FROM Registration r
     INNER JOIN PersonAlias pa on r.PersonAliasId = pa.Id
@@ -14,8 +14,8 @@
 {% assign registrationCount = results | Size %}
 {% assign today = 'Now' | Date:'MM/dd/yyyy' | AsDateTime %}
 {% comment %} When updating: Update these two dates to the next year {% endcomment %}
-{% assign july1 = '7/1/2024' | Date:'MM/dd/yyyy' |  AsDateTime %}
-{% assign sept1 = '9/1/2024' | Date:'MM/dd/yyyy' |  AsDateTime %}
+{% assign july1 = '7/1/2025' | Date:'MM/dd/yyyy' |  AsDateTime %}
+{% assign sept1 = '9/1/2025' | Date:'MM/dd/yyyy' |  AsDateTime %}
 
 {% comment %} If it's before July 1, set the start date for the payments to September 1 {% endcomment %}
 {% capture paymentDate %}{% if today < july1 %}&paymentDate={{ sept1 | UrlEncode }}{% endif %}{% endcapture %}
