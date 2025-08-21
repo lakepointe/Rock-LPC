@@ -1,4 +1,24 @@
 {% comment %}
+    By default, private groups are shown. If this is not desired, set HidePrivate to true.
+    You can optionally limit the group types that this setting applies to by setting HideGroupTypesIfPrivate.
+    This is a string with each of the group types to hide, separated and surrounded by colons. Example: ':321:123:57:'
+{% endcomment %}
+
+{% if HidePrivate %}
+    {% assign TempGroups = Groups %}
+    {% for group in Groups %}
+        {% capture groupType -%}
+            :{{ group.Group.GroupTypeId }}:
+        {%- endcapture %}
+        {% assign isHidePrivateGroup = HideGroupTypesIfPrivate | RegExMatch:groupType %}
+        {% if group.Group.IsPublic == false and isHidePrivateGroup %}
+            {% assign TempGroups = TempGroups | RemoveFromArray:group %}
+        {% endif %}
+    {% endfor %}
+    {% assign Groups = TempGroups %}
+{% endif %}
+
+{% comment %}
     This version of the group list sidebar has a different link for scheduled groups vs non-scheduled groups. That way, scheduled groups can go
     directly to the scheduler rather than having to go to the roster first.
     The link is defined here:
@@ -86,38 +106,44 @@
         {% comment %} The rest of the coach hack begins here {% endcomment %}
         {% for result in results %}
             {% group id:'{{ result.Id }}' securityenabled:'false' %}
-                {% capture content %}
-                    {{ group.Name }} <small>({{ result.Role }}<i class='fa fa-asterisk'></i>)</small>
-                    {% assign pending = 0 -%}
-                    {% for member in group.Members -%}
-                        {% if member.GroupMemberStatus == 'Pending' -%}
-                            {% assign pending = pending | Plus:1 -%}
+                {% capture groupType -%}
+                    :{{ group.GroupTypeId }}:
+                {%- endcapture %}
+                {% assign isHidePrivateGroup = HideGroupTypesIfPrivate | RegExMatch:groupType %}
+                {% unless HidePrivate and group.IsPublic == false and isHidePrivateGroup %}
+                    {% capture content %}
+                        {{ group.Name }} <small>({{ result.Role }}<i class='fa fa-asterisk'></i>)</small>
+                        {% assign pending = 0 -%}
+                        {% for member in group.Members -%}
+                            {% if member.GroupMemberStatus == 'Pending' -%}
+                                {% assign pending = pending | Plus:1 -%}
+                            {% endif -%}
+                        {% endfor -%}
+                        {% if pending != 0 -%}
+                            <span title="number of pending members" class="badge badge-danger">{{ pending }}</span>
                         {% endif -%}
-                    {% endfor -%}
-                    {% if pending != 0 -%}
-                        <span title="number of pending members" class="badge badge-danger">{{ pending }}</span>
-                    {% endif -%}
-                {% endcapture %}
+                    {% endcapture %}
 
-                <li class="list-group-item">
-                    {% if group.IsActive == true %}
-                        {% if group.GroupType.IsSchedulingEnabled == true and group.DisableScheduling == false %}
-                            <a href="{{ schedulerPage }}?GroupId={{group.Id}}" class="js-group-item" data-toggle="tooltip"
-                                data-placement="top" title="{{ group.GroupType.Name }}">
-                            {{ content }}
-                            </a>
+                    <li class="list-group-item">
+                        {% if group.IsActive == true %}
+                            {% if group.GroupType.IsSchedulingEnabled == true and group.DisableScheduling == false %}
+                                <a href="{{ schedulerPage }}?GroupId={{group.Id}}" class="js-group-item" data-toggle="tooltip"
+                                    data-placement="top" title="{{ group.GroupType.Name }}">
+                                {{ content }}
+                                </a>
+                            {% else %}
+                                <a href="{{ LinkedPages.DetailPage }}?GroupId={{group.Id}}" class="js-group-item" data-toggle="tooltip"
+                                    data-placement="top" title="{{ group.GroupType.Name }}">
+                                {{ content }}
+                                </a>
+                            {% endif %}
                         {% else %}
-                            <a href="{{ LinkedPages.DetailPage }}?GroupId={{group.Id}}" class="js-group-item" data-toggle="tooltip"
-                                data-placement="top" title="{{ group.GroupType.Name }}">
+                            <div class="js-group-item text-muted" data-toggle="tooltip" data-placement="top" title="{{ group.GroupType.Name }}">
                             {{ content }}
-                            </a>
+                            </div>
                         {% endif %}
-                    {% else %}
-                        <div class="js-group-item text-muted" data-toggle="tooltip" data-placement="top" title="{{ group.GroupType.Name }}">
-                        {{ content }}
-                        </div>
-                    {% endif %}
-                </li>
+                    </li>
+                {% endunless %}
             {% endgroup %}
         {% endfor %}
         {% comment %} end hack {% endcomment %}
